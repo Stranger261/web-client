@@ -32,7 +32,7 @@ jobs:
           password: ${{ secrets.SFTP_PASS }}
           port: 2298
           local_path: ./dist                 # ✅ build output folder
-          remote_path: /home/indevfinite.com/public_html  # ✅ your site folder
+          remote_path: /home/core1.health-ease-hospital.com/public_html  # ✅ your site folder
 
 
 
