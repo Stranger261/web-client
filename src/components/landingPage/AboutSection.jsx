@@ -14,7 +14,7 @@ const AboutSection = () => {
           the well-being of our patients.
         </p>
         <img
-          src="../../../public/images/logo.png"
+          src="images/logo.png"
           alt="About HVill Hospital"
           className="mx-auto rounded-lg w-full max-w-md"
         />

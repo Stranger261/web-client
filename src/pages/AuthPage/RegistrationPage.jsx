@@ -305,18 +305,7 @@ const RegistrationPage = () => {
     </div>
   );
 
-  const Step3 = (
-    <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md bg-white p-8 rounded-3xl shadow-lg space-y-6 z-20">
-      <SimpleFaceRecognition
-        onResult={handleFaceScanComplete}
-        usedAt="register"
-      />
-    </div>
-  );
-
-  return (
-    <>{step === 1 ? Step1 : step === 2 ? Step2 : step === 3 ? Step3 : null}</>
-  );
+  return <>{step === 1 ? Step1 : step === 2 ? Step2 : null}</>;
 };
 
 export default RegistrationPage;
