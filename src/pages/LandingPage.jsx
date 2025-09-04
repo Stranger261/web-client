@@ -64,7 +64,7 @@ const LandingPage = () => {
             className="text-2xl font-bold text-gray-800 flex items-center space-x-2"
           >
             <img
-              src="../../public/images/logo.png"
+              src="images/logo.png"
               alt="HVill Hospital Logo"
               className="h-10 md:mr-2 transition-transform duration-300 ease-in-out transform hover:scale-110"
             />
