@@ -16,7 +16,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 20    # match your local version if needed
+          node-version: 20
 
       - name: Install dependencies
         run: npm install
@@ -24,12 +24,13 @@ jobs:
       - name: Build project
         run: npm run build
 
-      - name: Deploy via FTP
+      - name: Deploy via FTPS
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps # Added this line to use a secure connection
           local-dir: ./dist/
-          server-dir: public_html/ # Corrected: Pointing to the correct directory
+          server-dir: public_html/
 
