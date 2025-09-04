@@ -3,7 +3,7 @@ name: Deploy to cPanel
 on:
   push:
     branches:
-      - master   # or "master", adjust to your default branch
+      - master    # or "main", adjust to your default branch
 
 jobs:
   build-and-deploy:
@@ -16,7 +16,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 20   # match your local version if needed
+          node-version: 20    # match your local version if needed
 
       - name: Install dependencies
         run: npm install
@@ -31,4 +31,5 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./dist/
-          server-dir: public_html/web-client
+          server-dir: public_html/ # Corrected: Pointing to the correct directory
+
