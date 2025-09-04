@@ -13,7 +13,7 @@ createRoot(document.getElementById('root')).render(
         reverseOrder={false}
         toastOptions={{
           style: {
-            zIndex: 999,
+            zIndex: 9999,
           },
         }}
       />
