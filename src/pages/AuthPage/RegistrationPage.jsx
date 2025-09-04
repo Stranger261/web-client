@@ -14,7 +14,6 @@ import {
   postImageForOcr,
   registerUser,
   verifyOtp,
-  verifyUser,
 } from '../../services/authApi.js';
 import SimpleFaceRecognition from '../../components/Scanner/SimpleFaceRecognition.jsx';
 import DebugFaceRecognition from '../../components/Scanner/DebugFaceRecognition.jsx';
@@ -148,16 +147,6 @@ const RegistrationPage = () => {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleFaceScanComplete = async id => {
-    try {
-      const res = await verifyUser(id);
-      console.log(res);
-    } catch (error) {
-      toast.error(error?.message);
-    }
-    toast.success('Face verified successfully! Registration is complete.');
   };
 
   const processImage = async file => {
