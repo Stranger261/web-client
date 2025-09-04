@@ -20,14 +20,14 @@ import DebugFaceRecognition from '../../components/Scanner/DebugFaceRecognition.
 
 const RegistrationPage = () => {
   const [formData, setFormData] = useState({
-    fullname: '',
-    username: '',
+    lastname: '',
+    firstname: '',
+    middlename: '',
     email: '',
     password: '',
     confirmPassword: '',
   });
   const [loading, setLoading] = useState(false);
-  const [ocrData, setOcrData] = useState(null);
   const [status, setStatus] = useState(null);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState('');
@@ -36,43 +36,51 @@ const RegistrationPage = () => {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [userId, setUserId] = useState(null);
 
-  const canSubmit = useMemo(() => !!ocrData && !loading, [ocrData, loading]);
+  const canSubmit = useMemo(() => {
+    const { middlename, ...requiredFields } = formData;
+
+    // check if all required fields are filled (non-empty)
+    const allFilled = Object.values(requiredFields).every(
+      value => value && value.trim() !== ''
+    );
+
+    const passwordsMatch = formData.password === formData.confirmPassword;
+
+    return allFilled && passwordsMatch && !loading;
+  }, [formData, loading]);
 
   useEffect(() => {
     if (!step) setStep(1);
     setFormData({
-      fullname: '',
-      username: '',
+      lastname: '',
+      firstname: '',
+      middlename: '',
       email: '',
       password: '',
       confirmPassword: '',
     });
     setOtp(['', '', '', '', '', '']);
     setUserId(null);
-    setOcrData(null);
     setImageFile(null), setImagePreviewUrl('');
     setStatus(null);
   }, []);
 
   const onSubmit = async e => {
     e.preventDefault();
+
+    if (formData.password.length < 6) {
+      toast.error('Passwords must be at least 6 Characters.');
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       toast.error('Passwords do not match.');
       return;
     }
 
-    // if (
-    //   !ocrData ||
-    //   !ocrData['Apelyido/Last Name'] ||
-    //   !ocrData['Mga Pangalan/Given Names'] ||
-    //   !ocrData['Petsa ng Kapanganakan/Date of Birth']
-    // ) {
-    //   toast.error('Please upload a valid ID with all required information.');
-    //   return;
-    // }
-
-    if (!imageFile) {
-      toast.error('Please scan or upload your ID first.');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      toast.error('Please enter a valid email address.');
       return;
     }
 
@@ -80,7 +88,7 @@ const RegistrationPage = () => {
     setStatus(null);
     setIsSubmitting(true);
     try {
-      const apiCall = await registerUser(formData, imageFile);
+      const apiCall = await registerUser(formData);
       const delayPromise = new Promise(resolve => setTimeout(resolve, 800));
 
       const [apiCallResult] = await Promise.all([apiCall, delayPromise]);
@@ -149,40 +157,6 @@ const RegistrationPage = () => {
     }
   };
 
-  const processImage = async file => {
-    setLoading(true);
-    setStatus(null);
-    setOcrData(null);
-    try {
-      setImageFile(file);
-      const data = await postImageForOcr(file);
-      setOcrData(data.extracted_info);
-      if (data.face_encoding) {
-        setStatus({
-          message:
-            'ID scanned successfully. Click "Register and Verify" to continue.',
-          isError: false,
-        });
-      } else if (data.face_error) {
-        setStatus({
-          message: `Face enrollment failed: ${data.face_error}`,
-          isError: true,
-        });
-      }
-    } catch (e) {
-      setStatus({ message: `ID scan failed: ${e.message}`, isError: true });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const onFileFromUpload = async file => {
-    const reader = new FileReader();
-    reader.onloadend = () => setImagePreviewUrl(reader.result);
-    reader.readAsDataURL(file);
-    await processImage(file);
-  };
-
   const onChange = e => {
     const { name, value } = e.target;
     setFormData(p => ({ ...p, [name]: value }));
@@ -201,27 +175,9 @@ const RegistrationPage = () => {
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
           Create a new account
         </h2>
-        <p className="mt-2 text-center text-gray-600">
-          Please provide your details and upload your ID.
-        </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md bg-white p-8 rounded-3xl shadow-lg space-y-6">
-        {/* The Upload ID section */}
-        <div className="border border-gray-300 rounded-md p-4">
-          <StatusBanner message={status?.message} isError={status?.isError} />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Upload Your ID
-          </h3>
-          <p className="text-sm text-gray-500 mb-4">
-            Please upload a clear image of your identification card.
-          </p>
-          <UploadScanner onFile={onFileFromUpload} />
-          <OcrResults data={ocrData} />
-          {/* Optional: Add a separator */}
-          <hr className="my-4" />
-        </div>
-
         {/* The Registration Form section */}
         <RegistrationForm
           formData={formData}
@@ -256,12 +212,13 @@ const RegistrationPage = () => {
         </div>
         <h2 className="text-2xl font-bold text-gray-900">Verify your Email</h2>
         <p className="text-sm text-gray-600">
-          We've sent a 6-digit OTP to **{formData.email}**. Please check your
-          inbox.
+          We've sent a 6-digit OTP to <strong>{formData.email}</strong>. Please
+          check your inbox.
         </p>
 
         <div className="space-y-4">
           <OTPInput setOtp={setOtp} otp={otp} />
+
           <button
             type="button"
             onClick={handleVerifyOtp}
@@ -280,6 +237,16 @@ const RegistrationPage = () => {
               'Verify Account'
             )}
           </button>
+
+          {/* 👇 Add "Go Back" button here */}
+          <button
+            type="button"
+            onClick={() => setStep(1)}
+            className="w-full border border-gray-300 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-colors duration-200"
+          >
+            Go Back
+          </button>
+
           <p className="text-sm text-gray-500">
             Didn't receive the OTP?{' '}
             <a
