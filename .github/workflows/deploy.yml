@@ -27,11 +27,12 @@ jobs:
       - name: 🚀 Deploy via SFTP
         uses: wlixcc/SFTP-Deploy-Action@v1.2
         with:
-          host: ${{ secrets.SFTP_HOST }}   # your server IP or domain
+          host: ${{ secrets.SFTP_HOST }}
           username: ${{ secrets.SFTP_USER }}
           password: ${{ secrets.SFTP_PASS }}
           port: 2298
-          localPath: "./dist"              # adjust to your build/output folder
-          remotePath: "/home/youruser/public_html" # adjust to your server path
+          local_path: ./dist                 # ✅ build output folder
+          remote_path: /home/indevfinite.com/public_html  # ✅ your site folder
+
 
 
