@@ -24,13 +24,14 @@ jobs:
       - name: Build project
         run: npm run build
 
-      - name: Deploy via FTPS
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      - name: 🚀 Deploy via SFTP
+        uses: wlixcc/SFTP-Deploy-Action@v1.2
         with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps # Added this line to use a secure connection
-          local-dir: ./dist/
-          server-dir: public_html/
+          host: ${{ secrets.SFTP_HOST }}   # your server IP or domain
+          username: ${{ secrets.SFTP_USER }}
+          password: ${{ secrets.SFTP_PASS }}
+          port: 2298
+          localPath: "./dist"              # adjust to your build/output folder
+          remotePath: "/home/youruser/public_html" # adjust to your server path
+
 
