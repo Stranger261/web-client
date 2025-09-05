@@ -24,15 +24,16 @@ jobs:
       - name: Build project
         run: npm run build
 
-      - name: Deploy to Server
+      - name: Deploy via SFTP
         uses: wlixcc/SFTP-Deploy-Action@v1.2
         with:
-          host: ${{ secrets.SFTP_HOST }}       # <-- your server IP (e.g. 23.94.230.146) or domain
-          port: 2298                             # your SSH port
-          username: ${{ secrets.SFTP_HOST_SERVER }}   # usually "root" or your cPanel/SSH user
-          ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
+          server: ${{ secrets.SFTP_HOST }}
+          port: 2298
+          username: ${{ secrets.SFTP_USER }}
+          password: ${{ secrets.SFTP_PASS }}
           local_path: ./dist
           remote_path: /home/core1.health-ease-hospital.com/public_html
+
 
 
 
