@@ -1,40 +1,23 @@
-name: Deploy to cPanel
+name: 🚀 Deploy Website
 
 on:
   push:
     branches:
-      - master    # or "main", adjust to your default branch
+      - main
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 20
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build project
-        run: npm run build
-
-      - name: 📂 Deploy to Server
+      - name: 📂 Deploy via SFTP (Password Auth)
         uses: wlixcc/SFTP-Deploy-Action@v1.2
         with:
           server: ${{ secrets.SFTP_HOST }}
           port: 2298
           username: ${{ secrets.SFTP_USER }}
-          ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
+          password: ${{ secrets.SFTP_PASS }}
           local_path: ./dist
           remote_path: /home/coreh3648/public_html
-
-
-
-
-
