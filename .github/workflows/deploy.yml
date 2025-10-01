@@ -1,4 +1,4 @@
-name: 🚀 Deploy Website
+name: 🚀 Deploy Frontend
 
 on:
   push:
@@ -12,6 +12,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build app
+        run: npm run build
+
       - name: 📂 Deploy via SFTP (Password Auth)
         uses: wlixcc/SFTP-Deploy-Action@v1.2
         with:
@@ -20,4 +31,5 @@ jobs:
           username: ${{ secrets.SFTP_USER }}
           password: ${{ secrets.SFTP_PASS }}
           local_path: ./dist
-          remote_path: /home/core1.health-ease-hospital.com/public_html
+          remote_path: /home/core1/public_html
+          args: "-o StrictHostKeyChecking=no"
