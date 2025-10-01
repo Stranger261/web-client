@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+
 import { useFaceRecognition } from '../../hooks/useFaceRecog';
-import { verifyUser } from '../../services/authApi';
-import toast from 'react-hot-toast';
 
 const SimpleFaceRecognition = ({ onResult, className = '', usedAt }) => {
   const navigate = useNavigate();
 
   const [result, setResult] = useState(null);
   const [showResult, setShowResult] = useState(false);
+  const [isProcessingVerification, setIsProcessingVerification] =
+    useState(false);
 
   const {
     videoRef,
@@ -28,28 +29,40 @@ const SimpleFaceRecognition = ({ onResult, className = '', usedAt }) => {
     onVerificationResult: verificationResult => {
       setResult(verificationResult);
       setShowResult(true);
-      if (onResult) {
-        onResult(verificationResult);
-      }
     },
     onError: error => {
       console.error('Face recognition error:', error);
     },
   });
-  useEffect(() => {
-    if (result !== null && usedAt === 'register') {
-      onResult(result.person_id);
-    }
-  }, [result]);
 
   const closeResult = () => {
     setShowResult(false);
     setResult(null);
+    setIsProcessingVerification(false);
   };
 
-  // Call this function when debugging
+  const handleCompleteVerification = async () => {
+    if (isProcessingVerification) return;
 
-  // Helper functions for styling
+    setIsProcessingVerification(true);
+    try {
+      console.log(
+        '🔍 Manually completing verification with ID:',
+        result.user_id || result.person_id
+      );
+      await onResult(result.user_id || result.person_id);
+    } catch (error) {
+      console.error('❌ Error completing verification:', error);
+    }
+  };
+
+  const handleTryAgain = () => {
+    closeResult();
+    if (cameraStatus === 'idle') {
+      start();
+    }
+  };
+
   const getStatusClass = () => {
     if (analysis.ready_for_capture)
       return 'bg-green-100 text-green-700 border border-green-200';
@@ -414,19 +427,48 @@ const SimpleFaceRecognition = ({ onResult, className = '', usedAt }) => {
             )}
 
             <div className="flex gap-3">
-              <button
-                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-6 rounded-full cursor-pointer transition-all"
-                onClick={() => navigate('/login')}
-              >
-                Continue
-              </button>
+              {/* Registration flow - auto navigates */}
+              {usedAt === 'register' && result.matched && (
+                <button
+                  className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 px-6 rounded-full cursor-pointer transition-all"
+                  onClick={() => window.location.reload()}
+                >
+                  Continue
+                </button>
+              )}
+
+              {/* Verification flow - manual completion */}
+              {usedAt !== 'register' && result?.matched && (
+                <button
+                  className={`flex-1 py-2 px-6 rounded-full cursor-pointer transition-all ${
+                    isProcessingVerification
+                      ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                      : 'bg-green-500 hover:bg-green-600 text-white'
+                  }`}
+                  onClick={handleCompleteVerification}
+                  disabled={isProcessingVerification}
+                >
+                  {isProcessingVerification
+                    ? 'Processing...'
+                    : 'Complete Verification'}
+                </button>
+              )}
+
+              {/* Close/Try Again buttons */}
+              {usedAt !== 'register' && (
+                <button
+                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-6 rounded-full cursor-pointer transition-all"
+                  onClick={closeResult}
+                  disabled={isProcessingVerification}
+                >
+                  Close
+                </button>
+              )}
 
               {!result?.matched && (
                 <button
                   className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-6 rounded-full cursor-pointer transition-all"
-                  onClick={() => {
-                    closeResult();
-                  }}
+                  onClick={handleTryAgain}
                 >
                   Try Again
                 </button>
@@ -437,7 +479,7 @@ const SimpleFaceRecognition = ({ onResult, className = '', usedAt }) => {
       )}
 
       {/* Custom CSS for animations */}
-      <style jsx>{`
+      <style>{`
         @keyframes fadeIn {
           from {
             opacity: 0;

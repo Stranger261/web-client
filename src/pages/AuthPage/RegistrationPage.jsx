@@ -1,24 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
 
-import UploadScanner from '../../components/Scanner/UploadScanner.jsx';
-import StatusBanner from '../../components/generic/StatusBanner.jsx';
-import OcrResults from '../../components/generic/OcrResults.jsx';
 import Spinner from '../../components/generic/Spinner.jsx';
 
 import RegistrationForm from '../../components/Form/RegistrationForm.jsx';
 import OTPInput from '../../components/Form/OTPInput.jsx';
-import FaceRecognition from '../../components/Scanner/FaceRecognition.jsx';
 
-import {
-  postImageForOcr,
-  registerUser,
-  verifyOtp,
-} from '../../services/authApi.js';
-import SimpleFaceRecognition from '../../components/Scanner/SimpleFaceRecognition.jsx';
-import DebugFaceRecognition from '../../components/Scanner/DebugFaceRecognition.jsx';
+import { registerUser, verifyOtp } from '../../services/authApi.js';
+import { useNavigate } from 'react-router';
 
 const RegistrationPage = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     lastname: '',
     firstname: '',
@@ -28,9 +20,6 @@ const RegistrationPage = () => {
     confirmPassword: '',
   });
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState(null);
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [step, setStep] = useState(1);
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -61,8 +50,6 @@ const RegistrationPage = () => {
     });
     setOtp(['', '', '', '', '', '']);
     setUserId(null);
-    setImageFile(null), setImagePreviewUrl('');
-    setStatus(null);
   }, []);
 
   const onSubmit = async e => {
@@ -85,20 +72,15 @@ const RegistrationPage = () => {
     }
 
     setLoading(true);
-    setStatus(null);
     setIsSubmitting(true);
     try {
-      const apiCall = await registerUser(formData);
+      const apiCall = registerUser(formData);
       const delayPromise = new Promise(resolve => setTimeout(resolve, 800));
 
       const [apiCallResult] = await Promise.all([apiCall, delayPromise]);
 
       setUserId(apiCallResult.data.userId);
 
-      setStatus({
-        message: 'Registration successful! Check your email for verification.',
-        isError: false,
-      });
       toast.success(
         `Registration successful! Check your email for verification.`
       );
@@ -107,11 +89,9 @@ const RegistrationPage = () => {
       // Correctly access the error message
       console.log(e);
       const errorMessage =
-        e?.data?.data.message || 'An unknown error occurred.';
-      setStatus({
-        message: `Registration failed: ${errorMessage}`,
-        isError: true,
-      });
+        e?.response?.data.message ||
+        e?.data?.data.message ||
+        'An unknown error occurred.';
       toast.error(`Registration failed: ${errorMessage}`);
     } finally {
       setLoading(false);
@@ -132,12 +112,10 @@ const RegistrationPage = () => {
       const delayPromise = new Promise(resolve => setTimeout(resolve, 800));
       const [apiResponse] = await Promise.all([verifyPromise, delayPromise]);
 
-      console.log(apiResponse);
-
       if (!apiResponse.data.success) return toast.error('Verification failed.');
 
-      if (verifyPromise.data.success) {
-        toast.success('Account verified & registered!');
+      if (apiResponse.data.success) {
+        toast.success(apiResponse?.data?.message || 'Registered successfully');
         setFormData({
           firstname: '',
           lastname: '',
@@ -145,13 +123,21 @@ const RegistrationPage = () => {
           password: '',
           confirmPassword: '',
         });
-        setStep(3);
+        setStep(1);
         setOtp(['', '', '', '', '', '']);
+
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        navigate('/login');
       } else {
         toast.error(verifyPromise?.message || 'Invalid OTP');
       }
     } catch (error) {
-      toast.error(error?.response?.data?.message || 'Something went wrong');
+      toast.error(
+        error?.response?.data?.message ||
+          error?.data?.data?.message ||
+          'Something went wrong'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -186,6 +172,14 @@ const RegistrationPage = () => {
           disabled={!canSubmit || loading}
           isSubmitting={isSubmitting}
         />
+
+        <button
+          type="button"
+          onClick={() => navigate('/login')}
+          className="w-full border border-gray-300 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-100 transition-colors duration-200"
+        >
+          Login instead
+        </button>
       </div>
     </div>
   );
@@ -238,7 +232,6 @@ const RegistrationPage = () => {
             )}
           </button>
 
-          {/* 👇 Add "Go Back" button here */}
           <button
             type="button"
             onClick={() => setStep(1)}

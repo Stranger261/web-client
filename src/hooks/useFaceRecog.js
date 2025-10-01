@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 /**
@@ -48,7 +47,7 @@ export const useFaceRecognition = (config = {}) => {
     if (providedWsUrl) return providedWsUrl;
 
     // Use the correct server port (8010) instead of the frontend port (5173)
-    const serverHost = 'localhost:8010'; // Your FastAPI server
+    const serverHost = 'localhost:8001'; // Your FastAPI server
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 
     // Based on your main.py: app.include_router(live_verify.router, prefix="/api/live_verify")

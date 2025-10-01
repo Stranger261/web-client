@@ -1,23 +1,8 @@
 import axios from 'axios';
-
-const AFRS_BASE_URL = 'http://localhost:8010/api';
-const AUTH_SERVICE_BASE_URL = 'http://localhost:8000';
-
-export const postImageForOcr = async file => {
-  const fd = new FormData();
-  fd.append('image', file);
-
-  try {
-    const { data } = await axios.post(`${AFRS_BASE_URL}/ocr`, fd, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return data;
-  } catch (error) {
-    throw new Error(error.response?.data?.error || 'OCR server error');
-  }
-};
+import {
+  AUTH_SERVICE_BASE_URL,
+  PATIENT_SERVICE_BASE_URL,
+} from '../config/API_URL';
 
 export const registerUser = async payload => {
   try {
@@ -33,46 +18,110 @@ export const registerUser = async payload => {
     return data;
   } catch (error) {
     console.log(error);
-    throw new Error(error.response?.data?.error || 'Registration failed');
+    throw error.response?.data?.error || 'Registration failed';
   }
 };
 
 export const verifyOtp = async (otp, userId) => {
-  console.log(otp, userId);
-  const res = await axios.post(`${AUTH_SERVICE_BASE_URL}/verify-otp`, {
-    userId,
-    otp,
+  try {
+    const res = await axios.post(`${AUTH_SERVICE_BASE_URL}/verify-otp`, {
+      userId,
+      otp,
+    });
+
+    return res;
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+};
+
+export const verifyUser = async (payload, imageFile) => {
+  const fd = new FormData();
+
+  // Add all form fields
+  Object.entries(payload).forEach(([key, value]) => fd.append(key, value));
+
+  // Add the image file
+  if (imageFile) fd.append('idPhoto', imageFile);
+
+  try {
+    const { data } = await axios.post(
+      `${AUTH_SERVICE_BASE_URL}/verify-user-info`,
+      fd,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        withCredentials: true,
+      }
+    );
+    return data;
+  } catch (error) {
+    throw error?.response?.data?.message;
+  }
+};
+
+export const verifyUserFaceRecog = async imageBlob => {
+  const formData = new FormData();
+  formData.append('image', imageBlob, 'live.jpg'); // backend expects "liveImage"
+
+  const res = await axios.post(
+    `${PATIENT_SERVICE_BASE_URL}/api/face/verify`,
+    formData,
+    {
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+      },
+    }
+  );
+
+  return res;
+};
+
+export const loginUser = async credentials => {
+  try {
+    const res = await axios.post(
+      `${AUTH_SERVICE_BASE_URL}/login`,
+      credentials,
+      { withCredentials: true }
+    );
+
+    return res;
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+};
+
+export const logoutUser = async () => {
+  await axios.post(
+    `${AUTH_SERVICE_BASE_URL}/logout`,
+    {},
+    {
+      withCredentials: true,
+    }
+  );
+};
+
+export const getCurrentUser = async () => {
+  const res = axios.get(`${AUTH_SERVICE_BASE_URL}/user/me`, {
+    withCredentials: true,
   });
 
   return res;
 };
 
-export const verifyUser = async userId => {
-  const res = await axios.post(`${AUTH_SERVICE_BASE_URL}/verify-user`, {
-    userId,
-  });
+export const updateUser = async (userId, updatedData) => {
+  const res = await axios.put(
+    `${AUTH_SERVICE_BASE_URL}/update-user/${userId}`,
+    updatedData,
+    {
+      withCredentials: true,
+    }
+  );
 
   return res;
 };
-
-// export const verifyUser = async (payload, imageFile) => {
-//   const fd = new FormData();
-
-//   // Add all form fields
-//   Object.entries(payload).forEach(([key, value]) => fd.append(key, value));
-
-//   // Add the image file
-//   if (imageFile) fd.append('imageFile', imageFile);
-
-//   try {
-//     const { data } = await axios.post(`${AUTH_SERVICE_BASE_URL}/register`, fd, {
-//       headers: {
-//         'Content-Type': 'multipart/form-data', //
-//       },
-//     });
-//     return data;
-//   } catch (error) {
-//     console.log(error);
-//     throw new Error(error.response?.data?.error || 'Registration failed');
-//   }
-// };
