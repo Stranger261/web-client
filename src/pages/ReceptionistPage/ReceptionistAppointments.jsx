@@ -7,8 +7,8 @@ import Pagination from '../../components/generic/Pagination';
 import { LIMIT } from '../../config/CONST';
 
 import AppointmentsTable from '../../components/appointments/AppointmentTables';
-import UniversalAppointmentModal from '../../components/modals/UniversalAppointmentModal';
-import AppointmentSchedulerModal from '../../components/modals/AppointmentSchedulerModal';
+import UniversalAppointmentModal from '../../components/Modals/UniversalAppointmentModal';
+import AppointmentSchedulerModal from '../../components/Modals/AppointmentSchedulerModal';
 
 const ReceptionistAppointments = () => {
   const { currentUser } = useAuth();
