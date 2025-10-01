@@ -14,7 +14,7 @@ jobs:
 
       - name: Build project
         run: |
-          npm ci
+          npm install
           npm run build
 
       - name: Deploy via SFTP
@@ -23,7 +23,7 @@ jobs:
           server: ${{ secrets.SERVER_HOST }}
           port: 2298
           username: ${{ secrets.SERVER_USER }}
-          ssh_private_key: ${{ secrets.SSH_PRIVATE_KEY }}
-          local_path: ./dist/*
-          remote_path: /var/www/html
+          ssh_private_key: ${{ secrets.DEPLOY_KEY }}
+          local_path: ./dist
+          remote_path: /home/core1/public_html
           args: "-o StrictHostKeyChecking=no"
