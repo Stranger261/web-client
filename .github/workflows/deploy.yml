@@ -4,18 +4,14 @@ on:
   push:
     branches:
       - master
-    branches: [ "main" ]
 
 jobs:
   build-and-deploy:
-  deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-      - name: Checkout code
-        uses: actions/checkout@v4
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -26,28 +22,24 @@ jobs:
         run: npm install
 
       - name: Create aws-exports.js if missing
-      - name: Build project
         run: |
           if [ ! -f src/aws-exports.js ]; then
             echo "export default {};" > src/aws-exports.js
           fi
-          npm install
-          npm run build
 
       - name: Build project
         run: npm run build
+
       
       - name: Deploy to Server
       - name: Deploy via SFTP
         uses: wlixcc/SFTP-Deploy-Action@v1.2
         with:
-          server: ${{ secrets.SERVER_IP }}
           server: ${{ secrets.SERVER_HOST }}
           port: 2298
           username: ${{ secrets.SERVER_USER }}
           ssh_private_key: ${{ secrets.DEPLOY_KEY }}
-          local_path: './dist/*'
-          remote_path: '/var/www/html'
+          # remote_path: '/var/www/html'
           local_path: ./dist
           remote_path: /home/core1.health-ease-hospital.com/public_html
           args: "-o StrictHostKeyChecking=no"
