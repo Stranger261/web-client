@@ -29,15 +29,13 @@ jobs:
 
       - name: Build project
         run: npm run build
-
-
-      - name: 📂 Deploy via SFTP (Password Auth)
+      
+      - name: Deploy to Server
         uses: wlixcc/SFTP-Deploy-Action@v1.2
         with:
-          server: ${{ secrets.SFTP_HOST }}
+          server: ${{ secrets.SERVER_IP }}
           port: 2298
-          username: ${{ secrets.SFTP_USER }}
-          password: ${{ secrets.SFTP_PASS }}
-          local_path: ./dist
-          remote_path: /home/core1/public_html
-          args: "-o StrictHostKeyChecking=no"
+          username: ${{ secrets.SERVER_USER }}
+          ssh_private_key: ${{ secrets.DEPLOY_KEY }}
+          local_path: './dist/*'
+          remote_path: '/var/www/html'
