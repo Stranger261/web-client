@@ -43,6 +43,7 @@ const CreateAppointment = () => {
     reason: '',
   });
 
+  console.log('updated');
   useEffect(() => {
     getDepartments();
     getDoctors();
