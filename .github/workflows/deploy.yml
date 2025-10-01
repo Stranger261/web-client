@@ -30,8 +30,6 @@ jobs:
       - name: Build project
         run: npm run build
 
-      - name: Build app
-        run: npm run build
 
       - name: 📂 Deploy via SFTP (Password Auth)
         uses: wlixcc/SFTP-Deploy-Action@v1.2
