@@ -3,44 +3,50 @@ name: 🚀 Deploy Frontend
 on:
   push:
     branches:
-      - master
+      - master  # Trigger deploy on pushes to master
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Checkout code
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Debug SSH Key (first few lines only)
+      # Step 2: Debug SSH key (first few lines only)
+      - name: Debug SSH Key
         run: |
-          if [ -z "$INPUT_SSH_PRIVATE_KEY" ]; then
-            echo "❌ SSH key is missing (INPUT_SSH_PRIVATE_KEY not set)"
+          if [ -z "${{ secrets.DEPLOY_KEY }}" ]; then
+            echo "❌ SSH key is missing (DEPLOY_KEY secret not set)"
             exit 1
           fi
           echo "✅ SSH key is present."
-          echo "$INPUT_SSH_PRIVATE_KEY" | head -n 5
+          echo "${{ secrets.DEPLOY_KEY }}" | head -n 5
           echo "... (truncated)"
 
-
+      # Step 3: Set up Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 22   # or 22
+          node-version: 22
 
+      # Step 4: Install dependencies
       - name: Install dependencies
         run: npm install
 
+      # Step 5: Create aws-exports.js if missing
       - name: Create aws-exports.js if missing
         run: |
           if [ ! -f src/aws-exports.js ]; then
             echo "export default {};" > src/aws-exports.js
           fi
 
+      # Step 6: Build project
       - name: Build project
         run: npm run build
 
+      # Step 7: Deploy via SFTP
       - name: Deploy via SFTP
         uses: wlixcc/SFTP-Deploy-Action@v1.2
         with:
@@ -48,7 +54,6 @@ jobs:
           port: 2298
           username: ${{ secrets.SERVER_USER }}
           ssh_private_key: ${{ secrets.DEPLOY_KEY }}
-          remote_path: '/var/www/html'
           local_path: ./dist
-          # remote_path: /home/core1.health-ease-hospital.com/public_html
+          remote_path: /home/coreh3648/public_html
           args: "-o StrictHostKeyChecking=no"
