@@ -30,8 +30,6 @@ jobs:
       - name: Build project
         run: npm run build
 
-      
-      - name: Deploy to Server
       - name: Deploy via SFTP
         uses: wlixcc/SFTP-Deploy-Action@v1.2
         with:
