@@ -13,6 +13,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Debug SSH Key (first few lines only)
+        run: |
+          if [ -z "$INPUT_SSH_PRIVATE_KEY" ]; then
+            echo "❌ SSH key is missing (INPUT_SSH_PRIVATE_KEY not set)"
+            exit 1
+          fi
+          echo "✅ SSH key is present."
+          echo "$INPUT_SSH_PRIVATE_KEY" | head -n 5
+          echo "... (truncated)"
+
+
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
