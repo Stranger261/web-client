@@ -11,7 +11,7 @@ jobs:
 
     steps:
       # Step 1: Checkout code
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
       # Step 2: Debug SSH key (first few lines only)
@@ -50,10 +50,10 @@ jobs:
       - name: Deploy via SFTP
         uses: wlixcc/SFTP-Deploy-Action@v1.2
         with:
-          server: ${{ secrets.SERVER_HOST }}
+          host: ${{ secrets.SERVER_HOST }}
           port: 2298
           username: ${{ secrets.SERVER_USER }}
-          ssh_private_key: ${{ secrets.DEPLOY_KEY }}
-          local_path: ./dist
-          remote_path: /home/coreh3648/public_html
-          args: "-o StrictHostKeyChecking=no"
+          key: ${{ secrets.DEPLOY_KEY }}
+          source: "./dist/*"
+          target: "/home/coreh3648/public_html"
+          strip_components: 1
