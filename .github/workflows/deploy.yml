@@ -50,10 +50,11 @@ jobs:
       - name: Deploy via SFTP
         uses: wlixcc/SFTP-Deploy-Action@v1.2
         with:
-          host: ${{ secrets.SERVER_HOST }}
+          server: ${{ secrets.SERVER_HOST }}
           port: 2298
           username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.DEPLOY_KEY }}
-          source: "./dist/*"
-          target: "/home/coreh3648/public_html"
-          strip_components: 1
+          ssh_private_key: ${{ secrets.DEPLOY_KEY }}
+          local_path: ./dist
+          remote_path: /home/coreh3648/public_html
+          args: "-o StrictHostKeyChecking=no"
+
