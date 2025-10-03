@@ -22,7 +22,7 @@ jobs:
 
       # Step 3: Install dependencies
       - name: Install dependencies
-        run: npm install
+        run: npm ci   # ✅ faster & safer than npm install
 
       # Step 4: Ensure aws-exports.js exists
       - name: Create aws-exports.js if missing
@@ -50,7 +50,19 @@ jobs:
             cp -r /home/core1.health-ease-hospital.com/public_html $BACKUP_DIR
             echo "✅ Backup created at $BACKUP_DIR"
 
-      # Step 7: Deploy new build (upload dist contents only)
+      # Step 7: Clean old files before deploy (optional but recommended for Vite hashed files)
+      - name: Clean old public_html
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          port: 2298
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          script: |
+            rm -rf /home/core1.health-ease-hospital.com/public_html/*
+            echo "🧹 Old files removed"
+
+      # Step 8: Deploy new build (upload dist contents only)
       - name: Deploy via SFTP
         uses: wlixcc/SFTP-Deploy-Action@v1.2
         with:
@@ -58,11 +70,11 @@ jobs:
           port: 2298
           username: ${{ secrets.SERVER_USER }}
           ssh_private_key: ${{ secrets.DEPLOY_KEY }}
-          local_path: ./dist/**
+          local_path: ./dist/*
           remote_path: /home/core1.health-ease-hospital.com/public_html
           args: "-o StrictHostKeyChecking=no"
 
-      # Step 8: Fix permissions
+      # Step 9: Fix permissions
       - name: Fix permissions
         uses: appleboy/ssh-action@v1.0.3
         with:
