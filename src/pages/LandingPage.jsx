@@ -11,10 +11,23 @@ import { useSchedule } from '../context/ScheduleContext';
 import LoadingOverlay from '../components/generic/LoadingOverlay';
 
 const LandingPage = () => {
-  const { allDoctors, getDoctors, isLoading } = useSchedule();
+  const { allDoctors, getDoctors } = useSchedule();
+  const [pageLoading, setPageLoading] = useState(true);
 
   useEffect(() => {
-    getDoctors();
+    const init = async () => {
+      setPageLoading(true);
+      try {
+        const delay = new Promise(res => setTimeout(res, 1000));
+        await Promise.race([delay, getDoctors()]);
+      } catch (error) {
+        console.log(error);
+      } finally {
+        setPageLoading(false);
+      }
+    };
+
+    init();
   }, [getDoctors]);
 
   const filteredDocs =
@@ -60,7 +73,7 @@ const LandingPage = () => {
     </section>
   );
 
-  return isLoading || filteredDocs.length === 0 ? (
+  return pageLoading || filteredDocs.length === 0 ? (
     <LoadingOverlay />
   ) : (
     <div className="antialiased font-inter text-gray-800 bg-slate-50">
