@@ -14,39 +14,43 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 2: Debug SSH key (first few lines only)
-      - name: Debug SSH Key
-        run: |
-          if [ -z "${{ secrets.DEPLOY_KEY }}" ]; then
-            echo "❌ SSH key is missing (DEPLOY_KEY secret not set)"
-            exit 1
-          fi
-          echo "✅ SSH key is present."
-          echo "${{ secrets.DEPLOY_KEY }}" | head -n 5
-          echo "... (truncated)"
-
-      # Step 3: Set up Node.js
+      # Step 2: Set up Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 22
 
-      # Step 4: Install dependencies
+      # Step 3: Install dependencies
       - name: Install dependencies
         run: npm install
 
-      # Step 5: Create aws-exports.js if missing
+      # Step 4: Ensure aws-exports.js exists
       - name: Create aws-exports.js if missing
         run: |
           if [ ! -f src/aws-exports.js ]; then
             echo "export default {};" > src/aws-exports.js
           fi
 
-      # Step 6: Build project
+      # Step 5: Build project
       - name: Build project
         run: npm run build
 
-      # Step 7: Deploy via SFTP
+      # Step 6: Backup old public_html
+      - name: Backup old public_html
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          port: 2298
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          script: |
+            TIMESTAMP=$(date +'%Y%m%d_%H%M%S')
+            BACKUP_DIR="/home/core1.health-ease-hospital.com/backups/public_html_$TIMESTAMP"
+            mkdir -p /home/core1.health-ease-hospital.com/backups
+            cp -r /home/core1.health-ease-hospital.com/public_html $BACKUP_DIR
+            echo "✅ Backup created at $BACKUP_DIR"
+
+      # Step 7: Deploy new build
       - name: Deploy via SFTP
         uses: wlixcc/SFTP-Deploy-Action@v1.2
         with:
@@ -54,7 +58,6 @@ jobs:
           port: 2298
           username: ${{ secrets.SERVER_USER }}
           ssh_private_key: ${{ secrets.DEPLOY_KEY }}
-          local_path: ./dist
+          local_path: ./dist/*
           remote_path: /home/core1.health-ease-hospital.com/public_html
           args: "-o StrictHostKeyChecking=no"
-
