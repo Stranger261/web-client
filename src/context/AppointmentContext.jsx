@@ -44,7 +44,6 @@ const AppointmentProvider = ({ children }) => {
 
   const { currentUser } = useAuth();
 
-  // Your existing methods...
   const getMyAppointments = useCallback(async () => {
     if (!currentUser?.role) {
       setMyAppointments([]);
