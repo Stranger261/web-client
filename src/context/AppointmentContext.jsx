@@ -15,7 +15,7 @@ import {
   fetchAllAppointments,
   // Add these new API functions to your appointmentApi.js
   fetchPatientAppointmentHistory,
-  updateAppointment,
+  reschedAppt,
   searchAppointments as searchAppointmentsAPI,
   fetchMyDoctors,
   createReceptionistAppointment as createAppointmentByReceptionist,
@@ -148,10 +148,7 @@ const AppointmentProvider = ({ children }) => {
     async (appointmentId, appointmentData) => {
       setIsUpdating(true);
       try {
-        const response = await updateAppointment(
-          appointmentId,
-          appointmentData
-        );
+        const response = await reschedAppt(appointmentId, appointmentData);
 
         // Update local state
         const updateAppointmentInState = appointments =>

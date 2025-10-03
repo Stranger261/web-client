@@ -41,7 +41,6 @@ const AdminUserManagement = () => {
     deleteExistingUser,
     fetchDepartmentRoles,
     clearError,
-    fetchUsers,
   } = useAuth();
 
   const [modalMode, setModalMode] = useState(null);
@@ -319,15 +318,6 @@ const AdminUserManagement = () => {
       user.email.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesRole && matchesSearch;
   });
-
-  useEffect(() => {
-    const loadUsers = async () => {
-      // if role is 'all', fetch everything at once
-      if (selectedRole === 'all') await fetchUsers();
-    };
-
-    loadUsers();
-  }, []);
 
   return isLoading ? (
     <LoadingOverlay />

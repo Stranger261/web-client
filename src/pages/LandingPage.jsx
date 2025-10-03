@@ -7,8 +7,19 @@ import ContactSection from '../components/landingPage/ContactSection';
 import FooterSection from '../components/landingPage/FooterSection';
 import AboutSection from '../components/landingPage/AboutSection';
 import { Link } from 'react-router';
+import { useSchedule } from '../context/ScheduleContext';
+import LoadingOverlay from '../components/generic/LoadingOverlay';
 
 const LandingPage = () => {
+  const { allDoctors, getDoctors, isLoading } = useSchedule();
+
+  useEffect(() => {
+    getDoctors();
+  }, [getDoctors]);
+
+  const filteredDocs =
+    allDoctors && allDoctors.sort((a, b) => a.department - b.department);
+
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
@@ -49,7 +60,9 @@ const LandingPage = () => {
     </section>
   );
 
-  return (
+  return isLoading || filteredDocs.length === 0 ? (
+    <LoadingOverlay />
+  ) : (
     <div className="antialiased font-inter text-gray-800 bg-slate-50">
       <link
         rel="stylesheet"
@@ -158,7 +171,7 @@ const LandingPage = () => {
       </FullHeightSection>
 
       <FullHeightSection id="doctors" className="bg-slate-100">
-        <DoctorsSection />
+        <DoctorsSection doctors={filteredDocs} />
       </FullHeightSection>
 
       <FullHeightSection id="contact" className="bg-white">

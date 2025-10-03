@@ -152,6 +152,8 @@ const AuthProvider = ({ children }) => {
       console.error('Error fetching users:', error);
       setError(error.response?.data?.message || 'Failed to fetch users');
       setUsers([]);
+    } finally {
+      setIsLoading(false);
     }
   }, [selectedRole, searchQuery, currentPage, itemsPerPage]);
 
@@ -173,7 +175,6 @@ const AuthProvider = ({ children }) => {
   const fetchDepartments = useCallback(async () => {
     try {
       const res = await getAllDepartments();
-      console.log(res);
 
       if (res?.success) {
         setDepartments(res.data || []);
@@ -217,6 +218,8 @@ const AuthProvider = ({ children }) => {
     } catch (error) {
       console.log();
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -307,28 +310,6 @@ const AuthProvider = ({ children }) => {
     }
   };
 
-  // Get single user by ID
-  // const fetchUserById = async userId => {
-  //   setIsLoading(true);
-  //   setError(null);
-  //   try {
-  //     const res = await getUserById(userId);
-
-  //     console.log('Fetch User By ID Response:', res);
-
-  //     if (res?.success) {
-  //       return res.data;
-  //     }
-  //     return res?.data || res;
-  //   } catch (error) {
-  //     console.error('Error fetching user by ID:', error);
-  //     setError(error.response?.data?.message || 'Failed to fetch user');
-  //     throw error;
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
-
   const resetPassword = async userId => {
     setIsLoading(true);
     try {
@@ -358,19 +339,25 @@ const AuthProvider = ({ children }) => {
 
   // Fetch users when filters change
   useEffect(() => {
-    if (currentUser?.role === 'admin') {
-      setIsLoading(true);
+    if (!currentUser || currentUser?.role !== 'admin') return;
+
+    const init = async () => {
       try {
-        fetchUsers();
-        fetchDepartments();
-        fetchStatistics();
+        await Promise.all([
+          fetchUsers(),
+          fetchDepartments(),
+          fetchStatistics(),
+        ]);
       } catch (error) {
-        console.log(error);
+        console.error(error);
       } finally {
         setIsLoading(false);
       }
-    }
+    };
+
+    init();
   }, [
+    currentUser?.role,
     selectedRole,
     searchQuery,
     currentPage,

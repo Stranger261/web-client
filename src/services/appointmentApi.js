@@ -137,10 +137,11 @@ export const createReceptionistAppointment = async appointmentData => {
  * @param {Object} appointmentData - Updated appointment data
  * @returns {Promise<Object>} Updated appointment
  */
-export const updateAppointment = async (appointmentId, appointmentData) => {
+export const reschedAppt = async (appointmentId, appointmentData) => {
+  console.log('calling');
   try {
     const response = await apiClient.put(
-      `/update/${appointmentId}`,
+      `/resched/${appointmentId}`,
       appointmentData
     );
     return response.data;
