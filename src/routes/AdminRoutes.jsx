@@ -17,6 +17,7 @@ import AdminBilling from '../pages/AdminPage/AdminBilling';
 import AdminReports from '../pages/AdminPage/AdminReports';
 import AdminSystemSettings from '../pages/AdminPage/AdminSystemSettings';
 import AdminSettings from '../pages/AdminPage/AdminSettings';
+import AdminBeds from '../pages/AdminPage/AdminBeds';
 
 const AdminRoutes = (
   <Route
@@ -41,6 +42,7 @@ const AdminRoutes = (
     <Route path="users" element={<AdminUserManagement />} />
     <Route path="appointments" element={<AdminAppointment />} />
     <Route path="medical-records" element={<AdminMedicalRecords />} />
+    <Route path="beds" element={<AdminBeds />} />
     <Route path="billing" element={<AdminBilling />} />
     <Route path="reports" element={<AdminReports />} />
     <Route path="system-settings" element={<AdminSystemSettings />} />

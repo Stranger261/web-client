@@ -1,9 +1,10 @@
 // services/awsFaceApi.service.js
 import axios from 'axios';
+import { PATIENT_SERVICE_BASE_URL } from '../config/API_URL';
 
 // Get base URL from environment or use default
 const getBaseURL = () => {
-  return 'http://localhost:8001';
+  return PATIENT_SERVICE_BASE_URL;
 };
 
 // Get auth token

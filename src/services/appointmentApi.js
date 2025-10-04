@@ -2,9 +2,10 @@
 // COMPLETE VERSION - Replace your existing file with this
 
 import axios from 'axios';
+import { APPOINTMENT_SERVICE_BASE_URL } from '../config/API_URL';
 
 const apiClient = axios.create({
-  baseURL: 'http://localhost:8002/appointments',
+  baseURL: `${APPOINTMENT_SERVICE_BASE_URL}/appointments`,
   withCredentials: true,
   headers: {
     'x-internal-api-key': 'CORE-1-HMS-safe-key',
@@ -156,6 +157,12 @@ export const reschedAppt = async (appointmentId, appointmentData) => {
   }
 };
 
+export const checkIn = async (appointmentId, status) => {
+  const appt = await apiClient.patch(`/update/${appointmentId}`, { status });
+
+  return appt.data;
+};
+
 /**
  * Search appointments with filters
  * @param {string} searchTerm - Search term
@@ -274,7 +281,7 @@ export const fetchAppointmentsByDateRange = async (startDate, endDate) => {
 
 export const fetchMyDoctors = async () => {
   const response = await axios.get(
-    'http://localhost:8002/schedule/my-doctors',
+    `${APPOINTMENT_SERVICE_BASE_URL}/schedule/my-doctors`,
     {
       withCredentials: true,
       headers: {
@@ -288,6 +295,31 @@ export const fetchMyDoctors = async () => {
 export const fetchDoctorAppointments = async docId => {
   const res = await apiClient(`/doctor/${docId}`);
 
-  console.log(res);
   return res.data;
 };
+
+// Link medical record
+// export const linkMedicalRecord = async (appointmentId, medicalRecordId) => {
+//   const { data } = await apiClient.patch(
+//     `/appointments/${appointmentId}/link-medical-record`,
+//     { medicalRecordId }
+//   );
+//   return data;
+// };
+
+// // Link admission
+// export const linkAdmission = async (appointmentId, admissionId) => {
+//   const { data } = await apiClient.patch(
+//     `/appointments/${appointmentId}/link-admission`,
+//     { admissionId }
+//   );
+//   return data;
+// };
+
+// // Get full appointment details
+// export const getFullDetails = async appointmentId => {
+//   const { data } = await apiClient.get(
+//     `/appointments/${appointmentId}/full-details`
+//   );
+//   return data;
+// };

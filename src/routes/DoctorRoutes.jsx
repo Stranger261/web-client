@@ -15,6 +15,7 @@ import DoctorAppointments from '../pages/DoctorPage/DoctorAppointments';
 import DoctorPatients from '../pages/DoctorPage/DoctorPatients';
 import DoctorReports from '../pages/DoctorPage/DoctorReports';
 import DoctorSettings from '../pages/DoctorPage/DoctorSettings';
+import DoctorQueue from '../pages/DoctorPage/DoctorQueue';
 
 const DoctorRoutes = (
   <Route
@@ -36,6 +37,7 @@ const DoctorRoutes = (
     }
   >
     <Route path="dashboard" element={<DoctorDashboard />} />
+    {/* <Route path="queue" element={<DoctorQueue />} /> */}
     <Route path="medical-records" element={<DoctorMedicalRecords />} />
     <Route path="appointments" element={<DoctorAppointments />} />
     <Route path="my-patients" element={<DoctorPatients />} />

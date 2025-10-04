@@ -9,8 +9,11 @@ export default {
   },
   plugins: [daisyui],
   daisyui: {
-    // can remove the dark theme
-    // add 'dark' theme
-    themes: ['cupcake'],
+    themes: ['cupcake'], // ✅ keep DaisyUI theme
+  },
+
+  // ✅ Add this
+  experimental: {
+    optimizeUniversalDefaults: true, // forces hex/rgb instead of oklch()
   },
 };

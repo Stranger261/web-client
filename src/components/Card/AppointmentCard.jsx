@@ -11,7 +11,6 @@ import {
 import { formatDate, formatTime } from '../../utils/dateFormatter';
 
 const AppointmentCard = ({ appointment, onStatusChange, role }) => {
-  console.log(appointment);
   const normalizedStatus = appointment.status
     ? appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)
     : 'Pending';

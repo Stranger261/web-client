@@ -1,8 +1,6 @@
 import axios from 'axios';
 import { APPOINTMENT_SERVICE_BASE_URL } from '../config/API_URL';
 
-// const API_BASE_URL = 'http://localhost:8002/schedule';
-
 const scheduleApi = axios.create({
   baseURL: `${APPOINTMENT_SERVICE_BASE_URL}/schedule`,
   withCredentials: true,
@@ -15,10 +13,13 @@ const scheduleApi = axios.create({
  */
 export const fetchDepartments = async () => {
   try {
-    const response = await axios.get('http://localhost:8002/department/view', {
-      withCredentials: true,
-      headers: { 'x-internal-api-key': 'CORE-1-HMS-safe-key' },
-    });
+    const response = await axios.get(
+      `${APPOINTMENT_SERVICE_BASE_URL}/department/view`,
+      {
+        withCredentials: true,
+        headers: { 'x-internal-api-key': 'CORE-1-HMS-safe-key' },
+      }
+    );
     return response.data.data;
   } catch (error) {
     console.error(

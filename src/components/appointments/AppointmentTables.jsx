@@ -1,4 +1,4 @@
-import { Eye, Edit, Trash2 } from 'lucide-react';
+import { Eye, Edit, Trash2, CheckCircle } from 'lucide-react';
 
 import { formatDate } from '../../utils/dateFormatter';
 import { formatTime } from '../../utils/FormatTime';
@@ -11,6 +11,8 @@ const AppointmentsTable = ({
   onCancelAppointment,
   pageItem,
   changing,
+  isDashboard,
+  onCheckIn,
   showColumns = ['person', 'date', 'time', 'status', 'actions'],
 }) => {
   // Get patient display info
@@ -86,12 +88,26 @@ const AppointmentsTable = ({
     if (currentUser.role === 'receptionist' && onEditAppointment) {
       actions.push(
         <button
-          key="edit"
-          onClick={() => onEditAppointment(appt)}
-          className="p-2 rounded-lg hover:bg-yellow-100 text-yellow-600 transition"
-          title="edit"
+          key={`${isDashboard ? 'check' : 'edit'}`}
+          onClick={() =>
+            isDashboard ? onCheckIn(appt) : onEditAppointment(appt)
+          }
+          className={`p-2 rounded-lg ${
+            isDashboard
+              ? 'hover:bg-green-100 text-green-600'
+              : 'hover:bg-yellow-100 text-yellow-600'
+          } transition`}
+          title={`${isDashboard ? 'check-in' : 'edit'}`}
         >
-          <Edit size={18} />
+          {isDashboard ? (
+            appt.status !== 'completed' || appt.status !== 'no-show' ? (
+              <CheckCircle size={18} />
+            ) : (
+              ''
+            )
+          ) : (
+            <Edit size={18} />
+          )}
         </button>
       );
     }

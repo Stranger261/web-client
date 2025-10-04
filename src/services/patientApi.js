@@ -25,30 +25,46 @@ export const softDeletePatient = async id => {
 };
 
 export const fetchAllPatients = async (page, limit) => {
-  const res = await patientApi.get('/view/all', {
-    params: { limit, page },
-  });
-
-  return res;
+  try {
+    const res = await patientApi.get('/view/all', {
+      params: { limit, page },
+    });
+    return res;
+  } catch (error) {
+    console.error('Error fetching all patients:', error);
+    throw error;
+  }
 };
 
 export const searchQueryPatient = async (page, limit, filters = {}) => {
-  const res = await patientApi.get('/search', {
-    params: {
-      page,
-      limit,
-      ...filters,
-    },
-  });
+  try {
+    const res = await patientApi.get('/search', {
+      params: {
+        page,
+        limit,
+        ...filters,
+      },
+    });
 
-  console.log(res);
-
-  return res;
+    return res;
+  } catch (error) {
+    console.error('Error searching patients:', error);
+    throw error;
+  }
 };
 
 export const fetchPatientDetail = async id => {
   const res = await patientApi.get(`/view/${id}`);
 
-  console.log(res.data.data);
   return res;
+};
+
+export const getPatientStatsAPI = async () => {
+  try {
+    const response = await patientApi.get('/stats');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching patient stats:', error);
+    throw error;
+  }
 };

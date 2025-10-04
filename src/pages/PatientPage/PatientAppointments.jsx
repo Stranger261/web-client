@@ -39,7 +39,7 @@ const PatientAppointments = () => {
   if (!currentUser.isVerified) return <UnverifiedUserStatus />;
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-base-100 min-h-screen">
       <header className="flex items-center justify-between px-16 py-4 border-b bg-base-100 border-base-300 shadow">
         <h1 className="text-2xl font-bold text-base-content">
           My Appointments
@@ -52,7 +52,7 @@ const PatientAppointments = () => {
         </button>
       </header>
 
-      {isLoading || myAppointments.length === 0 ? (
+      {isLoading ? (
         <LoadingOverlay />
       ) : (
         <div className="p-6 bg-white min-h-screen">

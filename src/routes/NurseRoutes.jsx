@@ -17,6 +17,7 @@ import NurseMedicalRecords from '../pages/NursePage/NurseMedicalRecords';
 import NurseAssistance from '../pages/NursePage/NurseAssistance';
 import NurseSettings from '../pages/NursePage/NurseSettings';
 import NurseReports from '../pages/NursePage/NurseReports';
+import NurseBedManagement from '../pages/NursePage/NurseBedManagement';
 
 const NurseRoutes = (
   <Route
@@ -40,6 +41,7 @@ const NurseRoutes = (
     <Route path="dashboard" element={<NurseDashboard />} />
     <Route path="appointments" element={<NurseAppointments />} />
     <Route path="patient-records" element={<NursePatientRecords />} />
+    <Route path="beds" element={<NurseBedManagement />} />
     <Route path="medical-records" element={<NurseMedicalRecords />} />
     <Route path="assistance" element={<NurseAssistance />} />
     <Route path="reports" element={<NurseReports />} />

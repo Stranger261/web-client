@@ -154,7 +154,7 @@ const RegistrationPage = () => {
         <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-[#172554] text-white font-bold text-lg">
           <img
             className="mx-auto h-12 w-auto"
-            src="../../../public/images/logo.png"
+            src="../images/logo.png"
             alt="St. Jude's Medical Logo"
           />
         </div>

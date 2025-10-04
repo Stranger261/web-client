@@ -20,6 +20,7 @@ import {
   fetchMyDoctors,
   createReceptionistAppointment as createAppointmentByReceptionist,
   fetchDoctorAppointments,
+  checkIn,
 } from '../services/appointmentApi';
 import { useAuth } from './AuthContext';
 
@@ -367,7 +368,9 @@ const AppointmentProvider = ({ children }) => {
     try {
       const doctorAppointments = await fetchDoctorAppointments(docId);
 
-      console.log(doctorAppointments);
+      setDoctorAppointments(doctorAppointments.data);
+
+      return doctorAppointments;
     } catch (error) {
       console.log(error);
       throw error;
@@ -377,6 +380,14 @@ const AppointmentProvider = ({ children }) => {
   const resetFilters = useCallback(() => {
     setFilteredAppointments(allAppointments);
   }, [allAppointments]);
+
+  const quickCheckIn = useCallback(async (apptId, status) => {
+    const appt = await checkIn(apptId, status);
+
+    fetchAllAppointments();
+
+    return appt.data;
+  }, []);
 
   // Refresh appointments based on user role
   const refreshAppointments = useCallback(async () => {
@@ -434,6 +445,7 @@ const AppointmentProvider = ({ children }) => {
     getMyDoctors,
     resetFilters,
     getDoctorAppointments,
+    quickCheckIn,
   };
 
   return (

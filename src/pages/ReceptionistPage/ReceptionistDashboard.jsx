@@ -20,7 +20,8 @@ import { useAuth } from '../../context/AuthContext';
 
 const ReceptionistDashboard = () => {
   const { currentUser } = useAuth();
-  const { allAppointments, getAllAppointments, isLoading } = useAppointments();
+  const { allAppointments, getAllAppointments, quickCheckIn, isLoading } =
+    useAppointments();
 
   const [activeTab, setActiveTab] = useState('today');
   const [searchTerm, setSearchTerm] = useState('');
@@ -119,6 +120,13 @@ const ReceptionistDashboard = () => {
 
   const handleCancelAppointment = apt => {
     console.log('Cancel appointment:', apt);
+  };
+
+  const handleCheckIn = async apt => {
+    console.log('Checked In: ', apt);
+    const res = await quickCheckIn(apt._id, 'checked-in');
+
+    console.log(res);
   };
 
   return (
@@ -270,6 +278,8 @@ const ReceptionistDashboard = () => {
             onViewDetails={handleViewDetails}
             onEditAppointment={handleEditAppointment}
             onCancelAppointment={handleCancelAppointment}
+            isDashboard={true}
+            onCheckIn={handleCheckIn}
             pageItem={paginatedAppointments}
             changing={false}
           />

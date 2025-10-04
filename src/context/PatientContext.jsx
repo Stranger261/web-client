@@ -1,9 +1,10 @@
-import { useState, useCallback, useContext, useEffect } from 'react';
+import { useState, useCallback, useContext } from 'react';
 import { createContext } from 'react';
 import {
   createNewPatient,
   fetchAllPatients,
   fetchPatientDetail,
+  getPatientStatsAPI,
   searchQueryPatient,
   softDeletePatient,
   updatePatient,
@@ -14,19 +15,34 @@ export const PatientContext = createContext();
 const PatientProvider = ({ children }) => {
   const [patientDetail, setPatientDetail] = useState({});
   const [patients, setPatients] = useState([]);
-  const [patientsMaxPage, setPatientsMaxPage] = useState(null);
+  const [patientsMaxPage, setPatientsMaxPage] = useState(1);
+
   const [isLoading, setIsLoading] = useState(false);
 
+  const [patientStats, setPatientStats] = useState({
+    total: 0,
+    active: 0,
+    inactive: 0,
+    recentVisits: 0,
+    totalVisitsAllPatients: 0,
+  });
+
   const getAllPatients = useCallback(async (page = 1, limit = 20) => {
-    setIsLoading(true);
     try {
+      setIsLoading(true);
       const response = await fetchAllPatients(page, limit);
-      setPatientsMaxPage(response.data.data.pagination.totalPages);
-      setPatients(response.data.data.patients);
+
+      if (response.data?.success) {
+        setPatients(response.data.data.patients);
+        setPatientsMaxPage(response.data.data.pagination.totalPages);
+      }
+
+      return response;
     } catch (error) {
-      console.error('Error fetching all patients:', error);
+      console.error('Error fetching patients:', error);
       setPatients([]);
-      setPatientsMaxPage(1);
+
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -35,14 +51,22 @@ const PatientProvider = ({ children }) => {
   const searchPatients = useCallback(
     async (page = 1, limit = 20, filters = {}) => {
       try {
+        setIsLoading(true);
         const response = await searchQueryPatient(page, limit, filters);
-        setPatientsMaxPage(response.data.data.pagination.totalPages);
-        setPatients(response.data.data.patients);
+
+        if (response.data?.success) {
+          setPatients(response.data.data.patients || []);
+          setPatientsMaxPage(response.data.data.pagination?.totalPages || 1);
+        }
+
+        return response;
       } catch (error) {
         console.error('Error searching patients:', error);
-        // Handle no results gracefully
         setPatients([]);
-        setPatientsMaxPage(1);
+
+        throw error;
+      } finally {
+        setIsLoading(false);
       }
     },
     []
@@ -90,11 +114,30 @@ const PatientProvider = ({ children }) => {
     return deletedPatient.data.data;
   }, []);
 
+  const getPatientStats = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await getPatientStatsAPI();
+
+      if (response.success) {
+        setPatientStats(response.data);
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Error fetching patient stats:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   const value = {
     patientDetail,
     patients,
     patientsMaxPage,
     isLoading,
+    patientStats,
     createPatient,
     updatePatientDetail,
     deletePatient,
@@ -102,6 +145,7 @@ const PatientProvider = ({ children }) => {
     getAllPatients,
     searchPatients,
     setPatientDetail,
+    getPatientStats,
   };
 
   return (

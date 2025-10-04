@@ -21,12 +21,12 @@ const ContactSection = () => {
             <ContactItem
               iconClass="fas fa-phone-alt"
               title="Phone"
-              text="(123) 456-7890"
+              text="997-89-49/997-96-27/997-14-39"
             />
             <ContactItem
-              iconClass="fas fa-envelope"
-              title="Email"
-              text="info@stjudesmedical.com"
+              iconClass="fab fa-facebook"
+              title="Facebook"
+              text="https://web.facebook.com/profile.php?id=100063816370233"
             />
             <ContactItem
               iconClass="fas fa-clock"
