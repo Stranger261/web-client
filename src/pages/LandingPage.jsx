@@ -73,7 +73,7 @@ const LandingPage = () => {
     </section>
   );
 
-  return pageLoading || filteredDocs.length === 0 ? (
+  return pageLoading === 0 ? (
     <LoadingOverlay />
   ) : (
     <div className="antialiased font-inter text-gray-800 bg-slate-50">
