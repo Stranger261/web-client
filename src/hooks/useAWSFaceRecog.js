@@ -1,5 +1,6 @@
 // hooks/useAWSFaceRecog.js
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { PATIENT_SERVICE_BASE_URL } from '../config/API_URL';
 
 export const useAWSFaceRecognition = (config = {}) => {
   const {
@@ -38,7 +39,7 @@ export const useAWSFaceRecognition = (config = {}) => {
   const getWebSocketUrl = useCallback(() => {
     if (providedWsUrl) return providedWsUrl;
 
-    const serverHost = 'localhost:8001';
+    const serverHost = PATIENT_SERVICE_BASE_URL;
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 
     return `${protocol}//${serverHost}/api/live_verify/ws/live_verify`;
