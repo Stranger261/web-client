@@ -53,7 +53,7 @@ const Sidebar = ({ isOpen, toggleSidebar, onLogout }) => {
         >
           <div className="h-10 w-10 flex-shrink-0 rounded-full grid place-items-center border-2">
             <img
-              src="../../../public/images/logo.png"
+              src="../public/images/logo.png"
               alt="HVill Hospital Logo"
               className="transition-transform duration-300 ease-in-out transform hover:scale-110"
             />
