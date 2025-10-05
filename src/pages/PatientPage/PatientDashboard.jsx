@@ -56,7 +56,7 @@ const Header = ({ name = 'Guest', role = 'Patient' }) => (
 );
 
 const MainContent = ({ currentUser }) => {
-  const fullname = `${currentUser.firstname} ${currentUser.middlename} ${currentUser.lastname}`;
+  const fullname = `${currentUser?.firstname} ${currentUser?.middlename} ${currentUser?.lastname}`;
 
   return (
     <main className="flex-1 flex flex-col pb-7 bg-base-200">
@@ -128,7 +128,7 @@ const Dashboard = () => {
     })
     .slice(0, 3); // Show only last 3
 
-  if (isLoading) return <LoadingOverlay />;
+  if (isLoading || !currentUser) return <LoadingOverlay />;
 
   return (
     <div className="space-y-8 py-8">
