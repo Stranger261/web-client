@@ -89,9 +89,7 @@ const RegistrationPage = () => {
       // Correctly access the error message
       console.log(e);
       const errorMessage =
-        e?.response?.data.message ||
-        e?.data?.data.message ||
-        'An unknown error occurred.';
+        e || e?.data?.data.message || 'An unknown error occurred.';
       toast.error(`Registration failed: ${errorMessage}`);
     } finally {
       setLoading(false);
@@ -133,10 +131,9 @@ const RegistrationPage = () => {
         toast.error(verifyPromise?.message || 'Invalid OTP');
       }
     } catch (error) {
+      console.log(error);
       toast.error(
-        error?.response?.data?.message ||
-          error?.data?.data?.message ||
-          'Something went wrong'
+        error || error?.data?.data?.message || 'Something went wrong'
       );
     } finally {
       setIsSubmitting(false);

@@ -15,10 +15,11 @@ export const registerUser = async payload => {
         },
       }
     );
+
     return data;
   } catch (error) {
     console.log(error);
-    throw error.response?.data?.error || 'Registration failed';
+    throw error.response?.data?.message || 'Registration failed';
   }
 };
 
