@@ -256,15 +256,13 @@ const LandingPage = () => {
             <li>
               <Link
                 to="/login"
-                className={`px-6 py-2 rounded-full font-semibold shadow-md block text-center md:inline-block md:ml-4 transition-all duration-200 ${
+                className={`px-6 py-2 rounded-full font-semibold shadow-md block text-center md:inline-block md:ml-4 transition-all duration-300 ${
                   isScrolled
                     ? 'bg-[#1e3a8a] text-white hover:bg-[#1d4ed8]'
-                    : 'bg-white text-[#1e3a8a] hover:bg-[#f1f5f9]'
+                    : 'bg-[#1e3a8a] text-white hover:bg-[#1d4ed8]'
                 }`}
                 style={{
-                  boxShadow: isScrolled
-                    ? '0 4px 6px rgba(0,0,0,0.1)'
-                    : '0 4px 8px rgba(255,255,255,0.2)',
+                  boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
                 }}
               >
                 Login
