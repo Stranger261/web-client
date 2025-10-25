@@ -256,20 +256,15 @@ const LandingPage = () => {
             <li>
               <Link
                 to="/login"
-                className="ml-4 bg-[#1e3a8a] text-white px-6 py-2 rounded-full font-semibold shadow-md"
+                className={`px-6 py-2 rounded-full font-semibold shadow-md block text-center md:inline-block md:ml-4 transition-all duration-200 ${
+                  isScrolled
+                    ? 'bg-[#1e3a8a] text-white hover:bg-[#1d4ed8]'
+                    : 'bg-white text-[#1e3a8a] hover:bg-[#f1f5f9]'
+                }`}
                 style={{
-                  transition:
-                    'transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease',
-                }}
-                onMouseEnter={e => {
-                  e.target.style.transform = 'scale(1.05)';
-                  e.target.style.boxShadow = '0 10px 25px rgba(30,58,138,0.3)';
-                  e.target.style.backgroundColor = '#1d4ed8'; // lighter shade on hover
-                }}
-                onMouseLeave={e => {
-                  e.target.style.transform = 'scale(1)';
-                  e.target.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
-                  e.target.style.backgroundColor = '#1e3a8a';
+                  boxShadow: isScrolled
+                    ? '0 4px 6px rgba(0,0,0,0.1)'
+                    : '0 4px 8px rgba(255,255,255,0.2)',
                 }}
               >
                 Login
