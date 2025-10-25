@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router';
+
 import HomeSection from '../components/landingPage/HomeSection';
 import MissionVisionSection from '../components/landingPage/MissionVisionSection';
 import ServicesSection from '../components/landingPage/ServicesSection';
@@ -6,7 +8,8 @@ import DoctorsSection from '../components/landingPage/DoctorsSection';
 import ContactSection from '../components/landingPage/ContactSection';
 import FooterSection from '../components/landingPage/FooterSection';
 import AboutSection from '../components/landingPage/AboutSection';
-import { Link } from 'react-router';
+
+import LoadingOverlay from '../components/shared/LoadingOverlay';
 
 const LandingPage = () => {
   const [pageLoading, setPageLoading] = useState(true);
@@ -16,7 +19,6 @@ const LandingPage = () => {
 
   const allDoctors = [];
 
-  // Simulate initial loading
   useEffect(() => {
     const timer = setTimeout(() => {
       setPageLoading(false);
@@ -138,16 +140,7 @@ const LandingPage = () => {
       : [];
 
   if (pageLoading) {
-    return (
-      <div className="fixed inset-0 bg-white flex items-center justify-center z-50">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-blue-600 font-semibold">
-            Loading HVill Hospital...
-          </p>
-        </div>
-      </div>
-    );
+    return <LoadingOverlay message="Loading..." size="lg" />;
   }
 
   return (
