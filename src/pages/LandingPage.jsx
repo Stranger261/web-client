@@ -1,6 +1,4 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router';
-
+import { useEffect, useRef, useState } from 'react';
 import HomeSection from '../components/landingPage/HomeSection';
 import MissionVisionSection from '../components/landingPage/MissionVisionSection';
 import ServicesSection from '../components/landingPage/ServicesSection';
@@ -8,8 +6,7 @@ import DoctorsSection from '../components/landingPage/DoctorsSection';
 import ContactSection from '../components/landingPage/ContactSection';
 import FooterSection from '../components/landingPage/FooterSection';
 import AboutSection from '../components/landingPage/AboutSection';
-
-import LoadingOverlay from '../components/shared/LoadingOverlay';
+import { Link } from 'react-router';
 
 const LandingPage = () => {
   const [pageLoading, setPageLoading] = useState(true);
@@ -19,6 +16,7 @@ const LandingPage = () => {
 
   const allDoctors = [];
 
+  // Simulate initial loading
   useEffect(() => {
     const timer = setTimeout(() => {
       setPageLoading(false);
@@ -140,7 +138,16 @@ const LandingPage = () => {
       : [];
 
   if (pageLoading) {
-    return <LoadingOverlay message="Loading..." size="lg" />;
+    return (
+      <div className="fixed inset-0 bg-white flex items-center justify-center z-50">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-blue-600 font-semibold">
+            Loading HVill Hospital...
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -371,9 +378,11 @@ const LandingPage = () => {
       <main>
         <section
           id="home"
-          className={`section-reveal ${
-            revealedSections.has('home') ? 'section-visible' : ''
-          } py-20 min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-blue-700 to-blue-500 text-white`}
+          className="section-reveal section-visible py-20 min-h-screen flex items-center justify-center text-white"
+          style={{
+            background:
+              'linear-gradient(to bottom right, #1e3a8a, #3b82f6, #60a5fa)',
+          }}
         >
           <div className="container mx-auto px-6 w-full">
             <HomeSection />
