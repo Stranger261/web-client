@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router';
+
 import HomeSection from '../components/landingPage/HomeSection';
 import MissionVisionSection from '../components/landingPage/MissionVisionSection';
 import ServicesSection from '../components/landingPage/ServicesSection';
@@ -6,7 +8,8 @@ import DoctorsSection from '../components/landingPage/DoctorsSection';
 import ContactSection from '../components/landingPage/ContactSection';
 import FooterSection from '../components/landingPage/FooterSection';
 import AboutSection from '../components/landingPage/AboutSection';
-import { Link } from 'react-router';
+
+import LoadingOverlay from '../components/shared/LoadingOverlay';
 
 const LandingPage = () => {
   const [pageLoading, setPageLoading] = useState(true);
@@ -138,16 +141,7 @@ const LandingPage = () => {
       : [];
 
   if (pageLoading) {
-    return (
-      <div className="fixed inset-0 bg-white flex items-center justify-center z-50">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-blue-600 font-semibold">
-            Loading HVill Hospital...
-          </p>
-        </div>
-      </div>
-    );
+    return <LoadingOverlay message="Loading..." size="xl" />;
   }
 
   return (
@@ -169,9 +163,9 @@ const LandingPage = () => {
             transform: translateY(0);
             transition: opacity 0.6s ease, transform 0.6s ease;
           }
-          .section-reveal:first-child {
-            opacity: 1;
-            transform: translateY(0);
+          #home {
+            opacity: 1 !important;
+            transform: translateY(0) !important;
           }
         `}
       </style>
@@ -262,17 +256,20 @@ const LandingPage = () => {
             <li>
               <Link
                 to="/login"
-                className="ml-4 bg-white text-blue-900 px-6 py-2 rounded-full font-semibold shadow-md"
+                className="ml-4 bg-[#1e3a8a] text-white px-6 py-2 rounded-full font-semibold shadow-md"
                 style={{
-                  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                  transition:
+                    'transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease',
                 }}
                 onMouseEnter={e => {
                   e.target.style.transform = 'scale(1.05)';
-                  e.target.style.boxShadow = '0 10px 25px rgba(0,0,0,0.15)';
+                  e.target.style.boxShadow = '0 10px 25px rgba(30,58,138,0.3)';
+                  e.target.style.backgroundColor = '#1d4ed8'; // lighter shade on hover
                 }}
                 onMouseLeave={e => {
                   e.target.style.transform = 'scale(1)';
                   e.target.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+                  e.target.style.backgroundColor = '#1e3a8a';
                 }}
               >
                 Login
@@ -363,7 +360,19 @@ const LandingPage = () => {
                 <li className="pt-4 border-t">
                   <Link
                     to="/login"
-                    className="block w-full bg-blue-900 text-white text-center py-3 px-4 rounded-lg font-semibold"
+                    className="block w-full bg-[#1e3a8a] text-white text-center py-3 px-4 rounded-lg font-semibold"
+                    style={{
+                      transition:
+                        'background-color 0.2s ease, transform 0.2s ease',
+                    }}
+                    onMouseEnter={e => {
+                      e.target.style.backgroundColor = '#1d4ed8';
+                      e.target.style.transform = 'scale(1.03)';
+                    }}
+                    onMouseLeave={e => {
+                      e.target.style.backgroundColor = '#1e3a8a';
+                      e.target.style.transform = 'scale(1)';
+                    }}
                   >
                     Login to Portal
                   </Link>

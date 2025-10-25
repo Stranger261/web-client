@@ -53,38 +53,38 @@ const ContactSection = () => {
         {/* Contact Info */}
         <div className="space-y-6 flex flex-col justify-center">
           {/* Address with Click Handler for Mobile */}
-          <button
-            onClick={openInMaps}
-            className="block group hover:no-underline text-left w-full"
-          >
+          <button onClick={openInMaps} className="block group text-left w-full">
             <ContactItem
               iconClass="fas fa-map-marker-alt group-hover:text-blue-700 transition-colors"
               title="Address"
               text={
-                <span className="text-blue-600 underline group-hover:text-blue-800">
-                  {LEAFLET.HOSPITALADDRESS}
+                <>
+                  <span className="text-blue-600 underline group-hover:text-blue-800">
+                    {LEAFLET.HOSPITALADDRESS}
+                  </span>
                   <br />
                   <span className="text-xs text-gray-500 mt-1 block">
                     (Tap to open in Maps)
                   </span>
-                </span>
+                </>
               }
             />
           </button>
 
           {/* Phone with tel: link for mobile */}
-          <a href="tel:+6329978949" className="block group hover:no-underline">
+          <a href="tel:+6329978949" className="block group">
             <ContactItem
               iconClass="fas fa-phone-alt group-hover:text-blue-700 transition-colors"
               title="Phone"
               text={
-                <span className="text-blue-600 underline group-hover:text-blue-800">
-                  (02) 997 8949
-                  <br />
-                  <span className="text-xs text-gray-500 mt-1 block">
+                <>
+                  <span className="text-blue-600 underline group-hover:text-blue-800">
+                    (02) 997 8949
+                  </span>
+                  <span className="text-xs text-gray-500 mt-1 block no-underline">
                     (Tap to call)
                   </span>
-                </span>
+                </>
               }
             />
           </a>
@@ -94,19 +94,20 @@ const ContactSection = () => {
             href="https://web.facebook.com/profile.php?id=100063816370233"
             target="_blank"
             rel="noopener noreferrer"
-            className="block group hover:no-underline"
+            className="block group"
           >
             <ContactItem
               iconClass="fab fa-facebook group-hover:text-blue-700 transition-colors"
               title="Facebook"
               text={
-                <span className="text-blue-600 underline group-hover:text-blue-800">
-                  Visit our Facebook Page
-                  <br />
-                  <span className="text-xs text-gray-500 mt-1 block">
+                <>
+                  <span className="text-blue-600 underline group-hover:text-blue-800">
+                    Visit our Facebook Page
+                  </span>
+                  <span className="text-xs text-gray-500 mt-1 block no-underline">
                     (Tap to visit)
                   </span>
-                </span>
+                </>
               }
             />
           </a>
