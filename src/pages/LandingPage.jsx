@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router';
 
 import HomeSection from '../components/landingPage/HomeSection';
@@ -27,7 +27,7 @@ const LandingPage = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Simple scroll handler - compatible with older Chrome
+  // Fixed scroll handler with useCallback
   useEffect(() => {
     let lastScrollY = window.scrollY;
     let scrollTimer = null;
@@ -47,7 +47,7 @@ const LandingPage = () => {
       }, 50);
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
       window.removeEventListener('scroll', handleScroll);
       if (scrollTimer !== null) {
@@ -56,83 +56,94 @@ const LandingPage = () => {
     };
   }, []);
 
-  // Manual reveal on scroll - no IntersectionObserver for better compatibility
+  // Fixed section reveal with useCallback to prevent infinite re-renders
+  const checkSections = useCallback(() => {
+    const sections = [
+      'home',
+      'mission-vision',
+      'about',
+      'services',
+      'doctors',
+      'contact',
+    ];
+    const windowHeight = window.innerHeight;
+    const scrollY = window.scrollY;
+    const newRevealed = new Set(revealedSections);
+
+    let hasChanges = false;
+
+    sections.forEach(sectionId => {
+      const element = document.getElementById(sectionId);
+      if (element) {
+        const rect = element.getBoundingClientRect();
+        const elementTop = rect.top + scrollY;
+        const elementVisible = scrollY + windowHeight > elementTop + 100;
+
+        if (elementVisible && !newRevealed.has(sectionId)) {
+          newRevealed.add(sectionId);
+          hasChanges = true;
+        }
+      }
+    });
+
+    if (hasChanges) {
+      setRevealedSections(newRevealed);
+    }
+  }, [revealedSections]);
+
   useEffect(() => {
     let scrollTimer = null;
 
-    const checkSections = () => {
+    const handleScroll = () => {
       if (scrollTimer !== null) return;
 
       scrollTimer = setTimeout(() => {
-        const sections = [
-          'home',
-          'mission-vision',
-          'about',
-          'services',
-          'doctors',
-          'contact',
-        ];
-        const windowHeight = window.innerHeight;
-        const scrollY = window.scrollY;
-        const newRevealed = new Set(revealedSections);
-
-        sections.forEach(sectionId => {
-          const element = document.getElementById(sectionId);
-          if (element) {
-            const rect = element.getBoundingClientRect();
-            const elementTop = rect.top + scrollY;
-            const elementVisible = scrollY + windowHeight > elementTop + 100;
-
-            if (elementVisible) {
-              newRevealed.add(sectionId);
-            }
-          }
-        });
-
-        if (newRevealed.size !== revealedSections.size) {
-          setRevealedSections(newRevealed);
-        }
-
+        checkSections();
         scrollTimer = null;
       }, 100);
     };
 
-    window.addEventListener('scroll', checkSections);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     checkSections(); // Initial check
 
     return () => {
-      window.removeEventListener('scroll', checkSections);
+      window.removeEventListener('scroll', handleScroll);
       if (scrollTimer !== null) {
         clearTimeout(scrollTimer);
       }
     };
-  }, [revealedSections]);
+  }, [checkSections]);
 
-  // Simple smooth scroll - no event delegation
+  // Fixed smooth scroll handler
   useEffect(() => {
     const handleClick = e => {
-      const target = e.target;
-      if (target.tagName !== 'A') return;
+      // Check if it's a link with hash
+      let target = e.target;
+      while (target && target !== document.body) {
+        if (target.tagName === 'A') {
+          const href = target.getAttribute('href');
+          if (href && href.startsWith('#')) {
+            e.preventDefault();
+            const targetId = href.substring(1);
+            const targetElement = document.getElementById(targetId);
 
-      const href = target.getAttribute('href');
-      if (!href || !href.startsWith('#')) return;
-
-      e.preventDefault();
-      const targetId = href.substring(1);
-      const targetElement = document.getElementById(targetId);
-
-      if (targetElement) {
-        const offsetTop = targetElement.offsetTop - 80;
-        window.scrollTo({
-          top: offsetTop,
-          behavior: 'smooth',
-        });
-        setIsMenuOpen(false);
+            if (targetElement) {
+              const offsetTop = targetElement.offsetTop - 80;
+              window.scrollTo({
+                top: offsetTop,
+                behavior: 'smooth',
+              });
+              setIsMenuOpen(false);
+            }
+            return;
+          }
+        }
+        target = target.parentElement;
       }
     };
 
-    document.body.addEventListener('click', handleClick);
-    return () => document.body.removeEventListener('click', handleClick);
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
   }, []);
 
   const filteredDocs =
@@ -151,24 +162,22 @@ const LandingPage = () => {
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
       />
 
-      {/* Simple CSS animations */}
-      <style>
-        {`
-          .section-reveal {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          .section-visible {
-            opacity: 1;
-            transform: translateY(0);
-            transition: opacity 0.6s ease, transform 0.6s ease;
-          }
-          #home {
-            opacity: 1 !important;
-            transform: translateY(0) !important;
-          }
-        `}
-      </style>
+      {/* Fixed CSS animations */}
+      <style>{`
+        .section-reveal {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        .section-visible {
+          opacity: 1;
+          transform: translateY(0);
+          transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        #home {
+          opacity: 1 !important;
+          transform: translateY(0) !important;
+        }
+      `}</style>
 
       {/* SIMPLIFIED HEADER */}
       <header
@@ -197,13 +206,13 @@ const LandingPage = () => {
             <span>HVill Hospital</span>
           </a>
 
-          {/* MOBILE MENU BUTTON */}
+          {/* MOBILE MENU BUTTON - Fixed with type="button" */}
           <button
+            type="button" // Added this line
             className={`md:hidden p-2 rounded ${
               isScrolled ? 'text-blue-900' : 'text-white'
             }`}
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            type="button"
           >
             <svg
               className="h-6 w-6"
@@ -240,14 +249,7 @@ const LandingPage = () => {
                     .toLowerCase()
                     .replace(' & ', '-')
                     .replace(' ', '-')}`}
-                  className="px-4 py-2 rounded-full font-medium"
-                  style={{ transition: 'background-color 0.2s ease' }}
-                  onMouseEnter={e =>
-                    (e.target.style.backgroundColor = 'rgba(255,255,255,0.2)')
-                  }
-                  onMouseLeave={e =>
-                    (e.target.style.backgroundColor = 'transparent')
-                  }
+                  className="px-4 py-2 rounded-full font-medium hover:bg-white hover:bg-opacity-20 transition-colors duration-200"
                 >
                   {item}
                 </a>
@@ -299,9 +301,9 @@ const LandingPage = () => {
                     </span>
                   </div>
                   <button
+                    type="button" // Added this line
                     onClick={() => setIsMenuOpen(false)}
                     className="p-2 text-gray-500"
-                    type="button"
                   >
                     <svg
                       className="h-6 w-6"
@@ -335,16 +337,8 @@ const LandingPage = () => {
                         .toLowerCase()
                         .replace(' & ', '-')
                         .replace(' ', '-')}`}
-                      className="block py-3 px-4 text-gray-700 rounded-lg font-medium"
-                      style={{ transition: 'all 0.2s ease' }}
-                      onMouseEnter={e => {
-                        e.target.style.backgroundColor = '#EFF6FF';
-                        e.target.style.color = '#1E40AF';
-                      }}
-                      onMouseLeave={e => {
-                        e.target.style.backgroundColor = 'transparent';
-                        e.target.style.color = '#374151';
-                      }}
+                      className="block py-3 px-4 text-gray-700 rounded-lg font-medium hover:bg-blue-50 hover:text-blue-600 transition-colors duration-200"
+                      onClick={() => setIsMenuOpen(false)}
                     >
                       {item}
                     </a>
@@ -353,19 +347,8 @@ const LandingPage = () => {
                 <li className="pt-4 border-t">
                   <Link
                     to="/login"
-                    className="block w-full bg-[#1e3a8a] text-white text-center py-3 px-4 rounded-lg font-semibold"
-                    style={{
-                      transition:
-                        'background-color 0.2s ease, transform 0.2s ease',
-                    }}
-                    onMouseEnter={e => {
-                      e.target.style.backgroundColor = '#1d4ed8';
-                      e.target.style.transform = 'scale(1.03)';
-                    }}
-                    onMouseLeave={e => {
-                      e.target.style.backgroundColor = '#1e3a8a';
-                      e.target.style.transform = 'scale(1)';
-                    }}
+                    className="block w-full bg-[#1e3a8a] text-white text-center py-3 px-4 rounded-lg font-semibold hover:bg-[#1d4ed8] transform hover:scale-105 transition-all duration-200"
+                    onClick={() => setIsMenuOpen(false)}
                   >
                     Login to Portal
                   </Link>

@@ -202,7 +202,8 @@ const RegisterPage = () => {
             label="Confirm Password"
             name="confirmPassword"
             type="password"
-            value={e => handleInputChange('confirmPassword', e.target.value)}
+            value={formData.confirmPassword}
+            onChange={e => handleInputChange('confirmPassword', e.target.value)}
             placeholder="Confirm your password"
             required
             error={errors.confirmPassword}

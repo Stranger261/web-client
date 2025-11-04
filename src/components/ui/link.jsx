@@ -95,10 +95,11 @@ export const DynamicLink = ({
       onClick(e);
     }
 
-    // For internal links with 'to' prop, use React Router's navigate
-    if (to && linkType === 'internal' && !e.defaultPrevented) {
+    // Only handle special cases for non-RouterLink scenarios
+    if (href && linkType === 'internal' && !e.defaultPrevented) {
+      // For href-based internal links, prevent default and use navigate
       e.preventDefault();
-      navigate(to);
+      navigate(href);
     }
   };
 
@@ -109,7 +110,7 @@ export const DynamicLink = ({
         <a
           href={url}
           className={finalClassName}
-          target={isExternal ? '_blank' : undefined}
+          target={isExternal ? '_blank' : '_self'}
           rel={isExternal ? 'noopener noreferrer' : undefined}
           onClick={handleClick}
           {...props}
@@ -132,18 +133,20 @@ export const DynamicLink = ({
       );
 
     case 'internal':
+      // Use RouterLink for internal navigation with 'to' prop
       if (to) {
         return (
           <RouterLink
             to={to}
             className={finalClassName}
-            onClick={handleClick}
+            onClick={onClick} // Just pass through onClick for RouterLink
             {...props}
           >
             {content}
           </RouterLink>
         );
       }
+      // Use regular anchor with navigate for href-based internal links
       return (
         <a
           href={href}
@@ -157,7 +160,12 @@ export const DynamicLink = ({
 
     default:
       return (
-        <button className={finalClassName} onClick={handleClick} {...props}>
+        <button
+          type="button" // Always specify type for buttons
+          className={finalClassName}
+          onClick={handleClick}
+          {...props}
+        >
           {content}
         </button>
       );
