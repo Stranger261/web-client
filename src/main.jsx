@@ -15,6 +15,7 @@ createRoot(document.getElementById('root')).render(
           style: {
             zIndex: 9999,
           },
+          duration: 1200,
         }}
       />
       <App />

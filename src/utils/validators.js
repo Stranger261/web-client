@@ -1,6 +1,3 @@
-// src/utils/validators.js
-import { useMemo } from 'react';
-
 // Create stable validator instances (singleton pattern)
 const PASSWORD_VALIDATORS = [
   {
@@ -27,15 +24,57 @@ const PASSWORD_VALIDATORS = [
 
 const EMAIL_VALIDATORS = [
   {
-    message: 'Valid email format',
+    message: 'Must contain @ symbol',
+    validate: value => value.includes('@'),
+  },
+  {
+    message: 'Must have text before @',
+    validate: value => {
+      const parts = value.split('@');
+      return parts[0] && parts[0].length > 0;
+    },
+  },
+  {
+    message: 'Must have domain after @ (e.g., gmail.com)',
+    validate: value => {
+      const parts = value.split('@');
+      return parts[1] && parts[1].length > 0;
+    },
+  },
+  {
+    message: 'Domain must contain a dot (e.g., .com, .org)',
+    validate: value => {
+      const parts = value.split('@');
+      return parts[1] && parts[1].includes('.');
+    },
+  },
+  {
+    message: 'Valid email format (e.g., user@example.com)',
     validate: value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
   },
 ];
 
 const PHONE_VALIDATORS = [
   {
-    message: 'Valid phone number format',
-    validate: value => /^[+]?[1-9][\d]{0,15}$/.test(value.replace(/\D/g, '')),
+    message: 'Must start with 9',
+    validate: value => {
+      const phone = value.replace('+63', '');
+      return phone.startsWith('9');
+    },
+  },
+  {
+    message: 'Must be exactly 10 digits',
+    validate: value => {
+      const phone = value.replace('+63', '');
+      return phone.length === 10;
+    },
+  },
+  {
+    message: 'Valid Philippine mobile number',
+    validate: value => {
+      const phone = value.replace('+63', '');
+      return /^9\d{9}$/.test(phone);
+    },
   },
 ];
 

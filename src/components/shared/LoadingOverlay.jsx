@@ -1,4 +1,3 @@
-// src/components/generic/LoadingOverlay.jsx
 import { Loader2, Heart, Stethoscope } from 'lucide-react';
 
 const LoadingOverlay = ({

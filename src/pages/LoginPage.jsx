@@ -45,20 +45,21 @@ const LoginPage = () => {
     setIsSubmitting(true);
     try {
       await new Promise(res => setTimeout(res, 1000));
-      const result = login(formData);
+      const response = await login(formData);
       const delay = new Promise(res => setTimeout(res, 1000));
 
+      console.log(response);
       // const [apiCallRes, ]
-      toast.success(result?.message || 'Login successfully.');
-      // navigate('')
+      toast.success(response?.message || 'Login successfully.');
+      navigate(
+        `/${response.data.user.role}/${
+          response.data.user.role === 'patient' ? 'my-' : ''
+        }dashboard`
+      );
     } catch (error) {
       await new Promise(res => setTimeout(res, 1000));
       const errorMessage =
-        error.response.message ||
-        error.message ||
-        error.response.data.message ||
-        'Please try again later.';
-      console.log(errorMessage);
+        error?.response?.message || error?.message || 'Please try again later.';
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);

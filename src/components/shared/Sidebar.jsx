@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { sidebarConfig } from '../../configs/sidebarConfig';
 
 const Sidebar = ({ isOpen, toggleSidebar, onLogout, currentUser }) => {
+  console.log(currentUser);
   const { patient } = useAuth();
   const [menuItems, setMenuItems] = useState([]);
 
@@ -29,9 +30,17 @@ const Sidebar = ({ isOpen, toggleSidebar, onLogout, currentUser }) => {
       <button
         onClick={toggleSidebar}
         aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-        className="hidden lg:block absolute -right-3 top-6 z-20 h-6 w-6 rounded-full bg-[#d4af37] text-[#0b1b3b] hover:bg-yellow-300 shadow-md flex items-center justify-center transition-colors"
+        className="
+    hidden lg:flex
+    absolute -right-3 top-6 z-20
+    h-7 w-7 rounded-full
+    bg-[#d4af37] text-[#0b1b3b]
+    hover:bg-yellow-300 shadow-md
+    items-center justify-center
+    transition-colors
+  "
       >
-        {isOpen ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
+        {isOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
       </button>
 
       {/* Logo Section */}
@@ -62,15 +71,17 @@ const Sidebar = ({ isOpen, toggleSidebar, onLogout, currentUser }) => {
         <div className="flex items-center gap-3">
           <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#d4af37] to-[#b8941f] flex items-center justify-center border-2 border-white/20 shadow-lg">
             <span className="font-bold text-white text-sm">
-              {currentUser?.first_name?.[0] || patient?.first_name?.[0]}
-              {currentUser?.last_name?.[0] || patient?.last_name?.[0]}
+              {currentUser?.person?.first_name?.[0] ||
+                patient?.person?.first_name?.[0]}
+              {currentUser?.person?.last_name?.[0] ||
+                patient?.person?.last_name?.[0]}
             </span>
           </div>
           {isOpen && (
             <div>
               <p className="font-semibold text-sm">
-                {currentUser?.first_name || patient?.first_name}{' '}
-                {currentUser?.last_name || patient?.last_name}
+                {currentUser?.person?.first_name}{' '}
+                {currentUser?.person?.last_name}
               </p>
               <p className="text-xs text-gray-300 capitalize">
                 {currentUser?.role}

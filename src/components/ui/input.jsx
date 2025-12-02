@@ -1,5 +1,4 @@
-// src/components/ui/input.jsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Eye, EyeOff, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
 export const Input = ({
@@ -24,6 +23,10 @@ export const Input = ({
   const [isTouched, setIsTouched] = useState(false);
 
   const isPassword = type === 'password';
+  const isEmailField = type === 'email';
+  const emailIsValid =
+    isEmailField && value && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  const showEmailValidation = isEmailField && isTouched && value && !error;
 
   // Calculate validation results on the fly
   const getValidationResults = () => {
@@ -91,12 +94,18 @@ export const Input = ({
             block w-full rounded-lg border shadow-sm focus:ring-2 focus:ring-offset-1 transition-colors
             ${Icon ? 'pl-10' : 'pl-4'}
             ${isPassword ? 'pr-10' : 'pr-4'}
-            ${allValid && shouldShowValidation ? 'pr-10' : ''}
+            ${
+              (allValid && shouldShowValidation && passwordsMatch) ||
+              (emailIsValid && showEmailValidation)
+                ? 'pr-10'
+                : ''
+            }
             py-3 text-sm
             ${
               error || showMatchError
                 ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                : allValid && shouldShowValidation && passwordsMatch
+                : (allValid && shouldShowValidation && passwordsMatch) ||
+                  (emailIsValid && showEmailValidation)
                 ? 'border-green-300 focus:border-green-500 focus:ring-green-500'
                 : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
             }
@@ -106,11 +115,13 @@ export const Input = ({
         />
 
         {/* Validation Success Icon */}
-        {allValid && shouldShowValidation && passwordsMatch && !isPassword && (
-          <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-            <CheckCircle className="h-5 w-5 text-green-500" />
-          </div>
-        )}
+        {((allValid && shouldShowValidation && passwordsMatch) ||
+          (emailIsValid && showEmailValidation)) &&
+          !isPassword && (
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+              <CheckCircle className="h-5 w-5 text-green-500" />
+            </div>
+          )}
 
         {isPassword && (
           <button

@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Camera,
-  Upload,
   CheckCircle,
   XCircle,
   AlertCircle,
@@ -9,42 +7,29 @@ import {
   Loader,
 } from 'lucide-react';
 import * as faceapi from 'face-api.js';
-import FacePlusPlusService from '../../services/facePlusPlus';
+import { useAuth } from '../../contexts/AuthContext';
 
-// Helper functions
-const fileToBase64 = file => {
-  return new Promise(resolve => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result.split(',')[1]);
-  });
+// Helper function to convert canvas to base64
+const canvasToBase64 = (canvas, quality = 0.9) => {
+  return canvas.toDataURL('image/jpeg', quality).split(',')[1];
 };
 
-const fileToBase64FromUrl = async url => {
-  const response = await fetch(url);
-  const blob = await response.blob();
-  return await fileToBase64(blob);
-};
-
-function App() {
+function FaceCapture() {
+  const { verifyFace } = useAuth();
   const [modelsLoaded, setModelsLoaded] = useState(false);
-  const [uploadedImage, setUploadedImage] = useState(null);
-  const [croppedFace, setCroppedFace] = useState(null);
-  const [faceDescriptor, setFaceDescriptor] = useState(null);
-  const [idFaceToken, setIdFaceToken] = useState(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [countdown, setCountdown] = useState(3);
   const [isCountingDown, setIsCountingDown] = useState(false);
   const [verificationResult, setVerificationResult] = useState(null);
   const [status, setStatus] = useState({ message: '', type: '' });
-  const [isVerifying, setIsVerifying] = useState(false); // NEW: Verification loading state
+  const [isVerifying, setIsVerifying] = useState(false);
   const [feedback, setFeedback] = useState({
     centered: false,
     rightSize: false,
     blinked: false,
     lighting: false,
     faceDetected: false,
-    message: 'Waiting to start...',
+    message: 'Initializing camera...',
     blinkCount: 0,
     brightness: 0,
     currentEAR: 0,
@@ -67,11 +52,22 @@ function App() {
   const countdownStartedRef = useRef(false);
 
   useEffect(() => {
-    loadModels();
+    const initialize = async () => {
+      await loadModels();
+    };
+    initialize();
+
     return () => {
       stopCamera();
     };
   }, []);
+
+  // Auto-start camera when models are loaded
+  useEffect(() => {
+    if (modelsLoaded) {
+      startCamera();
+    }
+  }, [modelsLoaded]);
 
   const loadModels = async () => {
     try {
@@ -92,7 +88,7 @@ function App() {
 
       setModelsLoaded(true);
       setStatus({
-        message: 'AI Models loaded! Ready to start.',
+        message: 'AI Models loaded! Starting camera...',
         type: 'success',
       });
       console.log('✅ All models loaded successfully');
@@ -105,99 +101,11 @@ function App() {
     }
   };
 
-  const handleFileUpload = async e => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    setStatus({ message: 'Processing ID photo with Face++...', type: 'info' });
-    const img = await loadImage(file);
-    setUploadedImage(img.src);
-
-    try {
-      console.log('🔍 Detecting face in uploaded image with Face++...');
-
-      const base64 = await fileToBase64(file);
-      const faceData = await FacePlusPlusService.detectFace(base64);
-
-      if (faceData) {
-        console.log('✅ Face detected with Face++:', faceData.face_token);
-
-        setIdFaceToken(faceData.face_token);
-
-        // Also do face-api.js detection for display
-        const detections = await faceapi
-          .detectSingleFace(img)
-          .withFaceLandmarks()
-          .withFaceDescriptor();
-
-        if (detections) {
-          setFaceDescriptor(detections.descriptor);
-          const box = detections.detection.box;
-          const croppedCanvas = document.createElement('canvas');
-          const ctx = croppedCanvas.getContext('2d');
-
-          const padding = 30;
-          croppedCanvas.width = box.width + padding * 2;
-          croppedCanvas.height = box.height + padding * 2;
-
-          ctx.drawImage(
-            img,
-            box.x - padding,
-            box.y - padding,
-            box.width + padding * 2,
-            box.height + padding * 2,
-            0,
-            0,
-            croppedCanvas.width,
-            croppedCanvas.height
-          );
-
-          setCroppedFace(croppedCanvas.toDataURL());
-        }
-
-        setStatus({
-          message: `Face registered with Face++! Quality: ${(
-            faceData.face_quality?.value * 100
-          ).toFixed(1)}%`,
-          type: 'success',
-        });
-
-        // Auto-start camera after successful ID upload
-        setTimeout(() => {
-          startCamera();
-        }, 500);
-      } else {
-        console.log('❌ No face detected by Face++');
-        setStatus({
-          message: 'No face detected. Upload a clearer photo.',
-          type: 'error',
-        });
-      }
-    } catch (error) {
-      setStatus({
-        message: 'Error processing image with Face++.',
-        type: 'error',
-      });
-      console.error('❌ Face++ Error:', error);
-    }
-  };
-
-  const loadImage = file => {
-    return new Promise(resolve => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.src = URL.createObjectURL(file);
-    });
-  };
-
   const startCamera = async () => {
-    if (!idFaceToken) {
-      setStatus({ message: 'Please upload an ID photo first!', type: 'error' });
-      return;
-    }
-
     try {
       console.log('🎥 Starting camera...');
+      setStatus({ message: 'Accessing camera...', type: 'info' });
+
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           width: { ideal: 640 },
@@ -228,7 +136,10 @@ function App() {
       isBlinkingRef.current = false;
       countdownStartedRef.current = false;
 
-      setStatus({ message: 'Camera active!', type: 'info' });
+      setStatus({
+        message: 'Camera active! Follow the instructions.',
+        type: 'info',
+      });
       console.log('✅ Camera started');
 
       setTimeout(() => {
@@ -254,7 +165,11 @@ function App() {
         }
       }, 1000);
     } catch (error) {
-      setStatus({ message: 'Camera access denied.', type: 'error' });
+      setStatus({
+        message:
+          'Camera access denied. Please allow camera access and refresh.',
+        type: 'error',
+      });
       console.error('❌ Camera error:', error);
     }
   };
@@ -690,17 +605,17 @@ function App() {
     }, 100);
   };
 
-  // UPDATED: Better error handling and loading states
+  // MODIFIED: This function now sends base64 image to backend for verification
   const captureAndVerify = async () => {
     try {
-      console.log('📸 Capturing with Face++...');
-      setIsVerifying(true); // Show loading state
+      console.log('📸 Capturing face image...');
+      setIsVerifying(true);
       setStatus({
-        message: 'Sending to Face++ for verification...',
+        message: 'Sending to backend for verification...',
         type: 'info',
       });
 
-      // Capture live face
+      // Capture live face as base64
       const canvas = document.createElement('canvas');
       canvas.width = videoRef.current.videoWidth;
       canvas.height = videoRef.current.videoHeight;
@@ -709,34 +624,40 @@ function App() {
       ctx.scale(-1, 1);
       ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
 
-      const liveImageBase64 = canvas.toDataURL('image/jpeg').split(',')[1];
+      const dataURL = canvas.toDataURL('image/jpeg', 0.9);
+      console.log('📊 Data URL info:', {
+        length: dataURL.length,
+        hasPrefix: dataURL.startsWith('data:image/jpeg;base64,'),
+        first100Chars: dataURL.substring(0, 100),
+      });
 
-      // Convert ID photo to base64
-      const idImageBase64 = await fileToBase64FromUrl(uploadedImage);
+      // Extract base64 data (remove the data URL prefix)
+      const livePhotoBase64 = dataURL.replace(/^data:image\/jpeg;base64,/, '');
 
-      // Verify with Face++
-      const result = await FacePlusPlusService.verifyFaces(
-        idImageBase64,
-        liveImageBase64
-      );
+      console.log('📊 Base64 data ready for sending:', {
+        length: livePhotoBase64.length,
+        first100Chars: livePhotoBase64.substring(0, 100) + '...',
+      });
 
-      console.log('🎯 Face++ Verification Result:', result);
+      const response = await verifyFace({ livePhotoBase64 });
+
+      console.log('🎯 Verification Result:', response);
 
       setVerificationResult({
-        isMatch: result.isMatch,
-        confidence: result.confidence,
-        distance: 1 - result.confidence / 100,
+        isMatch: response.isMatch,
+        confidence: response.confidence,
+        distance: 1 - response.confidence / 100,
         threshold: 0.15,
         liveFaceImage: canvas.toDataURL(),
-        facePlusPlusData: result.facePlusPlusData,
+        // Include any additional data from your backend
+        verificationData: response.data || {},
       });
 
       setIsVerifying(false);
       stopCamera();
     } catch (error) {
-      console.error('❌ Face++ verification error:', error);
+      console.error('❌ Verification error:', error);
 
-      // Better error messages for different types of errors
       let errorMessage = 'Verification failed. Please try again.';
 
       if (
@@ -744,7 +665,7 @@ function App() {
         error.message.includes('Forbidden')
       ) {
         errorMessage =
-          'Face++ API quota exceeded. Please try again later or contact support.';
+          'API quota exceeded. Please try again later or contact support.';
       } else if (
         error.message.includes('Network') ||
         error.message.includes('Failed to fetch')
@@ -766,14 +687,16 @@ function App() {
   };
 
   const resetDemo = () => {
-    setUploadedImage(null);
-    setCroppedFace(null);
-    setFaceDescriptor(null);
-    setIdFaceToken(null);
     setVerificationResult(null);
     setStatus({ message: '', type: '' });
     setIsVerifying(false);
     stopCamera();
+    // Restart camera after reset
+    setTimeout(() => {
+      if (modelsLoaded) {
+        startCamera();
+      }
+    }, 500);
   };
 
   const StatusAlert = ({ message, type }) => {
@@ -802,7 +725,7 @@ function App() {
 
   if (!modelsLoaded) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-2xl p-8 text-center max-w-md">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600 mx-auto mb-4"></div>
           <p className="text-xl font-semibold text-gray-700">
@@ -814,19 +737,18 @@ function App() {
     );
   }
 
-  // NEW: Show verification loading state
   if (isVerifying) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-2xl p-8 text-center max-w-md">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600 mx-auto mb-4"></div>
           <p className="text-xl font-semibold text-gray-700">
-            Verifying with Face++...
+            Verifying with Backend...
           </p>
           <p className="text-gray-500 mt-2">This may take a few seconds</p>
           <div className="mt-4 bg-blue-50 rounded-lg p-3">
             <p className="text-sm text-blue-700">
-              Sending images to Face++ for comparison
+              Sending image to backend for verification
             </p>
           </div>
         </div>
@@ -842,27 +764,15 @@ function App() {
             🎯 Verification Result
           </h1>
           <div className="bg-white rounded-2xl shadow-2xl p-8">
-            <div className="grid md:grid-cols-2 gap-8 mb-8">
-              <div className="text-center">
-                <h3 className="text-xl font-semibold text-indigo-600 mb-4">
-                  ID Photo
-                </h3>
-                <img
-                  src={croppedFace || uploadedImage}
-                  alt="ID"
-                  className="rounded-lg shadow-lg mx-auto"
-                />
-              </div>
-              <div className="text-center">
-                <h3 className="text-xl font-semibold text-indigo-600 mb-4">
-                  Live Camera
-                </h3>
-                <img
-                  src={verificationResult.liveFaceImage}
-                  alt="Live"
-                  className="rounded-lg shadow-lg mx-auto"
-                />
-              </div>
+            <div className="text-center mb-8">
+              <h3 className="text-xl font-semibold text-indigo-600 mb-4">
+                Captured Face
+              </h3>
+              <img
+                src={verificationResult.liveFaceImage}
+                alt="Live"
+                className="rounded-lg shadow-lg mx-auto max-w-md"
+              />
             </div>
             <div
               className={`p-8 rounded-xl text-center ${
@@ -909,7 +819,7 @@ function App() {
                   </div>
                 </div>
                 <div>
-                  <div className="text-sm opacity-75">Face++ Confidence</div>
+                  <div className="text-sm opacity-75">Confidence Score</div>
                   <div className="text-xl font-semibold">
                     {verificationResult.confidence.toFixed(1)}%
                   </div>
@@ -926,46 +836,22 @@ function App() {
                 </div>
               </div>
 
-              <div className="text-sm mt-4 p-4 bg-white bg-opacity-70 rounded-lg text-left space-y-2">
-                <div className="font-bold text-base mb-2">
-                  📊 Face++ Verification Breakdown:
+              {/* Display any additional backend data */}
+              {verificationResult.verificationData && (
+                <div className="text-sm mt-4 p-4 bg-white bg-opacity-70 rounded-lg text-left space-y-2">
+                  <div className="font-bold text-base mb-2">
+                    📊 Backend Verification Data:
+                  </div>
+                  {Object.entries(verificationResult.verificationData).map(
+                    ([key, value]) => (
+                      <div key={key} className="flex justify-between">
+                        <span>{key}:</span>
+                        <span className="font-semibold">{String(value)}</span>
+                      </div>
+                    )
+                  )}
                 </div>
-                <div className="flex justify-between">
-                  <span>Required Confidence:</span>
-                  <span className="font-semibold">≥ 85%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Your Confidence:</span>
-                  <span className="font-semibold">
-                    {verificationResult.confidence.toFixed(1)}%
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Face++ Thresholds:</span>
-                  <span className="font-semibold">
-                    1e-3:{' '}
-                    {verificationResult.facePlusPlusData?.thresholds?.['1e-3']}{' '}
-                    | 1e-4:{' '}
-                    {verificationResult.facePlusPlusData?.thresholds?.['1e-4']}{' '}
-                    | 1e-5:{' '}
-                    {verificationResult.facePlusPlusData?.thresholds?.['1e-5']}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Result:</span>
-                  <span
-                    className={`font-bold ${
-                      verificationResult.isMatch
-                        ? 'text-green-600'
-                        : 'text-red-600'
-                    }`}
-                  >
-                    {verificationResult.isMatch
-                      ? 'VERIFIED ✓'
-                      : 'NOT VERIFIED ✗'}
-                  </span>
-                </div>
-              </div>
+              )}
             </div>
             <div className="mt-8 text-center">
               <button
@@ -985,9 +871,9 @@ function App() {
                     <li>Ensure good, even lighting on your face</li>
                     <li>Face the camera directly (no angles)</li>
                     <li>Remove glasses or accessories if possible</li>
-                    <li>Use a neutral expression similar to your ID</li>
+                    <li>Use a neutral expression</li>
                     <li>Stay still during the countdown</li>
-                    <li>Make sure your ID photo is clear and well-lit</li>
+                    <li>Follow the blink instructions carefully</li>
                   </ul>
                 </div>
               )}
@@ -999,286 +885,214 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-4">
+    <div className="min-h-screen bg-gradient-to-br">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl md:text-5xl font-bold text-white text-center mb-4">
+        <h1 className="text-4xl md:text-5xl font-bold text-center mb-4">
           🎓 Face Verification System
         </h1>
-        <p className="text-white text-center mb-8 text-lg">
-          Hybrid: face-api.js (Live Guide) + Face++ (Accurate Verify)
+        <p className="text-center mb-8 text-lg">
+          Auto face capture and verification
         </p>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-2xl shadow-2xl p-6">
-            <h2 className="text-2xl font-bold text-indigo-600 mb-6 border-b-4 border-indigo-600 pb-2">
-              📋 Step 1: Upload ID Photo
-            </h2>
-            <StatusAlert message={status.message} type={status.type} />
-            <div className="mt-6 text-center">
-              <label className="cursor-pointer">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-                <div className="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-700 transition inline-flex items-center gap-2">
-                  <Upload className="w-5 h-5" />
-                  Choose ID Photo
+        <div className="bg-white rounded-2xl shadow-2xl p-6">
+          <h2 className="text-2xl font-bold text-indigo-600 mb-6 border-b-4 border-indigo-600 pb-2">
+            📹 Live Face Capture
+          </h2>
+
+          <StatusAlert message={status.message} type={status.type} />
+
+          <div className={`relative mb-4 ${cameraActive ? 'block' : 'hidden'}`}>
+            <div className="relative aspect-square w-full max-w-md mx-auto overflow-hidden rounded-full bg-black shadow-2xl">
+              <video
+                ref={videoRef}
+                autoPlay
+                muted
+                playsInline
+                className="w-full h-full object-cover"
+                style={{ transform: 'scaleX(-1)' }}
+              />
+              <canvas
+                ref={canvasRef}
+                className="absolute top-0 left-0 w-full h-full pointer-events-none"
+                style={{ transform: 'scaleX(-1)', zIndex: 1 }}
+              />
+              <canvas
+                ref={overlayCanvasRef}
+                className="absolute top-0 left-0 w-full h-full pointer-events-none"
+                style={{ transform: 'scaleX(-1)', zIndex: 2 }}
+              />
+
+              {isCountingDown && countdown > 0 && (
+                <div
+                  className="absolute inset-0 flex items-center justify-center z-10"
+                  style={{ zIndex: 10 }}
+                >
+                  <div className="text-white text-9xl font-bold drop-shadow-2xl animate-pulse">
+                    {countdown}
+                  </div>
                 </div>
-              </label>
-              <p className="text-sm text-gray-600 mt-2">
-                Face++ will detect and register your face
-              </p>
+              )}
+
+              <div
+                className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-90 text-white px-6 py-3 rounded-lg font-bold text-base text-center shadow-lg max-w-xs"
+                style={{ zIndex: 20 }}
+              >
+                {feedback.message}
+              </div>
             </div>
-            {uploadedImage && (
-              <div className="mt-6">
-                <h3 className="font-semibold text-indigo-600 mb-2">
-                  Uploaded ID:
-                </h3>
-                <img
-                  src={uploadedImage}
-                  alt="ID"
-                  className="rounded-lg shadow-lg w-full"
-                />
-              </div>
-            )}
-            {croppedFace && (
-              <div className="mt-6">
-                <h3 className="font-semibold text-indigo-600 mb-2">
-                  Detected Face:
-                </h3>
-                <img
-                  src={croppedFace}
-                  alt="Face"
-                  className="rounded-lg shadow-lg w-full max-w-sm mx-auto"
-                />
-              </div>
-            )}
-            {idFaceToken && (
-              <div className="mt-4 p-3 bg-green-50 rounded-lg">
-                <p className="text-green-700 text-sm font-semibold">
-                  ✅ Face registered with Face++
-                </p>
-              </div>
-            )}
           </div>
 
-          <div className="bg-white rounded-2xl shadow-2xl p-6">
-            <h2 className="text-2xl font-bold text-indigo-600 mb-6 border-b-4 border-indigo-600 pb-2">
-              📹 Step 2: Live Verification
-            </h2>
-
-            <div
-              className={`relative mb-4 ${cameraActive ? 'block' : 'hidden'}`}
-            >
-              <div className="relative aspect-square w-full max-w-md mx-auto overflow-hidden rounded-full bg-black shadow-2xl">
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  muted
-                  playsInline
-                  className="w-full h-full object-cover"
-                  style={{ transform: 'scaleX(-1)' }}
-                />
-                <canvas
-                  ref={canvasRef}
-                  className="absolute top-0 left-0 w-full h-full pointer-events-none"
-                  style={{ transform: 'scaleX(-1)', zIndex: 1 }}
-                />
-                <canvas
-                  ref={overlayCanvasRef}
-                  className="absolute top-0 left-0 w-full h-full pointer-events-none"
-                  style={{ transform: 'scaleX(-1)', zIndex: 2 }}
-                />
-
-                {isCountingDown && countdown > 0 && (
-                  <div
-                    className="absolute inset-0 flex items-center justify-center z-10"
-                    style={{ zIndex: 10 }}
-                  >
-                    <div className="text-white text-9xl font-bold drop-shadow-2xl animate-pulse">
-                      {countdown}
-                    </div>
-                  </div>
-                )}
-
-                <div
-                  className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-90 text-white px-6 py-3 rounded-lg font-bold text-base text-center shadow-lg max-w-xs"
-                  style={{ zIndex: 20 }}
-                >
-                  {feedback.message}
-                </div>
+          {cameraActive && (
+            <div className="bg-gray-50 rounded-xl p-4 mb-4 space-y-2">
+              <div className="mt-2 bg-green-50 border border-green-200 rounded-lg p-3">
+                <p className="text-sm text-green-800 font-medium mb-1">
+                  👁️ Blink Detection:
+                </p>
+                <ul className="text-xs text-green-700 space-y-1">
+                  <li>
+                    • <strong>Close and open eyes naturally</strong>
+                  </li>
+                  <li>• Eyes turn RED when closing detected</li>
+                  <li>
+                    • Count: <strong>{feedback.blinkCount}/2</strong> blinks
+                    registered
+                  </li>
+                  <li>
+                    • Current EAR:{' '}
+                    <strong>
+                      {feedback.currentEAR?.toFixed(3) || '0.000'}
+                    </strong>
+                  </li>
+                </ul>
               </div>
-            </div>
-
-            {cameraActive && (
-              <div className="bg-gray-50 rounded-xl p-4 mb-4 space-y-2">
-                <div className="mt-2 bg-green-50 border border-green-200 rounded-lg p-3">
-                  <p className="text-sm text-green-800 font-medium mb-1">
-                    👁️ Blink Detection:
-                  </p>
-                  <ul className="text-xs text-green-700 space-y-1">
-                    <li>
-                      • <strong>Close and open eyes naturally</strong>
-                    </li>
-                    <li>• Eyes turn RED when closing detected</li>
-                    <li>
-                      • Count: <strong>{feedback.blinkCount}/2</strong> blinks
-                      registered
-                    </li>
-                    <li>
-                      • Current EAR:{' '}
-                      <strong>
-                        {feedback.currentEAR?.toFixed(3) || '0.000'}
-                      </strong>
-                    </li>
-                  </ul>
-                </div>
-                <h3 className="font-semibold text-gray-700 text-sm mb-3 flex items-center gap-2">
-                  <Loader className="w-4 h-4 animate-spin" />
-                  Live Status (face-api.js)
-                </h3>
-                <div className="grid grid-cols-2 gap-2">
+              <h3 className="font-semibold text-gray-700 text-sm mb-3 flex items-center gap-2">
+                <Loader className="w-4 h-4 animate-spin" />
+                Live Status (face-api.js)
+              </h3>
+              <div className="grid grid-cols-2 gap-2">
+                <div
+                  className={`p-2 rounded-lg text-center ${
+                    feedback.faceDetected ? 'bg-green-100' : 'bg-red-100'
+                  }`}
+                >
+                  <div className="text-xs text-gray-600">Face</div>
                   <div
-                    className={`p-2 rounded-lg text-center ${
-                      feedback.faceDetected ? 'bg-green-100' : 'bg-red-100'
+                    className={`font-bold ${
+                      feedback.faceDetected ? 'text-green-700' : 'text-red-700'
                     }`}
                   >
-                    <div className="text-xs text-gray-600">Face</div>
-                    <div
-                      className={`font-bold ${
-                        feedback.faceDetected
-                          ? 'text-green-700'
-                          : 'text-red-700'
-                      }`}
-                    >
-                      {feedback.faceDetected ? '✓' : '✗'}
-                    </div>
-                  </div>
-                  <div
-                    className={`p-2 rounded-lg text-center ${
-                      feedback.lighting ? 'bg-green-100' : 'bg-orange-100'
-                    }`}
-                  >
-                    <div className="text-xs text-gray-600">Light</div>
-                    <div
-                      className={`font-bold ${
-                        feedback.lighting ? 'text-green-700' : 'text-orange-700'
-                      }`}
-                    >
-                      {feedback.lighting ? '✓' : '✗'}
-                    </div>
-                  </div>
-                  <div
-                    className={`p-2 rounded-lg text-center ${
-                      feedback.centered ? 'bg-green-100' : 'bg-blue-100'
-                    }`}
-                  >
-                    <div className="text-xs text-gray-600">Centered</div>
-                    <div
-                      className={`font-bold ${
-                        feedback.centered ? 'text-green-700' : 'text-blue-700'
-                      }`}
-                    >
-                      {feedback.centered ? '✓' : '✗'}
-                    </div>
-                  </div>
-                  <div
-                    className={`p-2 rounded-lg text-center ${
-                      feedback.rightSize ? 'bg-green-100' : 'bg-blue-100'
-                    }`}
-                  >
-                    <div className="text-xs text-gray-600">Distance</div>
-                    <div
-                      className={`font-bold ${
-                        feedback.rightSize ? 'text-green-700' : 'text-blue-700'
-                      }`}
-                    >
-                      {feedback.rightSize ? '✓' : '✗'}
-                    </div>
+                    {feedback.faceDetected ? '✓' : '✗'}
                   </div>
                 </div>
                 <div
                   className={`p-2 rounded-lg text-center ${
-                    feedback.blinked ? 'bg-green-100' : 'bg-yellow-100'
+                    feedback.lighting ? 'bg-green-100' : 'bg-orange-100'
                   }`}
                 >
-                  <div className="text-xs text-gray-600">Blink Count</div>
+                  <div className="text-xs text-gray-600">Light</div>
                   <div
                     className={`font-bold ${
-                      feedback.blinked ? 'text-green-700' : 'text-yellow-700'
+                      feedback.lighting ? 'text-green-700' : 'text-orange-700'
                     }`}
                   >
-                    {feedback.blinkCount}/2 {feedback.blinked ? '✓' : ''}
+                    {feedback.lighting ? '✓' : '✗'}
                   </div>
                 </div>
+                <div
+                  className={`p-2 rounded-lg text-center ${
+                    feedback.centered ? 'bg-green-100' : 'bg-blue-100'
+                  }`}
+                >
+                  <div className="text-xs text-gray-600">Centered</div>
+                  <div
+                    className={`font-bold ${
+                      feedback.centered ? 'text-green-700' : 'text-blue-700'
+                    }`}
+                  >
+                    {feedback.centered ? '✓' : '✗'}
+                  </div>
+                </div>
+                <div
+                  className={`p-2 rounded-lg text-center ${
+                    feedback.rightSize ? 'bg-green-100' : 'bg-blue-100'
+                  }`}
+                >
+                  <div className="text-xs text-gray-600">Distance</div>
+                  <div
+                    className={`font-bold ${
+                      feedback.rightSize ? 'text-green-700' : 'text-blue-700'
+                    }`}
+                  >
+                    {feedback.rightSize ? '✓' : '✗'}
+                  </div>
+                </div>
+              </div>
+              <div
+                className={`p-2 rounded-lg text-center ${
+                  feedback.blinked ? 'bg-green-100' : 'bg-yellow-100'
+                }`}
+              >
+                <div className="text-xs text-gray-600">Blink Count</div>
+                <div
+                  className={`font-bold ${
+                    feedback.blinked ? 'text-green-700' : 'text-yellow-700'
+                  }`}
+                >
+                  {feedback.blinkCount}/2 {feedback.blinked ? '✓' : ''}
+                </div>
+              </div>
 
-                {feedback.centered &&
-                  feedback.rightSize &&
-                  feedback.lighting &&
-                  feedback.blinked && (
-                    <div className="mt-3 pt-3 border-t-2 border-green-200 bg-green-50 rounded-lg p-3">
-                      <div className="flex items-center justify-center gap-2 text-green-600 font-semibold text-sm">
-                        <CheckCircle className="w-4 h-4" />
-                        <span>All requirements met! Countdown starting...</span>
-                      </div>
-                    </div>
-                  )}
-
-                {isCountingDown && (
-                  <div className="mt-3 pt-3 border-t-2 border-blue-200 bg-blue-50 rounded-lg p-3">
-                    <div className="flex items-center justify-center gap-2 text-blue-600 font-semibold text-sm">
-                      <Loader className="w-4 h-4 animate-spin" />
-                      <span>Countdown: {countdown}... Hold still!</span>
+              {feedback.centered &&
+                feedback.rightSize &&
+                feedback.lighting &&
+                feedback.blinked && (
+                  <div className="mt-3 pt-3 border-t-2 border-green-200 bg-green-50 rounded-lg p-3">
+                    <div className="flex items-center justify-center gap-2 text-green-600 font-semibold text-sm">
+                      <CheckCircle className="w-4 h-4" />
+                      <span>All requirements met! Countdown starting...</span>
                     </div>
                   </div>
                 )}
-              </div>
-            )}
 
-            <div className="flex flex-wrap gap-3 justify-center">
-              {!cameraActive ? (
-                <button
-                  onClick={startCamera}
-                  disabled={!idFaceToken}
-                  className={`px-6 py-3 rounded-lg font-semibold transition flex items-center gap-2 ${
-                    idFaceToken
-                      ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
-                >
-                  <Camera className="w-5 h-5" />
-                  Start Camera
-                </button>
-              ) : (
-                <button
-                  onClick={stopCamera}
-                  className="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition flex items-center gap-2"
-                >
-                  <XCircle className="w-5 h-5" />
-                  Stop Camera
-                </button>
+              {isCountingDown && (
+                <div className="mt-3 pt-3 border-t-2 border-blue-200 bg-blue-50 rounded-lg p-3">
+                  <div className="flex items-center justify-center gap-2 text-blue-600 font-semibold text-sm">
+                    <Loader className="w-4 h-4 animate-spin" />
+                    <span>Countdown: {countdown}... Hold still!</span>
+                  </div>
+                </div>
               )}
             </div>
+          )}
 
-            <div className="mt-4 bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
-              <p className="text-sm text-blue-800 font-medium mb-2 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4" />
-                Requirements:
+          {!cameraActive && modelsLoaded && (
+            <div className="text-center p-8 bg-yellow-50 rounded-lg border-2 border-yellow-200">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-yellow-600 mx-auto mb-4"></div>
+              <p className="text-yellow-800 font-semibold">
+                Starting camera...
               </p>
-              <ul className="text-sm text-blue-700 space-y-1 ml-6">
-                <li>✓ Face detected</li>
-                <li>✓ Good lighting</li>
-                <li>✓ Face centered</li>
-                <li>✓ Correct distance</li>
-                <li>✓ Blink 2 times</li>
-                <li>✓ 3-second countdown</li>
-              </ul>
-              <p className="text-xs text-blue-600 mt-2 italic">
-                face-api.js guides you → Face++ verifies accuracy
+              <p className="text-yellow-600 text-sm mt-2">
+                Please wait for camera initialization
               </p>
             </div>
+          )}
+
+          <div className="mt-4 bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+            <p className="text-sm text-blue-800 font-medium mb-2 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4" />
+              Instructions:
+            </p>
+            <ul className="text-sm text-blue-700 space-y-1 ml-6">
+              <li>• Camera starts automatically</li>
+              <li>• Position your face in the circle</li>
+              <li>• Ensure good lighting</li>
+              <li>• Blink 2 times naturally</li>
+              <li>• Stay still during 3-second countdown</li>
+              <li>• System will auto-capture and verify</li>
+            </ul>
+            <p className="text-xs text-blue-600 mt-2 italic">
+              Face detection guides you → Backend verifies identity
+            </p>
           </div>
         </div>
 
@@ -1286,8 +1100,7 @@ function App() {
           <div className="bg-white rounded-xl p-4 inline-block shadow-lg">
             <p className="text-sm text-gray-600">
               <strong>Status:</strong> Face-API{' '}
-              {modelsLoaded ? '✅ Active' : '❌ Inactive'} | Face++{' '}
-              {idFaceToken ? '✅ Ready' : '❌ Waiting'} | Camera{' '}
+              {modelsLoaded ? '✅ Active' : '❌ Inactive'} | Camera{' '}
               {cameraActive ? '🎥 On' : '📷 Off'} | Countdown{' '}
               {isCountingDown ? `⏱️ ${countdown}` : '⏸️ Inactive'}
             </p>
@@ -1298,4 +1111,4 @@ function App() {
   );
 }
 
-export default App;
+export default FaceCapture;

@@ -1,19 +1,25 @@
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { usePasswordValidators, validateValue } from '../utils/validators';
+import {
+  usePasswordValidators,
+  useEmailValidators,
+  validateValue,
+} from '../utils/validators';
 import { toast } from 'react-hot-toast';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { DynamicLink } from '../components/ui/link';
 import { LogIn } from 'lucide-react';
+import { PhoneInput } from '../components/ui/PhoneInput';
+import { useAuth } from '../contexts/AuthContext';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
-
-  const registerUser = () => {};
+  const { register } = useAuth();
 
   const [formData, setFormData] = useState({
     email: '',
+    phone: '+63',
     password: '',
     confirmPassword: '',
   });
@@ -24,37 +30,51 @@ const RegisterPage = () => {
     isValid: false,
     allValid: false,
   });
+  const [emailValidation, setEmailValidation] = useState({
+    results: [],
+    isValid: false,
+    allValid: false,
+  });
 
   const passwordValidators = usePasswordValidators();
+  const emailValidators = useEmailValidators();
 
   const canSubmit = useCallback(() => {
-    const { email, password, confirmPassword } = formData;
+    const { email, phone, password, confirmPassword } = formData;
 
-    if (!email || !password || !confirmPassword) return false;
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return false;
+    const phoneNumber = formData.phone.replace('+63', '');
+
+    if (!email || !phone || !password || !confirmPassword) return false;
+    if (!/^9\d{9}$/.test(phoneNumber)) return false;
+    if (!emailValidation.allValid) return false;
     if (!passwordValidation.allValid) return false;
     if (password !== confirmPassword) return false;
 
     return true;
-  }, [formData, passwordValidation]);
+  }, [formData, passwordValidation, emailValidation]);
 
   const handleInputChange = useCallback(
     (field, value) => {
       setFormData(prev => ({ ...prev, [field]: value }));
 
-      // real-time validate password
+      // Real-time validate email
+      if (field === 'email') {
+        const validation = validateValue(value, emailValidators);
+        setEmailValidation(validation);
+      }
+
+      // Real-time validate password
       if (field === 'password') {
         const validation = validateValue(value, passwordValidators);
-        console.log(validation);
         setPasswordValidation(validation);
       }
 
-      // clear field-specific error when user starts typing
+      // Clear field-specific error when user starts typing
       if (errors[field]) {
         setErrors(prev => ({ ...prev, [field]: '' }));
       }
 
-      // clear confirm password error when password changes
+      // Clear confirm password error when password changes
       if (
         (field === 'password' || field === 'confirmPassword') &&
         errors.confirmPassword
@@ -62,7 +82,7 @@ const RegisterPage = () => {
         setErrors(prev => ({ ...prev, confirmPassword: '' }));
       }
     },
-    [errors, passwordValidators]
+    [errors, passwordValidators, emailValidators]
   );
 
   const validateForm = useCallback(() => {
@@ -70,8 +90,16 @@ const RegisterPage = () => {
 
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    } else if (!emailValidation.allValid) {
       newErrors.email = 'Email is invalid';
+    }
+
+    const phoneNumber = formData.phone.replace('+63', '');
+    if (!phoneNumber) {
+      newErrors.phone = 'Phone number is required';
+    } else if (!/^9\d{9}$/.test(phoneNumber)) {
+      newErrors.phone =
+        'Invalid PH mobile number (should start with 9 and be 10 digits)';
     }
 
     if (!formData.password) {
@@ -88,7 +116,7 @@ const RegisterPage = () => {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [formData, passwordValidation]);
+  }, [formData, passwordValidation, emailValidation]);
 
   const onSubmitForm = useCallback(
     async e => {
@@ -97,34 +125,36 @@ const RegisterPage = () => {
 
       setIsSubmitting(true);
       try {
-        const response = await registerUser({
+        const response = await register({
           email: formData.email,
+          phone: formData.phone,
           password: formData.password,
         });
 
-        if (response.data.success) {
-          toast.success(
-            'Registered successfully. Please finish your account verifications.'
-          );
+        console.log(response);
 
-          // would redirect to patient dashboard
-          // setTimeout(() => {
-          //   navigate('/login');
-          // }, 2000);
+        if (response.success) {
+          toast.success(
+            response.message ||
+              'Registered successfully. Please finish your account verifications.'
+          );
         }
+        navigate('/patient/my-dashboard');
       } catch (error) {
         console.error('Registration error:', error);
         const errorMessage =
           error?.response?.data?.message ||
+          error?.message ||
           'Registration failed. Please try again.';
 
         toast.error(errorMessage);
         setErrors({ submit: errorMessage });
+        await new Promise(res => setTimeout(res, 1000));
       } finally {
         setIsSubmitting(false);
       }
     },
-    [formData, validateForm]
+    [formData, validateForm, register]
   );
 
   return (
@@ -157,46 +187,35 @@ const RegisterPage = () => {
             placeholder="you@example.com"
             required
             error={errors.email}
+            validationRules={emailValidators}
+            showValidation={true}
           />
 
-          <div className="space-y-2">
-            <Input
-              label="Password"
-              name="password"
-              type="password"
-              value={formData.password}
-              onChange={e => handleInputChange('password', e.target.value)}
-              placeholder="Enter password here"
-              required
-              error={errors.password}
-            />
+          <PhoneInput
+            label="Phone Number"
+            name="phone"
+            value={formData.phone}
+            onChange={e =>
+              handleInputChange('phone', e.target.fullValue || '+63')
+            }
+            placeholder="9XXXXXXXXX"
+            required
+            error={errors.phone}
+            countryCode="+63"
+          />
 
-            {formData.password && (
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-gray-700">
-                  Password must contain:
-                </p>
-                <div className="space-y-1">
-                  {passwordValidation.results.map((validator, index) => (
-                    <div key={index} className="flex items-center text-xs">
-                      <div
-                        className={`w-2 h-2 rounded-full mr-2 ${
-                          validator.isValid ? 'bg-green-500' : 'bg-gray-300'
-                        }`}
-                      />
-                      <span
-                        className={
-                          validator.isValid ? 'text-green-600' : 'text-gray-500'
-                        }
-                      >
-                        {validator.message}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          <Input
+            label="Password"
+            name="password"
+            type="password"
+            value={formData.password}
+            onChange={e => handleInputChange('password', e.target.value)}
+            placeholder="Enter password here"
+            required
+            error={errors.password}
+            validationRules={passwordValidators}
+            showValidation={true}
+          />
 
           <Input
             label="Confirm Password"
@@ -207,6 +226,8 @@ const RegisterPage = () => {
             placeholder="Confirm your password"
             required
             error={errors.confirmPassword}
+            matchValue={formData.password}
+            matchLabel="Password"
           />
 
           {errors.submit && (
