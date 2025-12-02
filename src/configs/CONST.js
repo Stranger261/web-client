@@ -7,8 +7,13 @@ export const GOOGLEMAPSURL = `https://google.com/maps/dir/?api=1&destination=${e
   LEAFLET.HOSPITALADDRESS
 )}`;
 
-export const AUTH_SERVICE_BASE_URL = 'http://localhost:56741/api/v1';
-export const PATIENT_SERVICE_BASE_URL = 'http://localhost:56742/api/v1';
+// export const AUTH_SERVICE_BASE_URL = 'http://localhost:56741/api/v1';
+// export const PATIENT_SERVICE_BASE_URL = 'http://localhost:56742/api/v1';
+
+export const AUTH_SERVICE_BASE_URL =
+  'https://auth.health-ease-hospital.com/api/v1';
+export const PATIENT_SERVICE_BASE_URL =
+  'https://auth.health-ease-hospital.com/api/v1';
 
 export const GENDERS = [
   { value: 'male', label: 'Male' },
