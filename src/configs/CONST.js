@@ -14,6 +14,8 @@ export const AUTH_SERVICE_BASE_URL =
   'https://auth.health-ease-hospital.com/api/v1';
 export const PATIENT_SERVICE_BASE_URL =
   'https://auth.health-ease-hospital.com/api/v1';
+export const APPOINTMENT_SERVICE_BASE_URL =
+  'https://auth.health-ease-hospital.com/api/v1';
 
 export const GENDERS = [
   { value: 'male', label: 'Male' },
