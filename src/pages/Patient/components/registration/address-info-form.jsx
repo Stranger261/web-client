@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Input } from '../../../components/ui/input';
-import { Button } from '../../../components/ui/button';
-import { Select } from '../../../components/ui/select';
-import { addressAPI } from '../../../services/addressApi';
+import { Input } from '../../../../components/ui/input';
+import { Button } from '../../../../components/ui/button';
+import { Select } from '../../../../components/ui/select';
+import { addressAPI } from '../../../../services/addressApi';
 
 export const AddressInfoForm = ({ data, onChange, onNext, onBack }) => {
   const [errors, setErrors] = useState({});

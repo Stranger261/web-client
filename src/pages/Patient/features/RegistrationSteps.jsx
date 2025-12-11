@@ -1,31 +1,40 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router';
 
 import { useAuth } from '../../../contexts/AuthContext';
 
 import OTPVerification from '../../../components/Forms/OTPVerification';
-import { useNavigate } from 'react-router';
-import ProfileCompletionForm from '../components/ProfileCompletionForm';
+import ProfileCompletionForm from '../components/registration/ProfileCompletionForm';
 import FaceCapture from '../../../components/Scanner/FaceCapture';
+import LoadingOverlay from '../../../components/shared/LoadingOverlay';
 
-const RegistrationSteps = ({ currentUser }) => {
-  const { logout, resendOTP, verifyOTP } = useAuth();
-  const [currentStep, setCurrentStep] = useState(
-    currentUser?.registration_status || 'email_verification'
-  );
+const RegistrationSteps = () => {
+  // Get currentUser directly from context, not as a prop
+  const { currentUser, logout, resendOTP, verifyOTP, isLoading } = useAuth();
   const navigate = useNavigate();
+
+  // Derive current step from currentUser
+  const currentStep = currentUser?.registration_status || 'email_verification';
 
   const handleEmailVerificationSuccess = data => {
     console.log('Email verified:', data);
-    setCurrentStep('personal_info_verification');
   };
 
   useEffect(() => {
     if (currentUser?.registration_status === 'completed') {
       navigate('/patient/my-dashboard', { replace: true });
-    } else {
-      setCurrentStep(currentUser?.registration_status);
     }
   }, [currentUser?.registration_status, navigate]);
+
+  // Show loading only when actively loading
+  if (isLoading) {
+    return <LoadingOverlay showLogo={true} message="Loading..." />;
+  }
+
+  // Show loading if no user data yet
+  if (!currentUser) {
+    return <LoadingOverlay showLogo={true} message="Loading user data..." />;
+  }
 
   const renderStep = () => {
     switch (currentStep) {
@@ -68,6 +77,7 @@ const RegistrationSteps = ({ currentUser }) => {
         );
     }
   };
+
   return <div className="py-8">{renderStep()}</div>;
 };
 

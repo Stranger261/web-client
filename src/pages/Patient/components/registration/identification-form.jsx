@@ -7,11 +7,11 @@ import {
   EyeOff,
   Loader2,
 } from 'lucide-react';
-import { useAuth } from '../../../contexts/AuthContext';
+import { useAuth } from '../../../../contexts/AuthContext';
 
-import { Input } from '../../../components/ui/input';
-import { Button } from '../../../components/ui/button';
-import { Select } from '../../../components/ui/select';
+import { Input } from '../../../../components/ui/input';
+import { Button } from '../../../../components/ui/button';
+import { Select } from '../../../../components/ui/select';
 
 const ID_TYPES = [
   { value: 'passport', label: 'Passport' },

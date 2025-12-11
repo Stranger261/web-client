@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAuth } from '../../../contexts/AuthContext';
+import { useAuth } from '../../../../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 import { PersonalInfoForm } from './personal-info-form';
 import { AddressInfoForm } from './address-info-form';

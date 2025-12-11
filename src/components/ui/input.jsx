@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Eye, EyeOff, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { COLORS } from '../../configs/CONST';
 
 export const Input = ({
   label,
@@ -15,12 +16,13 @@ export const Input = ({
   validationRules = [],
   showValidation = false,
   className = '',
-  matchValue, // For confirm password matching
-  matchLabel = 'Password', // Label for what we're matching
+  matchValue,
+  matchLabel = 'Password',
   ...props
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isTouched, setIsTouched] = useState(false);
+  const isDarkMode = document.documentElement.classList.contains('dark');
 
   const isPassword = type === 'password';
   const isEmailField = type === 'email';
@@ -28,7 +30,6 @@ export const Input = ({
     isEmailField && value && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
   const showEmailValidation = isEmailField && isTouched && value && !error;
 
-  // Calculate validation results on the fly
   const getValidationResults = () => {
     if (!value || validationRules.length === 0) {
       return { results: [], allValid: false };
@@ -43,7 +44,6 @@ export const Input = ({
     return { results, allValid };
   };
 
-  // Check if passwords match (for confirm password field)
   const passwordsMatch = matchValue !== undefined ? value === matchValue : true;
   const showMatchError =
     matchValue !== undefined && isTouched && value && !passwordsMatch;
@@ -63,21 +63,81 @@ export const Input = ({
     setIsTouched(true);
   };
 
+  // Determine input border color
+  const getBorderColor = () => {
+    if (error || showMatchError) {
+      return COLORS.danger;
+    }
+    if (
+      (allValid && shouldShowValidation && passwordsMatch) ||
+      (emailIsValid && showEmailValidation)
+    ) {
+      return COLORS.success;
+    }
+    return isDarkMode ? COLORS.input.borderDark : COLORS.input.border;
+  };
+
+  // Determine focus ring color
+  const getFocusRingColor = () => {
+    if (error || showMatchError) return COLORS.danger;
+    if (
+      (allValid && shouldShowValidation && passwordsMatch) ||
+      (emailIsValid && showEmailValidation)
+    ) {
+      return COLORS.success;
+    }
+    return COLORS.input.focus;
+  };
+
+  const inputStyles = {
+    width: '100%',
+    borderRadius: '0.5rem',
+    borderWidth: '1px',
+    borderColor: getBorderColor(),
+    backgroundColor: props.disabled
+      ? isDarkMode
+        ? COLORS.surface.darkHover
+        : COLORS.input.background
+      : isDarkMode
+      ? COLORS.input.backgroundDark
+      : COLORS.surface.light,
+    color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
+    padding: '0.75rem',
+    paddingLeft: Icon ? '2.5rem' : '1rem',
+    paddingRight:
+      isPassword ||
+      (allValid && shouldShowValidation && passwordsMatch) ||
+      (emailIsValid && showEmailValidation)
+        ? '2.5rem'
+        : '1rem',
+    fontSize: '0.875rem',
+    transition: 'border-color 0.2s, box-shadow 0.2s',
+    cursor: props.disabled ? 'not-allowed' : 'text',
+  };
+
+  const labelStyles = {
+    display: 'block',
+    fontSize: '0.875rem',
+    fontWeight: '500',
+    color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
+    marginBottom: '0.5rem',
+  };
+
   return (
     <div className={`space-y-2 ${className}`}>
       {label && (
-        <label
-          htmlFor={name}
-          className="block text-sm font-medium text-gray-700"
-        >
-          {label} {required && <span className="text-red-500">*</span>}
+        <label htmlFor={name} style={labelStyles}>
+          {label} {required && <span style={{ color: COLORS.danger }}>*</span>}
         </label>
       )}
 
       <div className="relative">
         {Icon && (
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Icon className="h-5 w-5 text-gray-400" />
+            <Icon
+              className="h-5 w-5"
+              style={{ color: COLORS.text.secondary }}
+            />
           </div>
         )}
 
@@ -87,30 +147,19 @@ export const Input = ({
           type={isPassword ? (showPassword ? 'text' : 'password') : type}
           value={value}
           onChange={handleChange}
-          onBlur={handleBlur}
           placeholder={placeholder}
           required={required}
-          className={`
-            block w-full rounded-lg border shadow-sm focus:ring-2 focus:ring-offset-1 transition-colors
-            ${Icon ? 'pl-10' : 'pl-4'}
-            ${isPassword ? 'pr-10' : 'pr-4'}
-            ${
-              (allValid && shouldShowValidation && passwordsMatch) ||
-              (emailIsValid && showEmailValidation)
-                ? 'pr-10'
-                : ''
-            }
-            py-3 text-sm
-            ${
-              error || showMatchError
-                ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                : (allValid && shouldShowValidation && passwordsMatch) ||
-                  (emailIsValid && showEmailValidation)
-                ? 'border-green-300 focus:border-green-500 focus:ring-green-500'
-                : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
-            }
-            ${props.disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}
-          `}
+          style={inputStyles}
+          onFocus={e => {
+            e.target.style.outline = 'none';
+            e.target.style.boxShadow = `0 0 0 3px ${getFocusRingColor()}20`;
+            e.target.style.borderColor = getFocusRingColor();
+          }}
+          onBlur={e => {
+            handleBlur();
+            e.target.style.boxShadow = 'none';
+            e.target.style.borderColor = getBorderColor();
+          }}
           {...props}
         />
 
@@ -119,7 +168,10 @@ export const Input = ({
           (emailIsValid && showEmailValidation)) &&
           !isPassword && (
             <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-              <CheckCircle className="h-5 w-5 text-green-500" />
+              <CheckCircle
+                className="h-5 w-5"
+                style={{ color: COLORS.success }}
+              />
             </div>
           )}
 
@@ -131,19 +183,30 @@ export const Input = ({
             tabIndex={-1}
           >
             {showPassword ? (
-              <EyeOff className="h-5 w-5 text-gray-400" />
+              <EyeOff
+                className="h-5 w-5"
+                style={{ color: COLORS.text.secondary }}
+              />
             ) : (
-              <Eye className="h-5 w-5 text-gray-400" />
+              <Eye
+                className="h-5 w-5"
+                style={{ color: COLORS.text.secondary }}
+              />
             )}
           </button>
         )}
       </div>
 
-      {/* Password Match Error (for confirm password) */}
+      {/* Password Match Error */}
       {showMatchError && (
         <div className="flex items-center space-x-2">
-          <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-          <p className="text-sm text-red-600">{matchLabel}s do not match</p>
+          <XCircle
+            className="w-4 h-4 flex-shrink-0"
+            style={{ color: COLORS.danger }}
+          />
+          <p className="text-sm" style={{ color: COLORS.danger }}>
+            {matchLabel}s do not match
+          </p>
         </div>
       )}
 
@@ -155,14 +218,21 @@ export const Input = ({
             {validationResults.map((rule, index) => (
               <div key={index} className="flex items-center space-x-2">
                 {rule.isValid ? (
-                  <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                  <CheckCircle
+                    className="w-4 h-4 flex-shrink-0"
+                    style={{ color: COLORS.success }}
+                  />
                 ) : (
-                  <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                  <XCircle
+                    className="w-4 h-4 flex-shrink-0"
+                    style={{ color: COLORS.danger }}
+                  />
                 )}
                 <span
-                  className={`text-xs ${
-                    rule.isValid ? 'text-green-600' : 'text-red-600'
-                  }`}
+                  className="text-xs"
+                  style={{
+                    color: rule.isValid ? COLORS.success : COLORS.danger,
+                  }}
                 >
                   {rule.message}
                 </span>
@@ -174,14 +244,21 @@ export const Input = ({
       {/* Error Message */}
       {error && !showMatchError && (
         <div className="flex items-center space-x-2">
-          <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-          <p className="text-sm text-red-600">{error}</p>
+          <AlertCircle
+            className="w-4 h-4 flex-shrink-0"
+            style={{ color: COLORS.danger }}
+          />
+          <p className="text-sm" style={{ color: COLORS.danger }}>
+            {error}
+          </p>
         </div>
       )}
 
       {/* Helper Text */}
       {helperText && !error && !shouldShowValidation && !showMatchError && (
-        <p className="text-sm text-gray-500">{helperText}</p>
+        <p className="text-sm" style={{ color: COLORS.text.secondary }}>
+          {helperText}
+        </p>
       )}
     </div>
   );

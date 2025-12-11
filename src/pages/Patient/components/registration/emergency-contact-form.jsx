@@ -1,10 +1,10 @@
 import { useState } from 'react';
 
-import { Input } from '../../../components/ui/input';
-import { Button } from '../../../components/ui/button';
-import { Select } from '../../../components/ui/select';
+import { Input } from '../../../../components/ui/input';
+import { Button } from '../../../../components/ui/button';
+import { Select } from '../../../../components/ui/select';
 
-import { PhoneInput } from '../../../components/ui/PhoneInput';
+import { PhoneInput } from '../../../../components/ui/PhoneInput';
 
 const RELATIONSHIPS = [
   { value: 'spouse', label: 'Spouse' },

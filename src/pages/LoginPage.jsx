@@ -51,11 +51,15 @@ const LoginPage = () => {
       console.log(response);
       // const [apiCallRes, ]
       toast.success(response?.message || 'Login successfully.');
-      navigate(
-        `/${response.data.user.role}/${
-          response.data.user.role === 'patient' ? 'my-' : ''
-        }dashboard`
-      );
+      if (response.data.user.registration_status === 'completed') {
+        navigate(
+          `/${response.data.user.role}/${
+            response.data.user.role === 'patient' ? 'my-' : ''
+          }dashboard`
+        );
+      } else {
+        navigate('/patient/complete-registration');
+      }
     } catch (error) {
       await new Promise(res => setTimeout(res, 1000));
       const errorMessage =

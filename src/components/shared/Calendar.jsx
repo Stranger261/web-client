@@ -12,7 +12,7 @@ import {
   addDays,
   isAfter,
 } from 'date-fns';
-import { useSchedule } from '../../context/ScheduleContext';
+import { useSchedule } from '../../contexts/ScheduleContext';
 
 const Calendar = ({ selectedDate, handleDateClick }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -35,28 +35,47 @@ const Calendar = ({ selectedDate, handleDateClick }) => {
     changeMonth(format(newMonthDate, 'yyyy-MM'));
   };
 
-  // --- NEW, SMARTER LOGIC for calculating combined daily availability ---
   const dailyAvailability = useMemo(() => {
     const availabilityMap = new Map();
-    const scheduleSource = doctorSchedule || combinedSchedule;
 
-    if (scheduleSource) {
-      const schedules = Array.isArray(scheduleSource)
-        ? scheduleSource
-        : [scheduleSource];
+    if (doctorSchedule?.availableSlots) {
+      doctorSchedule.availableSlots.forEach(slot => {
+        const dateKey = slot.date;
 
-      schedules.forEach(sched => {
-        sched?.dailySchedules?.forEach(day => {
-          const dateKey = format(new Date(day.date), 'yyyy-MM-dd');
+        if (!availabilityMap.has(dateKey)) {
+          availabilityMap.set(dateKey, {
+            hasAvailableSlots: false,
+            slots: [],
+          });
+        }
 
-          if (!availabilityMap.has(dateKey)) {
-            availabilityMap.set(dateKey, { hasAvailableSlots: false });
-          }
+        availabilityMap.get(dateKey).hasAvailableSlots = true;
+        availabilityMap.get(dateKey).slots.push(slot);
+      });
+    }
 
-          if (!day.isOnLeave && day.timeSlots.some(slot => !slot.isBooked)) {
+    if (Array.isArray(combinedSchedule) && combinedSchedule.length > 0) {
+      combinedSchedule.forEach(schedule => {
+        if (
+          schedule?.availableSlots &&
+          Array.isArray(schedule.availableSlots)
+        ) {
+          schedule.availableSlots.forEach(slot => {
+            const dateKey = slot.date;
+
+            if (!availabilityMap.has(dateKey)) {
+              availabilityMap.set(dateKey, {
+                hasAvailableSlots: false,
+                slots: [],
+              });
+            }
+
             availabilityMap.get(dateKey).hasAvailableSlots = true;
-          }
-        });
+            availabilityMap
+              .get(dateKey)
+              .slots.push({ ...slot, doctor: schedule.doctor });
+          });
+        }
       });
     }
     return availabilityMap;
@@ -67,19 +86,19 @@ const Calendar = ({ selectedDate, handleDateClick }) => {
       <button
         onClick={prevMonth}
         disabled={isSameMonth(currentMonth, today)}
-        className="text-sm text-white bg-blue-600 px-3 py-2 rounded-md hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="text-sm text-white bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
       >
-        &larr; Prev
+        ← Prev
       </button>
-      <h2 className="text-lg font-bold text-gray-700">
+      <h2 className="text-lg font-bold text-gray-800">
         {format(currentMonth, 'MMMM yyyy')}
       </h2>
       <button
         onClick={nextMonth}
         disabled={isSameMonth(currentMonth, startOfMonth(maxDate))}
-        className="text-sm text-white bg-blue-600 px-3 py-2 rounded-md hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="text-sm text-white bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
       >
-        Next &rarr;
+        Next →
       </button>
     </div>
   );
@@ -87,9 +106,11 @@ const Calendar = ({ selectedDate, handleDateClick }) => {
   const renderDaysOfWeek = () => {
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     return (
-      <div className="grid grid-cols-7 text-center text-sm font-medium text-gray-500">
+      <div className="grid grid-cols-7 text-center text-xs font-semibold text-gray-600 mb-2">
         {days.map(day => (
-          <div key={day}>{day}</div>
+          <div key={day} className="py-2">
+            {day}
+          </div>
         ))}
       </div>
     );
@@ -112,33 +133,46 @@ const Calendar = ({ selectedDate, handleDateClick }) => {
         const isTooFar = isAfter(cloneDay, maxDate);
         const isOutsideMonth = !isSameMonth(cloneDay, monthStart);
 
-        const isUnavailable = !dayAvailability?.hasAvailableSlots;
+        const hasAvailableSlots = dayAvailability?.hasAvailableSlots || false;
+        const slotCount = dayAvailability?.slots?.length || 0;
 
         const isDisabled = isOutsideMonth || isPast || isTooFar;
         const isSelected = selectedDate && isSameDay(cloneDay, selectedDate);
-        const isClickable = !isDisabled && !isUnavailable;
+        const isClickable = !isDisabled && hasAvailableSlots;
 
         days.push(
           <div
             key={day.toString()}
             onClick={() => isClickable && handleDateClick(cloneDay)}
-            className={`text-center text-sm py-2 border rounded-md transition-colors ${
+            className={`relative text-center text-sm py-4 px-2 border-2 rounded-lg transition-all flex flex-col items-center justify-center cursor-pointer ${
               isDisabled
-                ? 'text-gray-300 cursor-not-allowed'
-                : !isClickable
-                ? 'bg-red-200 text-red-500 cursor-not-allowed'
+                ? 'text-gray-300 bg-gray-50 cursor-not-allowed border-gray-200'
+                : !hasAvailableSlots
+                ? 'bg-red-50 text-red-500 cursor-not-allowed border-red-300'
                 : isSelected
-                ? 'bg-blue-600 text-white font-bold'
-                : 'hover:bg-blue-50 cursor-pointer'
+                ? 'bg-blue-600 text-white font-bold shadow-md border-blue-700'
+                : 'bg-white hover:bg-blue-50 border-gray-300 hover:border-blue-500 hover:shadow-sm'
             }`}
           >
-            {format(day, 'd')}
+            <div className="font-semibold text-lg">{format(day, 'd')}</div>
+
+            {!isDisabled && hasAvailableSlots && !isSelected && (
+              <div className="text-[10px] text-green-600 font-semibold mt-1">
+                {slotCount} slot{slotCount !== 1 ? 's' : ''}
+              </div>
+            )}
+
+            {!isDisabled && !hasAvailableSlots && !isOutsideMonth && (
+              <div className="text-[10px] text-red-600 font-semibold mt-1">
+                Full
+              </div>
+            )}
           </div>
         );
         day = addDays(day, 1);
       }
       rows.push(
-        <div className="grid grid-cols-7 gap-2 mb-1" key={day.toString()}>
+        <div className="grid grid-cols-7 gap-2 mb-2" key={day.toString()}>
           {days}
         </div>
       );
@@ -147,10 +181,30 @@ const Calendar = ({ selectedDate, handleDateClick }) => {
   };
 
   return (
-    <div className="bg-gray-50 p-6 rounded-xl shadow-lg">
+    <div className="bg-white p-5 rounded-lg shadow border border-gray-200">
       {renderHeader()}
       {renderDaysOfWeek()}
       {renderCells()}
+
+      {/* Legend */}
+      <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-2 gap-3 text-xs">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-white border-2 border-gray-300 rounded"></div>
+          <span className="text-gray-700">Available</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-red-50 border-2 border-red-300 rounded"></div>
+          <span className="text-gray-700">Full</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-blue-600 rounded"></div>
+          <span className="text-gray-700">Selected</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-gray-50 border-2 border-gray-200 rounded"></div>
+          <span className="text-gray-700">Unavailable</span>
+        </div>
+      </div>
     </div>
   );
 };

@@ -139,7 +139,7 @@ const RegisterPage = () => {
               'Registered successfully. Please finish your account verifications.'
           );
         }
-        navigate('/patient/my-dashboard');
+        navigate('/patient/complete-registration');
       } catch (error) {
         console.error('Registration error:', error);
         const errorMessage =

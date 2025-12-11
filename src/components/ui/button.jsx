@@ -1,4 +1,5 @@
 import { Loader2 } from 'lucide-react';
+import { COLORS } from '../../configs/CONST';
 
 export const Button = ({
   children,
@@ -7,38 +8,141 @@ export const Button = ({
   loading = false,
   disabled = false,
   icon: Icon,
+  iconOnly = false,
+  className = '',
+  onClick,
   ...props
 }) => {
+  const isDarkMode = document.documentElement.classList.contains('dark');
+
   const baseClasses =
     'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
 
-  const variants = {
-    primary:
-      'bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500 shadow-sm',
-    secondary:
-      'bg-gray-600 hover:bg-gray-700 text-white focus:ring-gray-500 shadow-sm',
-    outline:
-      'border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 focus:ring-blue-500',
-    ghost: 'hover:bg-gray-100 text-gray-700 focus:ring-blue-500',
+  const sizes = {
+    sm: iconOnly ? 'p-1.5' : 'px-3 py-2 text-sm',
+    md: iconOnly ? 'p-2' : 'px-4 py-3 text-sm',
+    lg: iconOnly ? 'p-2.5' : 'px-6 py-3 text-base',
   };
 
-  const sizes = {
-    sm: 'px-3 py-2 text-sm',
-    md: 'px-4 py-3 text-sm',
-    lg: 'px-6 py-3 text-base',
+  const iconSizes = {
+    sm: 'w-4 h-4',
+    md: 'w-5 h-5',
+    lg: 'w-6 h-6',
   };
+
+  const getButtonStyles = variant => {
+    const buttonColors = COLORS.button[variant];
+
+    if (!buttonColors) return { normal: {}, hover: {} };
+
+    // DELETE - Always visible background
+    if (variant === 'delete') {
+      return {
+        normal: {
+          backgroundColor: iconOnly
+            ? 'rgba(239, 68, 68, 0.1)'
+            : buttonColors.bg, // light red bg
+          color: buttonColors.bg, // red icon
+        },
+        hover: {
+          backgroundColor: buttonColors.bg, // solid red
+          color: '#ffffff', // white icon
+        },
+      };
+    }
+
+    // EDIT, VIEW - Transparent with colored icon
+    if (iconOnly && ['view', 'edit'].includes(variant)) {
+      return {
+        normal: {
+          backgroundColor: 'transparent',
+          color: buttonColors.icon || buttonColors.bg,
+        },
+        hover: {
+          backgroundColor: `${buttonColors.bg}15`, // 15 = 8% opacity in hex
+          color: buttonColors.bg,
+        },
+      };
+    }
+
+    // GHOST variant
+    if (variant === 'ghost') {
+      return {
+        normal: {
+          backgroundColor: 'transparent',
+          color: isDarkMode ? buttonColors.textDark : buttonColors.text,
+        },
+        hover: {
+          backgroundColor: isDarkMode
+            ? buttonColors.bgHoverDark
+            : buttonColors.bgHover,
+          color: isDarkMode ? buttonColors.textDark : buttonColors.text,
+        },
+      };
+    }
+
+    // OUTLINE variant
+    if (variant === 'outline') {
+      return {
+        normal: {
+          backgroundColor: buttonColors.bg,
+          color: isDarkMode ? buttonColors.textDark : buttonColors.text,
+          border: `1px solid ${
+            isDarkMode ? buttonColors.borderDark : buttonColors.border
+          }`,
+        },
+        hover: {
+          backgroundColor: isDarkMode
+            ? buttonColors.bgHoverDark
+            : buttonColors.bgHover,
+          color: isDarkMode ? buttonColors.textDark : buttonColors.text,
+          border: `1px solid ${
+            isDarkMode ? buttonColors.borderDark : buttonColors.border
+          }`,
+        },
+      };
+    }
+
+    // SOLID variants (create, primary, secondary, etc.)
+    return {
+      normal: {
+        backgroundColor: buttonColors.bg,
+        color: buttonColors.text,
+      },
+      hover: {
+        backgroundColor: buttonColors.bgHover,
+        color: buttonColors.text,
+      },
+    };
+  };
+
+  const styles = getButtonStyles(variant);
 
   return (
     <button
       {...props}
       disabled={disabled || loading}
-      className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${
-        props.className || ''
-      }`}
+      className={`${baseClasses} ${sizes[size]} group ${className}`}
+      style={styles.normal}
+      onMouseEnter={e => {
+        Object.assign(e.currentTarget.style, styles.hover);
+      }}
+      onMouseLeave={e => {
+        Object.assign(e.currentTarget.style, styles.normal);
+      }}
+      onClick={onClick}
     >
-      {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-      {Icon && !loading && <Icon className="w-4 h-4 mr-2" />}
-      {children}
+      {loading && (
+        <Loader2
+          className={`${iconSizes[size]} ${!iconOnly && 'mr-2'} animate-spin`}
+        />
+      )}
+      {Icon && !loading && (
+        <Icon
+          className={`${iconSizes[size]} ${!iconOnly && children && 'mr-2'}`}
+        />
+      )}
+      {!iconOnly && children}
     </button>
   );
 };

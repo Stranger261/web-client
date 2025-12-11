@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { AUTH_SERVICE_BASE_URL } from '../configs/CONST';
+import { AUTH_SERVICE_BASE_URL, INTERNAL_API_KEY } from '../configs/CONST';
 
 class faceService {
   constructor() {
@@ -7,7 +7,7 @@ class faceService {
       baseURL: AUTH_SERVICE_BASE_URL,
       withCredentials: true,
       headers: {
-        'x-internal-api-key': 'core-1-secret-key',
+        'x-internal-api-key': INTERNAL_API_KEY,
       },
     });
   }

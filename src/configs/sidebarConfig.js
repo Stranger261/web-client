@@ -98,17 +98,18 @@ export const sidebarConfig = {
       path: '/patient/my-dashboard',
       icon: LayoutDashboardIcon,
     },
-    { name: 'My Details', path: '/patient/my-details', icon: User },
     {
       name: 'Appointments',
-      path: '/patient/create-appointments',
+      path: '/patient/my-appointments',
       icon: Calendar,
     },
     {
       name: 'Medical History',
       path: '/patient/my-medical-history',
       icon: FileTextIcon,
-    }, // NEW
+    },
+    { name: 'My Details', path: '/patient/my-details', icon: User },
+    // NEW
     // {
     //   name: 'Billing History',
     //   path: '/patient/billing-history',

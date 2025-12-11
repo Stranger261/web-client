@@ -1,7 +1,7 @@
-// src/components/ui/link.jsx
 import React from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { ArrowRight, ExternalLink, ArrowDown } from 'lucide-react';
+import { COLORS } from '../../configs/CONST';
 
 export const DynamicLink = ({
   children,
@@ -18,19 +18,10 @@ export const DynamicLink = ({
   ...props
 }) => {
   const navigate = useNavigate();
+  const isDarkMode = document.documentElement.classList.contains('dark');
+
   const baseClasses =
     'inline-flex items-center font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 cursor-pointer';
-
-  const variants = {
-    primary:
-      'bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500 shadow-sm rounded-lg',
-    secondary:
-      'bg-gray-600 hover:bg-gray-700 text-white focus:ring-gray-500 shadow-sm rounded-lg',
-    outline:
-      'border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 focus:ring-blue-500 rounded-lg',
-    ghost: 'hover:bg-gray-100 text-gray-700 focus:ring-blue-500 rounded-lg',
-    text: 'text-blue-600 hover:text-blue-800 focus:ring-blue-500 underline-offset-4 hover:underline',
-  };
 
   const sizes = {
     sm: 'px-3 py-1.5 text-sm gap-1.5',
@@ -45,13 +36,88 @@ export const DynamicLink = ({
   };
 
   const sizeClasses = variant === 'text' ? textSizes[size] : sizes[size];
-  const finalClassName = `${baseClasses} ${variants[variant]} ${sizeClasses} ${className}`;
+
+  // Get variant styles
+  const getVariantStyles = variant => {
+    const variants = {
+      primary: {
+        backgroundColor: COLORS.button.primary.bg,
+        color: COLORS.button.primary.text,
+        borderRadius: '0.5rem',
+        boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+      },
+      secondary: {
+        backgroundColor: COLORS.button.secondary.bg,
+        color: COLORS.button.secondary.text,
+        borderRadius: '0.5rem',
+        boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+      },
+      outline: {
+        backgroundColor: isDarkMode
+          ? COLORS.button.outline.bgDark
+          : COLORS.button.outline.bg,
+        color: isDarkMode
+          ? COLORS.button.outline.textDark
+          : COLORS.button.outline.text,
+        border: `1px solid ${
+          isDarkMode
+            ? COLORS.button.outline.borderDark
+            : COLORS.button.outline.border
+        }`,
+        borderRadius: '0.5rem',
+      },
+      ghost: {
+        backgroundColor: 'transparent',
+        color: isDarkMode
+          ? COLORS.button.ghost.textDark
+          : COLORS.button.ghost.text,
+        borderRadius: '0.5rem',
+      },
+      text: {
+        backgroundColor: 'transparent',
+        color: COLORS.info,
+        textDecorationLine: 'none',
+        textUnderlineOffset: '4px',
+      },
+    };
+
+    return variants[variant] || variants.text;
+  };
+
+  const getHoverStyles = variant => {
+    const hoverVariants = {
+      primary: {
+        backgroundColor: COLORS.button.primary.bgHover,
+      },
+      secondary: {
+        backgroundColor: COLORS.button.secondary.bgHover,
+      },
+      outline: {
+        backgroundColor: isDarkMode
+          ? COLORS.button.outline.bgHoverDark
+          : COLORS.button.outline.bgHover,
+      },
+      ghost: {
+        backgroundColor: isDarkMode
+          ? COLORS.button.ghost.bgHoverDark
+          : COLORS.button.ghost.bgHover,
+      },
+      text: {
+        textDecorationLine: 'underline',
+        color: isDarkMode ? COLORS.info : '#1d4ed8', // Darker blue on hover
+      },
+    };
+
+    return hoverVariants[variant] || {};
+  };
+
+  const linkStyles = getVariantStyles(variant);
+  const hoverStyles = getHoverStyles(variant);
 
   // Smart link detection
   const detectLinkType = url => {
     if (!url) return 'button';
 
-    // External URLs
     if (
       url.startsWith('http') ||
       url.startsWith('//') ||
@@ -63,7 +129,6 @@ export const DynamicLink = ({
       return 'external';
     }
 
-    // File downloads
     if (
       url.startsWith('/downloads/') ||
       url.match(/\.(pdf|doc|docx|xls|xlsx|zip|rar)$/i)
@@ -71,7 +136,6 @@ export const DynamicLink = ({
       return 'download';
     }
 
-    // Internal links (React Router)
     return 'internal';
   };
 
@@ -95,12 +159,17 @@ export const DynamicLink = ({
       onClick(e);
     }
 
-    // Only handle special cases for non-RouterLink scenarios
     if (href && linkType === 'internal' && !e.defaultPrevented) {
-      // For href-based internal links, prevent default and use navigate
       e.preventDefault();
       navigate(href);
     }
+  };
+
+  const commonProps = {
+    className: `${baseClasses} ${sizeClasses} ${className}`,
+    style: linkStyles,
+    onMouseEnter: e => Object.assign(e.currentTarget.style, hoverStyles),
+    onMouseLeave: e => Object.assign(e.currentTarget.style, linkStyles),
   };
 
   // Render appropriate element based on link type
@@ -109,10 +178,10 @@ export const DynamicLink = ({
       return (
         <a
           href={url}
-          className={finalClassName}
           target={isExternal ? '_blank' : '_self'}
           rel={isExternal ? 'noopener noreferrer' : undefined}
           onClick={handleClick}
+          {...commonProps}
           {...props}
         >
           {content}
@@ -123,9 +192,9 @@ export const DynamicLink = ({
       return (
         <a
           href={url}
-          className={finalClassName}
           download={isDownload}
           onClick={handleClick}
+          {...commonProps}
           {...props}
         >
           {content}
@@ -133,39 +202,22 @@ export const DynamicLink = ({
       );
 
     case 'internal':
-      // Use RouterLink for internal navigation with 'to' prop
       if (to) {
         return (
-          <RouterLink
-            to={to}
-            className={finalClassName}
-            onClick={onClick} // Just pass through onClick for RouterLink
-            {...props}
-          >
+          <RouterLink to={to} onClick={onClick} {...commonProps} {...props}>
             {content}
           </RouterLink>
         );
       }
-      // Use regular anchor with navigate for href-based internal links
       return (
-        <a
-          href={href}
-          className={finalClassName}
-          onClick={handleClick}
-          {...props}
-        >
+        <a href={href} onClick={handleClick} {...commonProps} {...props}>
           {content}
         </a>
       );
 
     default:
       return (
-        <button
-          type="button" // Always specify type for buttons
-          className={finalClassName}
-          onClick={handleClick}
-          {...props}
-        >
+        <button type="button" onClick={handleClick} {...commonProps} {...props}>
           {content}
         </button>
       );

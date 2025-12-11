@@ -59,6 +59,7 @@ export const AuthProvider = ({ children }) => {
     try {
       setIsLoading(true);
       const user = await authApi.login(email, password);
+      console.log(user);
 
       setCurrentUser(user.data.user);
       setToken(user.data.token || true);
@@ -160,6 +161,7 @@ export const AuthProvider = ({ children }) => {
     currentUser,
     token,
     isLoading,
+    fetchCurrentUser,
     login,
     register,
     resendOTP,

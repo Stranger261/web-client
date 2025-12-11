@@ -1,0 +1,99 @@
+import axios from 'axios';
+import {
+  APPOINTMENT_SERVICE_BASE_URL,
+  INTERNAL_API_KEY,
+} from '../configs/CONST';
+
+class ScheduleService {
+  constructor() {
+    this.scheduleApi = axios.create({
+      baseURL: `${APPOINTMENT_SERVICE_BASE_URL}/doctors`,
+      withCredentials: true,
+      headers: {
+        'x-internal-api-key': INTERNAL_API_KEY,
+      },
+    });
+  }
+
+  async getDepartments() {
+    try {
+      const departments = await this.scheduleApi.get('/departments');
+      return departments.data;
+    } catch (error) {
+      console.log('Appointment Service error', error);
+      throw error;
+    }
+  }
+
+  async getAllDoctors() {
+    try {
+      const allDoctors = await this.scheduleApi.get('/doctors');
+      return allDoctors.data;
+    } catch (error) {
+      console.log('All doctors error: ', error);
+      throw error;
+    }
+  }
+
+  async getDoctorsByDept(departmentId, patientUuid = null) {
+    try {
+      const params = patientUuid ? { patientUuid } : {};
+      const doctorsByDept = await this.scheduleApi.get(
+        `/departments/${departmentId}/doctors`,
+        { params }
+      );
+
+      return doctorsByDept.data;
+    } catch (error) {
+      console.log('get doctor dept error: ', error);
+      throw error;
+    }
+  }
+
+  async getDoctorsAvailability(doctorUuid, startDate, endDate) {
+    try {
+      const doctorsAvailability = await this.scheduleApi.get(
+        `/doctors/${doctorUuid}/availability`,
+        { params: { startDate, endDate } }
+      );
+
+      return doctorsAvailability.data;
+    } catch (error) {
+      console.log('doctors availability error: ', error);
+      throw error;
+    }
+  }
+
+  async getCombinedSchedule(departmentId, startDate, endDate) {
+    try {
+      const combinedSchedule = await this.scheduleApi.get(
+        `/departments/${departmentId}/availability`,
+        {
+          params: { startDate, endDate },
+        }
+      );
+
+      return combinedSchedule.data;
+    } catch (error) {
+      console.log('Combined sched error: ', error);
+      throw error;
+    }
+  }
+
+  async getDoctorAppointments(doctorUuid, filters = {}) {
+    try {
+      const doctorAppointments = await this.scheduleApi.get(
+        `/doctors${doctorUuid}/appointments`,
+        filters
+      );
+      console.log(doctorAppointments);
+
+      return doctorAppointments.data;
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
+}
+
+export default new ScheduleService();

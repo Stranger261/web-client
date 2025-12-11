@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CheckCircle, XCircle, Phone } from 'lucide-react';
+import { COLORS } from '../../configs/CONST';
 
 export const PhoneInput = ({
   label,
@@ -14,6 +15,7 @@ export const PhoneInput = ({
   ...props
 }) => {
   const [isTouched, setIsTouched] = useState(false);
+  const isDarkMode = document.documentElement.classList.contains('dark');
 
   const phoneNumber = value.replace(countryCode, '');
   const isValidFormat = /^9\d{9}$/.test(phoneNumber);
@@ -64,20 +66,88 @@ export const PhoneInput = ({
   const validation = getValidationMessage();
   const showValidation = isTouched && hasValue && !error;
 
+  // Determine border color
+  const getBorderColor = () => {
+    if (error) return COLORS.danger;
+    if (validation?.isValid) return COLORS.success;
+    if (hasValue && isTouched && !validation?.isValid) return COLORS.danger;
+    return isDarkMode ? COLORS.input.borderDark : COLORS.input.border;
+  };
+
+  // Determine focus ring color
+  const getFocusRingColor = () => {
+    if (error || (hasValue && isTouched && !validation?.isValid))
+      return COLORS.danger;
+    if (validation?.isValid) return COLORS.success;
+    return COLORS.input.focus;
+  };
+
+  const labelStyles = {
+    display: 'block',
+    fontSize: '0.875rem',
+    fontWeight: '500',
+    color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
+    marginBottom: '0.5rem',
+  };
+
+  const borderColor = getBorderColor();
+
+  // Fixed: Use individual border properties instead of mixing shorthand
+  const countryCodeStyles = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '0.75rem 1rem',
+    borderTopLeftRadius: '0.5rem',
+    borderBottomLeftRadius: '0.5rem',
+    borderTop: `1px solid ${borderColor}`,
+    borderBottom: `1px solid ${borderColor}`,
+    borderLeft: `1px solid ${borderColor}`,
+    borderRight: 'none',
+    backgroundColor: isDarkMode
+      ? COLORS.surface.darkHover
+      : COLORS.input.background,
+    color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
+    fontSize: '0.875rem',
+    fontWeight: '500',
+  };
+
+  const inputStyles = {
+    width: '100%',
+    borderTopRightRadius: '0.5rem',
+    borderBottomRightRadius: '0.5rem',
+    borderTop: `1px solid ${borderColor}`,
+    borderRight: `1px solid ${borderColor}`,
+    borderBottom: `1px solid ${borderColor}`,
+    borderLeft: `1px solid ${borderColor}`,
+    backgroundColor: props.disabled
+      ? isDarkMode
+        ? COLORS.surface.darkHover
+        : COLORS.input.background
+      : isDarkMode
+      ? COLORS.input.backgroundDark
+      : COLORS.surface.light,
+    color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
+    padding: '0.75rem 2.5rem 0.75rem 1rem',
+    fontSize: '0.875rem',
+    transition: 'border-color 0.2s, box-shadow 0.2s',
+    cursor: props.disabled ? 'not-allowed' : 'text',
+    outline: 'none',
+  };
+
   return (
     <div className={`space-y-2 ${className}`}>
       {label && (
-        <label
-          htmlFor={name}
-          className="block text-sm font-medium text-gray-700"
-        >
-          {label} {required && <span className="text-red-500">*</span>}
+        <label htmlFor={name} style={labelStyles}>
+          {label} {required && <span style={{ color: COLORS.danger }}>*</span>}
         </label>
       )}
 
       <div className="relative flex">
-        <div className="inline-flex items-center px-4 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-700 text-sm font-medium">
-          <Phone className="h-4 w-4 mr-2 text-gray-500" />
+        <div style={countryCodeStyles}>
+          <Phone
+            className="h-4 w-4 mr-2"
+            style={{ color: COLORS.text.secondary }}
+          />
           {countryCode}
         </div>
 
@@ -87,46 +157,53 @@ export const PhoneInput = ({
           type="tel"
           value={phoneNumber}
           onChange={handleChange}
-          onBlur={handleBlur}
+          onBlur={e => {
+            handleBlur();
+            e.target.style.boxShadow = 'none';
+          }}
           placeholder={placeholder}
           required={required}
           maxLength={10}
-          className={`
-            block w-full rounded-r-lg border shadow-sm focus:ring-2 focus:ring-offset-1 transition-colors
-            pl-4 pr-10 py-3 text-sm
-            ${
-              error
-                ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                : validation?.isValid
-                ? 'border-green-300 focus:border-green-500 focus:ring-green-500'
-                : hasValue && isTouched
-                ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
-            }
-            ${props.disabled ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}
-          `}
+          style={inputStyles}
+          onFocus={e => {
+            e.target.style.outline = 'none';
+            e.target.style.boxShadow = `0 0 0 3px ${getFocusRingColor()}20`;
+          }}
           {...props}
         />
 
         {validation?.isValid && showValidation && (
-          <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-            <CheckCircle className="h-5 w-5 text-green-500" />
+          <div
+            className="absolute inset-y-0 right-0 pr-3 flex items-center"
+            style={{ pointerEvents: 'none' }}
+          >
+            <CheckCircle
+              className="h-5 w-5"
+              style={{ color: COLORS.success }}
+            />
           </div>
         )}
       </div>
 
       {/* Real-time validation feedback */}
       {showValidation && validation && (
-        <div className="flex items-center space-x-2 animate-in fade-in duration-200">
+        <div className="flex items-center space-x-2">
           {validation.isValid ? (
-            <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+            <CheckCircle
+              className="w-4 h-4 flex-shrink-0"
+              style={{ color: COLORS.success }}
+            />
           ) : (
-            <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+            <XCircle
+              className="w-4 h-4 flex-shrink-0"
+              style={{ color: COLORS.danger }}
+            />
           )}
           <span
-            className={`text-xs ${
-              validation.isValid ? 'text-green-600' : 'text-red-600'
-            }`}
+            className="text-xs"
+            style={{
+              color: validation.isValid ? COLORS.success : COLORS.danger,
+            }}
           >
             {validation.message}
           </span>
@@ -136,8 +213,13 @@ export const PhoneInput = ({
       {/* Server-side error (from form validation) */}
       {error && (
         <div className="flex items-center space-x-2">
-          <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-          <p className="text-sm text-red-600">{error}</p>
+          <XCircle
+            className="w-4 h-4 flex-shrink-0"
+            style={{ color: COLORS.danger }}
+          />
+          <p className="text-sm" style={{ color: COLORS.danger }}>
+            {error}
+          </p>
         </div>
       )}
     </div>

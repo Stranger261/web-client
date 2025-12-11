@@ -8,12 +8,12 @@ import {
   Moon,
   Search,
   ChevronDown,
-  User,
 } from 'lucide-react';
 
 import { useAuth } from '../contexts/AuthContext';
 import LoadingOverlay from '../components/shared/LoadingOverlay';
 import Sidebar from '../components/shared/Sidebar';
+import { COLORS, GRADIENTS } from '../configs/CONST';
 
 const BaseLayout = () => {
   const navigate = useNavigate();
@@ -21,7 +21,7 @@ const BaseLayout = () => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
-  const [notifications, setNotifications] = useState(3); // Mock notification count
+  const [notifications, setNotifications] = useState(3);
 
   const { isLoading, currentUser, logout } = useAuth();
 
@@ -63,7 +63,14 @@ const BaseLayout = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-100 dark:bg-gray-900">
+    <div
+      className="flex min-h-screen"
+      style={{
+        backgroundColor: darkMode
+          ? COLORS.background.dark
+          : COLORS.background.main,
+      }}
+    >
       {/* --- Desktop Sidebar --- */}
       <div className="hidden lg:block fixed left-0 top-0 h-full z-30">
         <Sidebar
@@ -100,46 +107,68 @@ const BaseLayout = () => {
         }`}
       >
         {/* Desktop Header */}
-        <header className="hidden lg:flex items-center justify-between bg-white dark:bg-gray-800 text-gray-800 dark:text-white px-6 py-4 shadow-sm sticky top-0 z-20">
+        <header
+          className="hidden lg:flex items-center justify-between px-6 py-4 shadow-sm sticky top-0 z-20"
+          style={{
+            backgroundColor: darkMode
+              ? COLORS.surface.dark
+              : COLORS.surface.light,
+            color: darkMode ? COLORS.text.white : COLORS.text.primary,
+          }}
+        >
           <div className="flex items-center space-x-4">
-            <div className="text-2xl font-bold text-[#0b1b3b] dark:text-white">
+            <div
+              className="text-2xl font-bold"
+              style={{ color: darkMode ? COLORS.text.white : COLORS.primary }}
+            >
               Patient Dashboard
             </div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              Welcome back, {currentUser?.firstName || 'Patient'}
+            <div className="text-sm" style={{ color: COLORS.text.secondary }}>
+              Welcome back, {currentUser?.person.first_name || 'Patient'}
             </div>
           </div>
 
           <div className="flex items-center space-x-6">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <input
-                type="text"
-                placeholder="Search appointments, doctors..."
-                className="pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
-              />
-            </div>
-
             {/* Dark Mode Toggle */}
             <button
               onClick={toggleDarkMode}
-              className="p-2 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              className="p-2 rounded-full transition-colors"
+              style={{
+                backgroundColor: darkMode
+                  ? COLORS.surface.darkHover
+                  : COLORS.button.hover,
+              }}
               aria-label="Toggle dark mode"
             >
               {darkMode ? (
-                <Sun className="h-5 w-5 text-yellow-500" />
+                <Sun
+                  className="h-5 w-5"
+                  style={{ color: COLORS.status.yellow }}
+                />
               ) : (
-                <Moon className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+                <Moon
+                  className="h-5 w-5"
+                  style={{ color: COLORS.text.primary }}
+                />
               )}
             </button>
 
             {/* Notifications */}
             <div className="relative">
-              <button className="p-2 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors relative">
+              <button
+                className="p-2 rounded-full transition-colors relative"
+                style={{
+                  backgroundColor: darkMode
+                    ? COLORS.surface.darkHover
+                    : COLORS.button.hover,
+                }}
+              >
                 <Bell className="h-5 w-5" />
                 {notifications > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  <span
+                    className="absolute -top-1 -right-1 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
+                    style={{ backgroundColor: COLORS.status.red }}
+                  >
                     {notifications}
                   </span>
                 )}
@@ -148,7 +177,12 @@ const BaseLayout = () => {
 
             {/* User Profile */}
             <div className="flex items-center space-x-3">
-              <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">
+              <div
+                className="h-10 w-10 rounded-full flex items-center justify-center text-white font-semibold"
+                style={{
+                  background: GRADIENTS.primary,
+                }}
+              >
                 {currentUser?.firstName?.charAt(0) || 'P'}
               </div>
               <div className="hidden md:block">
@@ -156,19 +190,40 @@ const BaseLayout = () => {
                   {currentUser?.firstName || 'Patient'}{' '}
                   {currentUser?.lastName || ''}
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
+                <div
+                  className="text-xs"
+                  style={{ color: COLORS.text.secondary }}
+                >
                   Patient ID: {currentUser?.id?.slice(0, 8) || 'N/A'}
                 </div>
               </div>
-              <ChevronDown className="h-5 w-5 text-gray-500" />
+              <ChevronDown
+                className="h-5 w-5"
+                style={{ color: COLORS.text.secondary }}
+              />
             </div>
           </div>
         </header>
 
         {/* Mobile Header */}
-        <header className="flex items-center justify-between bg-white dark:bg-gray-800 text-gray-800 dark:text-white p-4 shadow-md lg:hidden sticky top-0 z-20">
+        <header
+          className="flex items-center justify-between p-4 shadow-md lg:hidden sticky top-0 z-20"
+          style={{
+            backgroundColor: darkMode
+              ? COLORS.surface.dark
+              : COLORS.surface.light,
+            color: darkMode ? COLORS.text.white : COLORS.text.primary,
+          }}
+        >
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full grid place-items-center border-2 border-[#d4af37] bg-[#0b1b3b]">
+            <div
+              className="h-8 w-8 rounded-full grid place-items-center"
+              style={{
+                borderWidth: '2px',
+                borderColor: COLORS.accent,
+                backgroundColor: COLORS.primary,
+              }}
+            >
               <img
                 src="../images/logo.png"
                 alt="HVill Hospital Logo"
@@ -181,10 +236,18 @@ const BaseLayout = () => {
           <div className="flex items-center space-x-3">
             <button
               onClick={toggleDarkMode}
-              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="p-2 rounded-full"
+              style={{
+                backgroundColor: darkMode
+                  ? COLORS.surface.darkHover
+                  : 'transparent',
+              }}
             >
               {darkMode ? (
-                <Sun className="h-5 w-5 text-yellow-500" />
+                <Sun
+                  className="h-5 w-5"
+                  style={{ color: COLORS.status.yellow }}
+                />
               ) : (
                 <Moon className="h-5 w-5" />
               )}
@@ -193,22 +256,37 @@ const BaseLayout = () => {
             <button className="p-2 relative">
               <Bell className="h-5 w-5" />
               {notifications > 0 && (
-                <span className="absolute top-1 right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                <span
+                  className="absolute top-1 right-1 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center"
+                  style={{ backgroundColor: COLORS.status.red }}
+                >
                   {notifications}
                 </span>
               )}
             </button>
 
             <button
-              className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="p-2 rounded-md"
               onClick={() => setIsMobileSidebarOpen(true)}
+              style={{
+                backgroundColor: darkMode
+                  ? COLORS.surface.darkHover
+                  : 'transparent',
+              }}
             >
               <MenuIcon size={24} />
             </button>
           </div>
         </header>
 
-        <main className="flex-1 dark:bg-gray-900 bg-gray-50 p-4 md:p-6">
+        <main
+          className="flex-1 p-4 md:p-6"
+          style={{
+            backgroundColor: darkMode
+              ? COLORS.background.dark
+              : COLORS.background.light,
+          }}
+        >
           <Outlet />
         </main>
       </div>

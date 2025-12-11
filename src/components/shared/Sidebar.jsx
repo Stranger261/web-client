@@ -6,7 +6,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import { sidebarConfig } from '../../configs/sidebarConfig';
 
 const Sidebar = ({ isOpen, toggleSidebar, onLogout, currentUser }) => {
-  console.log(currentUser);
   const { patient } = useAuth();
   const [menuItems, setMenuItems] = useState([]);
 

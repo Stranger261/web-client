@@ -1,11 +1,11 @@
 import { useState } from 'react';
 
-import { Input } from '../../../components/ui/input';
-import { Button } from '../../../components/ui/button';
-import { Select } from '../../../components/ui/select';
-import { GENDERS, CIVIL_STATUS, BLOOD_TYPES } from '../../../configs/CONST';
+import { Input } from '../../../../components/ui/input';
+import { Button } from '../../../../components/ui/button';
+import { Select } from '../../../../components/ui/select';
+import { GENDERS, CIVIL_STATUS, BLOOD_TYPES } from '../../../../configs/CONST';
 
-import { PhoneInput } from '../../../components/ui/PhoneInput';
+import { PhoneInput } from '../../../../components/ui/PhoneInput';
 
 export const PersonalInfoForm = ({ data, onChange, onNext }) => {
   const [errors, setErrors] = useState({});

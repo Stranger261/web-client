@@ -1,11 +1,24 @@
 import { Loader2 } from 'lucide-react';
+import { COLORS } from '../../configs/CONST';
 
-export const LoadingSpinner = ({ size = 'md', className = '' }) => {
+export const LoadingSpinner = ({
+  size = 'md',
+  color = COLORS.info,
+  className = '',
+}) => {
   const sizes = {
-    sm: 'w-4 h-4',
-    md: 'w-8 h-8',
-    lg: 'w-12 h-12',
+    sm: { width: '1rem', height: '1rem' }, // 16px
+    md: { width: '2rem', height: '2rem' }, // 32px
+    lg: { width: '3rem', height: '3rem' }, // 48px
   };
 
-  return <Loader2 className={`animate-spin ${sizes[size]} ${className}`} />;
+  return (
+    <Loader2
+      className={`animate-spin ${className}`}
+      style={{
+        ...sizes[size],
+        color: color,
+      }}
+    />
+  );
 };
