@@ -1,19 +1,60 @@
+/* File: /src/index.css */
+/* Add these rules at the VERY TOP, before any other styles or @tailwind */
+
+/* Prevent text size adjustment on mobile devices */
 html {
   -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  font-size: 16px;
 }
 
-input,
-select,
-textarea {
-  font-size: 16px !important;
-}
-
+/* Prevent body from overflowing */
 body {
   margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ensure root container is properly sized */
+#root {
+  width: 100%;
+  min-height: 100vh;
   overflow-x: hidden;
 }
 
+/* CRITICAL: Prevent iOS Safari from zooming on input focus */
+input[type='text'],
+input[type='email'],
+input[type='password'],
+input[type='tel'],
+input[type='number'],
+input[type='date'],
+input[type='time'],
+input[type='search'],
+textarea,
+select {
+  font-size: 16px !important;
+}
+
+/* Remove tap highlight on mobile */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevent horizontal scroll */
+body,
+html {
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Any other custom styles below */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
