@@ -1,28 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useAppointment } from '../../../contexts/AppointmentContext';
-import {
-  Filter,
-  Plus,
-  X,
-  Calendar,
-  Search,
-  Clock,
-  User,
-  FileText,
-  Video,
-  Phone,
-  MapPin,
-  AlertCircle,
-  CheckCircle,
-  XCircle,
-  Edit,
-  Eye,
-  MoreVertical,
-  Stethoscope,
-  Pill,
-  MessageSquare,
-} from 'lucide-react';
+import { Filter, Plus, X, Calendar, Search } from 'lucide-react';
 
 import LoadingOverlay from '../../../components/shared/LoadingOverlay';
 import { Button } from '../../../components/ui/button';

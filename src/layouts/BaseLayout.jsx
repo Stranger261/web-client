@@ -25,7 +25,6 @@ const BaseLayout = () => {
   const [notifications, setNotifications] = useState(3);
 
   const { isLoading, currentUser, logout } = useAuth();
-  console.log(currentUser);
   const uuidDisplay =
     currentUser?.staff?.staff_uuid ||
     currentUser?.person?.patient?.patient_uuid;

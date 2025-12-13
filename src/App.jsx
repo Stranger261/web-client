@@ -11,13 +11,11 @@ const App = () => {
     <>
       <AuthProvider>
         <div className="w-full bg-base-100">
-          {/* <PageLayout /> */}
           <ErrorBoundary>
             <AppRoutes />
           </ErrorBoundary>
         </div>
       </AuthProvider>
-      {/* <FaceCapture /> */}
     </>
   );
 };

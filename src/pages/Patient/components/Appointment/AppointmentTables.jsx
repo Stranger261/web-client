@@ -32,6 +32,7 @@ const AppointmentsTable = ({
   // Get patient display info
   const getPatientDisplay = appointment => {
     const { patient, createdBy } = appointment;
+    console.log(appointment);
 
     if (patient && typeof patient === 'object' && patient.fullName) {
       return {
