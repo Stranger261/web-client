@@ -79,21 +79,6 @@ class ScheduleService {
       throw error;
     }
   }
-
-  async getDoctorAppointments(doctorUuid, filters = {}) {
-    try {
-      const doctorAppointments = await this.scheduleApi.get(
-        `/doctors${doctorUuid}/appointments`,
-        filters
-      );
-      console.log(doctorAppointments);
-
-      return doctorAppointments.data;
-    } catch (error) {
-      console.log(error);
-      throw error;
-    }
-  }
 }
 
 export default new ScheduleService();

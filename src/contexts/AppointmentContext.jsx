@@ -66,6 +66,26 @@ export const AppointmentProvider = ({ children }) => {
     }
   }, []);
 
+  const getDoctorAppointments = useCallback(async (doctorUuid, filters) => {
+    try {
+      setIsLoading(true);
+
+      const res = await appointmentApi.getDoctorAppointments(
+        doctorUuid,
+        filters
+      );
+
+      setAppointments(res.data.appointments || []);
+      setPagination(res.data.pagination);
+      return res;
+    } catch (error) {
+      console.error('Get doc appointment error: ', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   const checkInAppointment = useCallback(async appointmentId => {
     try {
       setIsLoading(true);
@@ -214,6 +234,7 @@ export const AppointmentProvider = ({ children }) => {
     bookUserAppointment,
     getPatientAppointments,
     getAppointmentById,
+    getDoctorAppointments,
     checkInAppointment,
     cancelAppointment,
     rescheduleAppointment,

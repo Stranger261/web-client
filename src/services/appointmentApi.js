@@ -59,6 +59,19 @@ class appointmentSerevice {
 
   // for staff
 
+  async getDoctorAppointments(doctorUuid, filters = {}) {
+    try {
+      const doctorAppointments = await this.appointmentApi.get(
+        `/doctors/${doctorUuid}/appointments`,
+        filters
+      );
+
+      return doctorAppointments.data;
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  }
   // doctor/receptionist/nurse
   async getAppointmentsToday(filters) {
     try {

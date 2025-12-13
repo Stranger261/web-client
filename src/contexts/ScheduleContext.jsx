@@ -8,7 +8,6 @@ const ScheduleProvider = ({ children }) => {
   const [allDoctors, setAllDoctors] = useState([]);
   const [doctorSchedule, setDoctorSchedule] = useState(null);
   const [combinedSchedule, setCombinedSchedule] = useState(null);
-  const [doctorAppointments, setDoctorAppointments] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const getDepartments = useCallback(async () => {
@@ -95,23 +94,6 @@ const ScheduleProvider = ({ children }) => {
     []
   );
 
-  const getDoctorAppointment = useCallback(async (doctorUuid, filters) => {
-    try {
-      setIsLoading(true);
-
-      const res = await scheduleApi.getDoctorAppointments(doctorUuid, filters);
-      console.log(res);
-
-      setDoctorAppointments(res.data || []);
-      return res;
-    } catch (error) {
-      console.error('Get doc appointment error: ', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
   const changeMonth = useCallback(
     async yearMonth => {
       const [year, month] = yearMonth.split('-');
@@ -155,13 +137,11 @@ const ScheduleProvider = ({ children }) => {
     allDoctors,
     doctorSchedule,
     combinedSchedule,
-    doctorAppointments,
     isLoading,
     getDepartments,
     getAllDoctors,
     getDoctorAvailability,
     getCombinedSchedule,
-    getDoctorAppointment,
     changeMonth,
     clearSchedules,
   };

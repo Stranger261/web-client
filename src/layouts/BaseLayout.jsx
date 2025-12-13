@@ -14,6 +14,7 @@ import { useAuth } from '../contexts/AuthContext';
 import LoadingOverlay from '../components/shared/LoadingOverlay';
 import Sidebar from '../components/shared/Sidebar';
 import { COLORS, GRADIENTS } from '../configs/CONST';
+import { normalizedWord } from '../utils/normalizedWord';
 
 const BaseLayout = () => {
   const navigate = useNavigate();
@@ -121,7 +122,7 @@ const BaseLayout = () => {
               className="text-2xl font-bold"
               style={{ color: darkMode ? COLORS.text.white : COLORS.primary }}
             >
-              Patient Dashboard
+              {normalizedWord(currentUser.role)} Dashboard
             </div>
             <div className="text-sm" style={{ color: COLORS.text.secondary }}>
               Welcome back, {currentUser?.person.first_name || 'Patient'}

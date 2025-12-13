@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Calendar,
   Clock,
@@ -30,6 +30,7 @@ import {
   Eye,
 } from 'lucide-react';
 
+import { useAuth } from '../../../contexts/AuthContext';
 // Import reusable components
 import { Button } from '../../../components/ui/button';
 import StatsCard from '../../../components/ui/stat-card';
@@ -39,6 +40,8 @@ import QuickActionsCard from '../components/Dashboard/QuickActionCard';
 import Card, { CardHeader, CardBody } from '../../../components/ui/card';
 import Badge from '../../../components/ui/badge';
 const PatientDashboard = () => {
+  const { currentUser } = useAuth();
+  console.log(currentUser);
   const [upcomingAppointments, setUpcomingAppointments] = useState([
     {
       id: '1',
@@ -241,22 +244,26 @@ const PatientDashboard = () => {
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white shadow-lg">
         <div className="flex flex-col md:flex-row md:items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Welcome back, John!</h1>
+            <h1 className="text-2xl font-bold">
+              Welcome back, {currentUser?.person?.first_name}!
+            </h1>
             <p className="text-blue-100 mt-2">
               Manage your health and appointments
             </p>
             <div className="flex flex-wrap items-center gap-4 mt-4">
               <div className="flex items-center space-x-2 bg-white/10 px-3 py-1 rounded-full">
                 <User className="h-4 w-4" />
-                <span className="text-sm">Patient ID: PA-789012</span>
+                <span className="text-sm">
+                  Patient ID: {currentUser?.person?.patient?.patient_uuid}
+                </span>
               </div>
               <div className="flex items-center space-x-2 bg-white/10 px-3 py-1 rounded-full">
                 <Phone className="h-4 w-4" />
-                <span className="text-sm">(555) 123-4567</span>
+                <span className="text-sm">{currentUser?.phone}</span>
               </div>
               <div className="flex items-center space-x-2 bg-white/10 px-3 py-1 rounded-full">
                 <Mail className="h-4 w-4" />
-                <span className="text-sm">john.doe@email.com</span>
+                <span className="text-sm">{currentUser?.email}</span>
               </div>
             </div>
           </div>
