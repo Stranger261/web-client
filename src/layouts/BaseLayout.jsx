@@ -25,6 +25,10 @@ const BaseLayout = () => {
   const [notifications, setNotifications] = useState(3);
 
   const { isLoading, currentUser, logout } = useAuth();
+  console.log(currentUser);
+  const uuidDisplay =
+    currentUser?.staff?.staff_uuid ||
+    currentUser?.person?.patient?.patient_uuid;
 
   const toggleDesktopSidebar = () => {
     setIsDesktopSidebarOpen(prev => !prev);
@@ -184,18 +188,21 @@ const BaseLayout = () => {
                   background: GRADIENTS.primary,
                 }}
               >
-                {currentUser?.firstName?.charAt(0) || 'P'}
+                {currentUser?.person.first_name?.charAt(0) || 'P'}
               </div>
               <div className="hidden md:block">
                 <div className="font-medium">
-                  {currentUser?.firstName || 'Patient'}{' '}
-                  {currentUser?.lastName || ''}
+                  {currentUser?.person.first_name || 'Patient'}{' '}
+                  {currentUser?.person.last_name || ''}
                 </div>
                 <div
-                  className="text-xs"
-                  style={{ color: COLORS.text.secondary }}
+                  className="text-xs truncate"
+                  style={{ color: COLORS.text.secondary, maxWidth: '200px' }}
                 >
-                  Patient ID: {currentUser?.id?.slice(0, 8) || 'N/A'}
+                  {normalizedWord(
+                    currentUser.role === 'doctor' ? 'Staff' : currentUser.role
+                  )}{' '}
+                  UUID: {uuidDisplay || 'N/A'}
                 </div>
               </div>
               <ChevronDown

@@ -13,13 +13,18 @@ import {
   Filter,
   MoreVertical,
   Eye,
-  Edit,
   FileText,
   Video,
   Phone,
+  Stethoscope,
+  Pill,
+  MapPin,
+  User,
 } from 'lucide-react';
+import Badge from '../../../components/ui/badge';
 
 import { COLORS } from '../../../configs/CONST';
+
 const DoctorDashboard = () => {
   const [darkMode, setDarkMode] = useState(false);
 
@@ -65,6 +70,7 @@ const DoctorDashboard = () => {
       time: '09:00 AM',
       patient: 'Sarah Johnson',
       age: 34,
+      mrn: 'MRN-2024-001',
       reason: 'Annual Checkup',
       type: 'In-Person',
       status: 'completed',
@@ -75,6 +81,7 @@ const DoctorDashboard = () => {
       time: '09:30 AM',
       patient: 'Michael Chen',
       age: 45,
+      mrn: 'MRN-2024-002',
       reason: 'Follow-up Consultation',
       type: 'Video Call',
       status: 'in-progress',
@@ -85,6 +92,7 @@ const DoctorDashboard = () => {
       time: '10:00 AM',
       patient: 'Emma Davis',
       age: 28,
+      mrn: 'MRN-2024-003',
       reason: 'Lab Results Review',
       type: 'In-Person',
       status: 'waiting',
@@ -95,6 +103,7 @@ const DoctorDashboard = () => {
       time: '10:30 AM',
       patient: 'James Wilson',
       age: 52,
+      mrn: 'MRN-2024-004',
       reason: 'Blood Pressure Check',
       type: 'In-Person',
       status: 'scheduled',
@@ -105,41 +114,11 @@ const DoctorDashboard = () => {
       time: '11:00 AM',
       patient: 'Lisa Anderson',
       age: 41,
+      mrn: 'MRN-2024-005',
       reason: 'Medication Review',
       type: 'Phone Call',
       status: 'scheduled',
       priority: 'normal',
-    },
-  ];
-
-  const recentActivity = [
-    {
-      type: 'prescription',
-      patient: 'Sarah Johnson',
-      action: 'Prescription updated',
-      time: '5 min ago',
-      icon: FileText,
-    },
-    {
-      type: 'appointment',
-      patient: 'Michael Chen',
-      action: 'Appointment rescheduled',
-      time: '15 min ago',
-      icon: Calendar,
-    },
-    {
-      type: 'lab',
-      patient: 'Emma Davis',
-      action: 'Lab results available',
-      time: '1 hour ago',
-      icon: Activity,
-    },
-    {
-      type: 'note',
-      patient: 'James Wilson',
-      action: 'Clinical note added',
-      time: '2 hours ago',
-      icon: FileText,
     },
   ];
 
@@ -165,225 +144,112 @@ const DoctorDashboard = () => {
     },
   ];
 
-  const bgColor = darkMode ? COLORS.background.dark : COLORS.background.light;
-  const cardBg = darkMode
-    ? COLORS.card.background.dark
-    : COLORS.card.background.light;
-  const textPrimary = darkMode ? COLORS.text.white : COLORS.text.primary;
-  const textSecondary = darkMode ? COLORS.text.light : COLORS.text.secondary;
-  const borderColor = darkMode ? COLORS.border.dark : COLORS.border.light;
+  const quickActions = [
+    { icon: Calendar, label: 'New Appointment', color: 'green' },
+    { icon: FileText, label: 'Write Note', color: 'blue' },
+    { icon: Users, label: 'View Patients', color: 'purple' },
+    { icon: Activity, label: 'Lab Results', color: 'orange' },
+  ];
 
-  const getStatusBadge = status => {
-    const badges = {
-      completed: {
-        bg: darkMode ? COLORS.badge.success.bgDark : COLORS.badge.success.bg,
-        text: darkMode
-          ? COLORS.badge.success.textDark
-          : COLORS.badge.success.text,
-        label: 'Completed',
-      },
-      'in-progress': {
-        bg: darkMode ? COLORS.badge.info.bgDark : COLORS.badge.info.bg,
-        text: darkMode ? COLORS.badge.info.textDark : COLORS.badge.info.text,
-        label: 'In Progress',
-      },
-      waiting: {
-        bg: darkMode ? COLORS.badge.warning.bgDark : COLORS.badge.warning.bg,
-        text: darkMode
-          ? COLORS.badge.warning.textDark
-          : COLORS.badge.warning.text,
-        label: 'Waiting',
-      },
-      scheduled: {
-        bg: darkMode ? COLORS.surface.dark : COLORS.surface.light,
-        text: textSecondary,
-        label: 'Scheduled',
-      },
+  const getStatusVariant = status => {
+    const statusMap = {
+      confirmed: 'success',
+      cancelled: 'danger',
+      completed: 'primary',
+      rescheduled: 'info',
+      scheduled: 'warning',
+      'checked-in': 'success',
+      'no-show': 'danger',
     };
-    return badges[status] || badges.scheduled;
+    return statusMap[status] || 'default';
   };
 
   const getPriorityBadge = priority => {
     if (priority === 'high') {
       return {
-        bg: darkMode ? COLORS.badge.danger.bgDark : COLORS.badge.danger.bg,
-        text: darkMode
-          ? COLORS.badge.danger.textDark
-          : COLORS.badge.danger.text,
+        bg: darkMode ? '#7f1d1d' : '#fee2e2',
+        text: darkMode ? '#fecaca' : '#991b1b',
       };
     }
     return null;
   };
 
   return (
-    <div
-      style={{
-        backgroundColor: bgColor,
-        minHeight: '100vh',
-        padding: '24px',
-        transition: 'background-color 0.3s',
-      }}
-    >
-      {/* Header */}
-      <div
-        style={{
-          marginBottom: '32px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '16px',
-        }}
-      >
-        <div>
-          <h1
-            style={{
-              fontSize: '28px',
-              fontWeight: '700',
-              color: textPrimary,
-              marginBottom: '8px',
-            }}
-          >
-            Welcome back, Dr. Smith
-          </h1>
-          <p style={{ color: textSecondary, fontSize: '14px' }}>
-            {new Date().toLocaleDateString('en-US', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })}
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <button
-            onClick={() => setDarkMode(!darkMode)}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: cardBg,
-              color: textPrimary,
-              border: `1px solid ${borderColor}`,
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '500',
-              transition: 'all 0.2s',
-            }}
-          >
-            {darkMode ? '☀️ Light' : '🌙 Dark'}
-          </button>
-          <button
-            style={{
-              position: 'relative',
-              padding: '10px',
-              backgroundColor: cardBg,
-              border: `1px solid ${borderColor}`,
-              borderRadius: '8px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Bell size={20} color={textPrimary} />
-            <span
-              style={{
-                position: 'absolute',
-                top: '6px',
-                right: '6px',
-                width: '8px',
-                height: '8px',
-                backgroundColor: COLORS.danger,
-                borderRadius: '50%',
-              }}
-            ></span>
-          </button>
+    <div className="space-y-6">
+      {/* Welcome Section */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white shadow-lg">
+        <div className="flex flex-col md:flex-row md:items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Welcome back, Dr. Smith</h1>
+            <p className="text-blue-100 mt-2">
+              {new Date().toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </p>
+          </div>
+          <div className="mt-4 md:mt-0 flex gap-3">
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-sm font-medium"
+            >
+              {darkMode ? '☀️ Light' : '🌙 Dark'}
+            </button>
+            <button className="relative p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors">
+              <Bell size={20} />
+              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-          gap: '20px',
-          marginBottom: '32px',
-        }}
-      >
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat, idx) => {
           const Icon = stat.icon;
           return (
             <div
               key={idx}
-              style={{
-                backgroundColor: cardBg,
-                padding: '24px',
-                borderRadius: '12px',
-                border: `1px solid ${borderColor}`,
-                boxShadow: COLORS.card.shadow.sm,
-                transition: 'all 0.3s',
-                cursor: 'pointer',
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = COLORS.card.shadow.md;
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = COLORS.card.shadow.sm;
-              }}
+              className={`${
+                darkMode
+                  ? 'bg-gray-800 border-gray-700'
+                  : 'bg-white border-gray-200'
+              } p-6 rounded-xl border shadow-sm hover:shadow-md transition-shadow cursor-pointer`}
             >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'flex-start',
-                }}
-              >
-                <div style={{ flex: 1 }}>
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
                   <p
-                    style={{
-                      color: textSecondary,
-                      fontSize: '14px',
-                      marginBottom: '8px',
-                    }}
+                    className={`text-sm ${
+                      darkMode ? 'text-gray-400' : 'text-gray-500'
+                    } mb-1`}
                   >
                     {stat.label}
                   </p>
                   <p
-                    style={{
-                      fontSize: '32px',
-                      fontWeight: '700',
-                      color: textPrimary,
-                      marginBottom: '8px',
-                    }}
+                    className={`text-3xl font-bold ${
+                      darkMode ? 'text-white' : 'text-gray-900'
+                    } mb-2`}
                   >
                     {stat.value}
                   </p>
                   <p
-                    style={{
-                      fontSize: '13px',
-                      color:
-                        stat.trend === 'up' ? COLORS.success : textSecondary,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                    }}
+                    className={`text-sm ${
+                      stat.trend === 'up'
+                        ? 'text-green-500'
+                        : darkMode
+                        ? 'text-gray-400'
+                        : 'text-gray-500'
+                    } flex items-center gap-1`}
                   >
                     {stat.trend === 'up' && <TrendingUp size={14} />}
                     {stat.change}
                   </p>
                 </div>
                 <div
-                  style={{
-                    width: '48px',
-                    height: '48px',
-                    backgroundColor: stat.color + '20',
-                    borderRadius: '10px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
+                  className="w-12 h-12 rounded-lg flex items-center justify-center"
+                  style={{ backgroundColor: stat.color + '20' }}
                 >
                   <Icon size={24} color={stat.color} />
                 </div>
@@ -393,678 +259,319 @@ const DoctorDashboard = () => {
         })}
       </div>
 
-      {/* Main Content Grid - Responsive */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr',
-          gap: '24px',
-        }}
-      >
-        <style>{`
-          @media (min-width: 1024px) {
-            .dashboard-grid {
-              grid-template-columns: 2fr 1fr;
-            }
-          }
-        `}</style>
-        <div
-          className="dashboard-grid"
-          style={{ display: 'grid', gap: '24px' }}
-        >
-          {/* Left Column */}
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - Appointments */}
+        <div className="lg:col-span-2 space-y-6">
           <div
-            style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}
+            className={`${
+              darkMode
+                ? 'bg-gray-800 border-gray-700'
+                : 'bg-white border-gray-200'
+            } rounded-xl border shadow-sm overflow-hidden`}
           >
-            {/* Appointments Card */}
+            {/* Header */}
             <div
-              style={{
-                backgroundColor: cardBg,
-                borderRadius: '12px',
-                border: `1px solid ${borderColor}`,
-                boxShadow: COLORS.card.shadow.sm,
-                overflow: 'hidden',
-              }}
+              className={`p-6 ${
+                darkMode ? 'border-gray-700' : 'border-gray-200'
+              } border-b`}
             >
-              <div
-                style={{
-                  padding: '24px',
-                  borderBottom: `1px solid ${borderColor}`,
-                }}
-              >
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '16px',
-                    flexWrap: 'wrap',
-                    gap: '12px',
-                  }}
-                >
+              <div className="flex justify-between items-center mb-4">
+                <div>
                   <h2
-                    style={{
-                      fontSize: '20px',
-                      fontWeight: '600',
-                      color: textPrimary,
-                    }}
+                    className={`text-xl font-semibold ${
+                      darkMode ? 'text-white' : 'text-gray-900'
+                    }`}
                   >
                     Today's Appointments
                   </h2>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button
-                      style={{
-                        padding: '8px 12px',
-                        backgroundColor: 'transparent',
-                        border: `1px solid ${borderColor}`,
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        color: textPrimary,
-                        fontSize: '13px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                      }}
-                    >
-                      <Filter size={16} />
-                      Filter
-                    </button>
-                  </div>
+                  <p
+                    className={`text-sm ${
+                      darkMode ? 'text-gray-400' : 'text-gray-500'
+                    } mt-1`}
+                  >
+                    Your scheduled visits
+                  </p>
                 </div>
-
-                {/* Search Bar */}
-                <div style={{ position: 'relative' }}>
-                  <Search
-                    size={18}
-                    color={textSecondary}
-                    style={{
-                      position: 'absolute',
-                      left: '12px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                    }}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Search appointments..."
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px 10px 40px',
-                      backgroundColor: darkMode
-                        ? COLORS.input.backgroundDark
-                        : COLORS.input.background,
-                      border: `1px solid ${
-                        darkMode ? COLORS.input.borderDark : COLORS.input.border
-                      }`,
-                      borderRadius: '8px',
-                      color: textPrimary,
-                      fontSize: '14px',
-                      outline: 'none',
-                    }}
-                  />
-                </div>
+                <button
+                  className={`px-3 py-2 ${
+                    darkMode
+                      ? 'bg-gray-700 text-gray-300 border-gray-600'
+                      : 'bg-white text-gray-700 border-gray-300'
+                  } border rounded-lg text-sm font-medium hover:bg-opacity-80 transition-colors flex items-center gap-2`}
+                >
+                  <Filter size={16} />
+                  Filter
+                </button>
               </div>
 
-              {/* Appointments List */}
-              <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
-                {appointments.map(apt => {
-                  const statusBadge = getStatusBadge(apt.status);
-                  const priorityBadge = getPriorityBadge(apt.priority);
+              {/* Search Bar */}
+              <div className="relative">
+                <Search
+                  size={18}
+                  className={`absolute left-3 top-1/2 -translate-y-1/2 ${
+                    darkMode ? 'text-gray-400' : 'text-gray-500'
+                  }`}
+                />
+                <input
+                  type="text"
+                  placeholder="Search appointments..."
+                  className={`w-full pl-10 pr-4 py-2 ${
+                    darkMode
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                      : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'
+                  } border rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none`}
+                />
+              </div>
+            </div>
 
-                  return (
-                    <div
-                      key={apt.id}
-                      style={{
-                        padding: '20px 24px',
-                        borderBottom: `1px solid ${borderColor}`,
-                        transition: 'background-color 0.2s',
-                        cursor: 'pointer',
-                      }}
-                      onMouseEnter={e =>
-                        (e.currentTarget.style.backgroundColor = darkMode
-                          ? COLORS.surface.darkHover
-                          : COLORS.surface.lightHover)
-                      }
-                      onMouseLeave={e =>
-                        (e.currentTarget.style.backgroundColor = 'transparent')
-                      }
-                    >
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'flex-start',
-                          flexWrap: 'wrap',
-                          gap: '12px',
-                        }}
-                      >
-                        <div style={{ flex: '1', minWidth: '200px' }}>
-                          <div
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '12px',
-                              marginBottom: '8px',
-                            }}
-                          >
-                            <div
-                              style={{
-                                width: '40px',
-                                height: '40px',
-                                borderRadius: '50%',
-                                backgroundColor: COLORS.info + '20',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontWeight: '600',
-                                color: COLORS.info,
-                                fontSize: '14px',
-                              }}
-                            >
-                              {apt.patient
-                                .split(' ')
-                                .map(n => n[0])
-                                .join('')}
-                            </div>
-                            <div>
-                              <div
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '8px',
-                                  flexWrap: 'wrap',
-                                }}
-                              >
-                                <p
-                                  style={{
-                                    fontWeight: '600',
-                                    color: textPrimary,
-                                    fontSize: '15px',
-                                  }}
-                                >
-                                  {apt.patient}
-                                </p>
-                                {priorityBadge && (
-                                  <span
-                                    style={{
-                                      padding: '2px 8px',
-                                      borderRadius: '12px',
-                                      fontSize: '11px',
-                                      fontWeight: '600',
-                                      backgroundColor: priorityBadge.bg,
-                                      color: priorityBadge.text,
-                                    }}
-                                  >
-                                    HIGH
-                                  </span>
-                                )}
-                              </div>
-                              <p
-                                style={{
-                                  color: textSecondary,
-                                  fontSize: '13px',
-                                }}
-                              >
-                                {apt.age} years • {apt.type}
-                              </p>
-                            </div>
-                          </div>
-                          <div style={{ marginLeft: '52px' }}>
-                            <p
-                              style={{
-                                color: textSecondary,
-                                fontSize: '13px',
-                                marginBottom: '4px',
-                              }}
-                            >
-                              <Clock
-                                size={14}
-                                style={{
-                                  display: 'inline',
-                                  marginRight: '4px',
-                                  verticalAlign: 'middle',
-                                }}
-                              />
-                              {apt.time}
-                            </p>
-                            <p style={{ color: textPrimary, fontSize: '14px' }}>
-                              {apt.reason}
-                            </p>
-                          </div>
+            {/* Appointments List */}
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+              {appointments.map(apt => {
+                const priorityBadge = getPriorityBadge(apt.priority);
+
+                return (
+                  <div
+                    key={apt.id}
+                    className={`p-6 ${
+                      darkMode ? 'hover:bg-gray-750' : 'hover:bg-gray-50'
+                    } transition-colors`}
+                  >
+                    <div className="flex items-center justify-between gap-4 flex-wrap">
+                      <div className="flex items-center gap-4 flex-1 min-w-0">
+                        <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                          <User
+                            className="text-blue-600 dark:text-blue-400"
+                            size={24}
+                          />
                         </div>
-
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            flexWrap: 'wrap',
-                          }}
-                        >
-                          <span
-                            style={{
-                              padding: '4px 12px',
-                              borderRadius: '16px',
-                              fontSize: '12px',
-                              fontWeight: '500',
-                              backgroundColor: statusBadge.bg,
-                              color: statusBadge.text,
-                              whiteSpace: 'nowrap',
-                            }}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3
+                              className={`font-semibold ${
+                                darkMode ? 'text-white' : 'text-gray-900'
+                              }`}
+                            >
+                              {apt.patient}
+                            </h3>
+                            {priorityBadge && (
+                              <span
+                                className="px-2 py-0.5 rounded-full text-xs font-semibold"
+                                style={{
+                                  backgroundColor: priorityBadge.bg,
+                                  color: priorityBadge.text,
+                                }}
+                              >
+                                HIGH
+                              </span>
+                            )}
+                          </div>
+                          <p
+                            className={`text-sm ${
+                              darkMode ? 'text-gray-400' : 'text-gray-600'
+                            }`}
                           >
-                            {statusBadge.label}
-                          </span>
-
-                          <div style={{ display: 'flex', gap: '4px' }}>
-                            {apt.type === 'Video Call' && (
-                              <button
-                                style={{
-                                  padding: '8px',
-                                  backgroundColor: COLORS.button.edit.bg,
-                                  border: 'none',
-                                  borderRadius: '6px',
-                                  cursor: 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                }}
-                              >
-                                <Video size={16} color="white" />
-                              </button>
-                            )}
-                            {apt.type === 'Phone Call' && (
-                              <button
-                                style={{
-                                  padding: '8px',
-                                  backgroundColor: COLORS.success,
-                                  border: 'none',
-                                  borderRadius: '6px',
-                                  cursor: 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                }}
-                              >
-                                <Phone size={16} color="white" />
-                              </button>
-                            )}
-                            <button
-                              style={{
-                                padding: '8px',
-                                backgroundColor: 'transparent',
-                                border: `1px solid ${borderColor}`,
-                                borderRadius: '6px',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}
+                            {apt.mrn} • {apt.age} years • {apt.type}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-3 mt-2">
+                            <span
+                              className={`flex items-center text-sm ${
+                                darkMode ? 'text-gray-400' : 'text-gray-600'
+                              }`}
                             >
-                              <Eye size={16} color={textPrimary} />
-                            </button>
-                            <button
-                              style={{
-                                padding: '8px',
-                                backgroundColor: 'transparent',
-                                border: 'none',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}
+                              <Clock size={14} className="mr-1" />
+                              {apt.time}
+                            </span>
+                            <span
+                              className={`text-sm ${
+                                darkMode ? 'text-gray-300' : 'text-gray-900'
+                              }`}
                             >
-                              <MoreVertical size={16} color={textSecondary} />
-                            </button>
+                              {apt.reason}
+                            </span>
                           </div>
                         </div>
                       </div>
+
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant={getStatusVariant(apt.status)}>
+                          {apt.status}
+                        </Badge>
+
+                        <div className="flex items-center gap-2">
+                          {apt.type === 'Video Call' && (
+                            <button className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                              <Video size={16} />
+                            </button>
+                          )}
+                          {apt.type === 'Phone Call' && (
+                            <button className="p-2 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors">
+                              <Phone size={16} />
+                            </button>
+                          )}
+                          <button
+                            className={`p-2 ${
+                              darkMode
+                                ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                                : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+                            } rounded-lg transition-colors`}
+                          >
+                            <Eye size={16} />
+                          </button>
+                          <button
+                            className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors`}
+                          >
+                            <MoreVertical
+                              size={16}
+                              className={
+                                darkMode ? 'text-gray-400' : 'text-gray-500'
+                              }
+                            />
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column */}
+        <div className="space-y-6">
+          {/* Quick Actions */}
+          <div
+            className={`${
+              darkMode
+                ? 'bg-gray-800 border-gray-700'
+                : 'bg-white border-gray-200'
+            } rounded-xl border shadow-sm p-6`}
+          >
+            <h3
+              className={`text-lg font-semibold ${
+                darkMode ? 'text-white' : 'text-gray-900'
+              } mb-1`}
+            >
+              Quick Actions
+            </h3>
+            <p
+              className={`text-sm ${
+                darkMode ? 'text-gray-400' : 'text-gray-500'
+              } mb-4`}
+            >
+              Common tasks
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              {quickActions.map((action, index) => (
+                <button
+                  key={index}
+                  className={`flex flex-col items-center justify-center p-4 ${
+                    darkMode
+                      ? 'border-gray-700 hover:bg-gray-750'
+                      : 'border-gray-200 hover:bg-gray-50'
+                  } border rounded-lg transition-colors`}
+                >
+                  <div
+                    className={`p-3 rounded-lg mb-2 ${
+                      action.color === 'green'
+                        ? 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                        : action.color === 'blue'
+                        ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                        : action.color === 'purple'
+                        ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
+                        : 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
+                    }`}
+                  >
+                    <action.icon size={20} />
+                  </div>
+                  <span
+                    className={`text-sm font-medium text-center ${
+                      darkMode ? 'text-gray-300' : 'text-gray-700'
+                    }`}
+                  >
+                    {action.label}
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Right Column */}
+          {/* Alerts Card */}
           <div
-            style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}
+            className={`${
+              darkMode
+                ? 'bg-gray-800 border-gray-700'
+                : 'bg-white border-gray-200'
+            } rounded-xl border shadow-sm p-6`}
           >
-            {/* Alerts Card */}
-            <div
-              style={{
-                backgroundColor: cardBg,
-                borderRadius: '12px',
-                border: `1px solid ${borderColor}`,
-                boxShadow: COLORS.card.shadow.sm,
-                padding: '24px',
-              }}
+            <h3
+              className={`text-lg font-semibold ${
+                darkMode ? 'text-white' : 'text-gray-900'
+              } mb-1`}
             >
-              <h3
-                style={{
-                  fontSize: '18px',
-                  fontWeight: '600',
-                  color: textPrimary,
-                  marginBottom: '16px',
-                }}
-              >
-                Alerts & Notifications
-              </h3>
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '12px',
-                }}
-              >
-                {alerts.map(alert => {
-                  const alertColors = {
-                    critical: {
-                      bg: darkMode
-                        ? COLORS.badge.danger.bgDark
-                        : COLORS.badge.danger.bg,
-                      icon: COLORS.danger,
-                    },
-                    warning: {
-                      bg: darkMode
-                        ? COLORS.badge.warning.bgDark
-                        : COLORS.badge.warning.bg,
-                      icon: COLORS.warning,
-                    },
-                    info: {
-                      bg: darkMode
-                        ? COLORS.badge.info.bgDark
-                        : COLORS.badge.info.bg,
-                      icon: COLORS.info,
-                    },
-                  };
-                  const alertColor = alertColors[alert.type];
-
-                  return (
-                    <div
-                      key={alert.id}
-                      style={{
-                        padding: '12px',
-                        backgroundColor: alertColor.bg,
-                        borderRadius: '8px',
-                        borderLeft: `4px solid ${alertColor.icon}`,
-                      }}
-                    >
-                      <div style={{ display: 'flex', gap: '10px' }}>
-                        <AlertCircle
-                          size={18}
-                          color={alertColor.icon}
-                          style={{ flexShrink: 0, marginTop: '2px' }}
-                        />
-                        <div style={{ flex: 1 }}>
-                          <p
-                            style={{
-                              fontSize: '13px',
-                              color: textPrimary,
-                              marginBottom: '4px',
-                              lineHeight: '1.5',
-                            }}
-                          >
-                            {alert.message}
-                          </p>
-                          <p style={{ fontSize: '12px', color: textSecondary }}>
-                            {alert.time}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Recent Activity Card */}
-            <div
-              style={{
-                backgroundColor: cardBg,
-                borderRadius: '12px',
-                border: `1px solid ${borderColor}`,
-                boxShadow: COLORS.card.shadow.sm,
-                padding: '24px',
-              }}
+              Alerts & Notifications
+            </h3>
+            <p
+              className={`text-sm ${
+                darkMode ? 'text-gray-400' : 'text-gray-500'
+              } mb-4`}
             >
-              <h3
-                style={{
-                  fontSize: '18px',
-                  fontWeight: '600',
-                  color: textPrimary,
-                  marginBottom: '16px',
-                }}
-              >
-                Recent Activity
-              </h3>
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '16px',
-                }}
-              >
-                {recentActivity.map((activity, idx) => {
-                  const Icon = activity.icon;
-                  return (
-                    <div key={idx} style={{ display: 'flex', gap: '12px' }}>
-                      <div
-                        style={{
-                          width: '36px',
-                          height: '36px',
-                          borderRadius: '50%',
-                          backgroundColor: darkMode
-                            ? COLORS.surface.dark
-                            : COLORS.surface.light,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0,
-                        }}
-                      >
-                        <Icon size={18} color={COLORS.info} />
-                      </div>
-                      <div style={{ flex: 1 }}>
+              Important notices
+            </p>
+            <div className="space-y-3">
+              {alerts.map(alert => {
+                const alertColors = {
+                  critical: {
+                    bg: darkMode ? '#7f1d1d' : '#fee2e2',
+                    icon: COLORS.danger,
+                  },
+                  warning: {
+                    bg: darkMode ? '#713f12' : '#fef3c7',
+                    icon: COLORS.warning,
+                  },
+                  info: {
+                    bg: darkMode ? '#1e3a8a' : '#dbeafe',
+                    icon: COLORS.info,
+                  },
+                };
+                const alertColor = alertColors[alert.type];
+
+                return (
+                  <div
+                    key={alert.id}
+                    className="p-3 rounded-lg"
+                    style={{
+                      backgroundColor: alertColor.bg,
+                      borderLeft: `4px solid ${alertColor.icon}`,
+                    }}
+                  >
+                    <div className="flex gap-3">
+                      <AlertCircle
+                        size={18}
+                        color={alertColor.icon}
+                        className="flex-shrink-0 mt-0.5"
+                      />
+                      <div className="flex-1">
                         <p
-                          style={{
-                            fontSize: '14px',
-                            color: textPrimary,
-                            marginBottom: '2px',
-                          }}
+                          className={`text-sm ${
+                            darkMode ? 'text-gray-200' : 'text-gray-900'
+                          } leading-relaxed`}
                         >
-                          <strong>{activity.patient}</strong>
+                          {alert.message}
                         </p>
                         <p
-                          style={{
-                            fontSize: '13px',
-                            color: textSecondary,
-                            marginBottom: '2px',
-                          }}
+                          className={`text-xs ${
+                            darkMode ? 'text-gray-400' : 'text-gray-500'
+                          } mt-1`}
                         >
-                          {activity.action}
-                        </p>
-                        <p style={{ fontSize: '12px', color: textSecondary }}>
-                          {activity.time}
+                          {alert.time}
                         </p>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Quick Actions Card */}
-            <div
-              style={{
-                backgroundColor: cardBg,
-                borderRadius: '12px',
-                border: `1px solid ${borderColor}`,
-                boxShadow: COLORS.card.shadow.sm,
-                padding: '24px',
-              }}
-            >
-              <h3
-                style={{
-                  fontSize: '18px',
-                  fontWeight: '600',
-                  color: textPrimary,
-                  marginBottom: '16px',
-                }}
-              >
-                Quick Actions
-              </h3>
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(2, 1fr)',
-                  gap: '12px',
-                }}
-              >
-                <button
-                  style={{
-                    padding: '16px',
-                    backgroundColor: COLORS.button.create.bg,
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={e =>
-                    (e.currentTarget.style.backgroundColor =
-                      COLORS.button.create.bgHover)
-                  }
-                  onMouseLeave={e =>
-                    (e.currentTarget.style.backgroundColor =
-                      COLORS.button.create.bg)
-                  }
-                >
-                  <Calendar size={18} />
-                  <span
-                    style={{
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    New Appointment
-                  </span>
-                </button>
-                <button
-                  style={{
-                    padding: '16px',
-                    backgroundColor: COLORS.button.edit.bg,
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={e =>
-                    (e.currentTarget.style.backgroundColor =
-                      COLORS.button.edit.bgHover)
-                  }
-                  onMouseLeave={e =>
-                    (e.currentTarget.style.backgroundColor =
-                      COLORS.button.edit.bg)
-                  }
-                >
-                  <FileText size={18} />
-                  <span
-                    style={{
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    Write Note
-                  </span>
-                </button>
-                <button
-                  style={{
-                    padding: '16px',
-                    backgroundColor: 'transparent',
-                    color: textPrimary,
-                    border: `1px solid ${borderColor}`,
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={e =>
-                    (e.currentTarget.style.backgroundColor = darkMode
-                      ? COLORS.surface.darkHover
-                      : COLORS.surface.lightHover)
-                  }
-                  onMouseLeave={e =>
-                    (e.currentTarget.style.backgroundColor = 'transparent')
-                  }
-                >
-                  <Users size={18} />
-                  <span
-                    style={{
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    View Patients
-                  </span>
-                </button>
-                <button
-                  style={{
-                    padding: '16px',
-                    backgroundColor: 'transparent',
-                    color: textPrimary,
-                    border: `1px solid ${borderColor}`,
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={e =>
-                    (e.currentTarget.style.backgroundColor = darkMode
-                      ? COLORS.surface.darkHover
-                      : COLORS.surface.lightHover)
-                  }
-                  onMouseLeave={e =>
-                    (e.currentTarget.style.backgroundColor = 'transparent')
-                  }
-                >
-                  <Activity size={18} />
-                  <span
-                    style={{
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    Lab Results
-                  </span>
-                </button>
-              </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
