@@ -1,3 +1,4 @@
+// File: /src/layouts/BaseLayout.jsx
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { Outlet, useNavigate } from 'react-router-dom';
@@ -287,7 +288,7 @@ const BaseLayout = () => {
         </header>
 
         <main
-          className="flex-1 p-4 md:p-6"
+          className="flex-1 overflow-x-hidden"
           style={{
             backgroundColor: darkMode
               ? COLORS.background.dark

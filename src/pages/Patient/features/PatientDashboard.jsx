@@ -239,7 +239,7 @@ const PatientDashboard = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4">
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white shadow-lg">
         <div className="flex flex-col md:flex-row md:items-center justify-between">

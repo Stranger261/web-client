@@ -25,7 +25,7 @@ const Pagination = ({
   // Generate page numbers to display
   const getPageNumbers = () => {
     const pages = [];
-    const maxVisible = 5; // Max page numbers to show
+    const maxVisible = window.innerWidth < 640 ? 3 : 5; // Fewer pages on mobile
 
     if (totalPages <= maxVisible) {
       // Show all pages if total is less than max
@@ -65,7 +65,7 @@ const Pagination = ({
 
   return (
     <div
-      className={`flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 ${className}`}
+      className={`flex flex-col items-center gap-3 px-2 sm:px-4 py-3 ${className}`}
       style={{
         backgroundColor: isDarkMode
           ? COLORS.surface.dark
@@ -75,9 +75,9 @@ const Pagination = ({
         }`,
       }}
     >
-      {/* Items info */}
+      {/* Items info - Full width on mobile */}
       <div
-        className="text-sm"
+        className="text-xs sm:text-sm text-center sm:text-left w-full sm:w-auto order-2 sm:order-1"
         style={{
           color: isDarkMode ? COLORS.text.light : COLORS.text.secondary,
         }}
@@ -87,12 +87,12 @@ const Pagination = ({
         <span className="font-medium">{totalItems}</span> results
       </div>
 
-      {/* Pagination controls */}
-      <div className="flex items-center gap-2">
+      {/* Pagination controls - Centered layout */}
+      <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto order-1 sm:order-2">
         {/* Items per page selector */}
-        <div className="flex items-center gap-2 mr-4">
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-center">
           <span
-            className="text-sm whitespace-nowrap"
+            className="text-xs sm:text-sm whitespace-nowrap"
             style={{
               color: isDarkMode ? COLORS.text.light : COLORS.text.secondary,
             }}
@@ -102,7 +102,7 @@ const Pagination = ({
           <select
             value={itemsPerPage}
             onChange={e => onItemsPerPageChange(Number(e.target.value))}
-            className="px-2 py-1 text-sm rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-2 py-1 text-xs sm:text-sm rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500"
             style={{
               backgroundColor: isDarkMode
                 ? COLORS.input.backgroundDark
@@ -120,99 +120,102 @@ const Pagination = ({
           </select>
         </div>
 
-        {/* First page button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={ChevronsLeft}
-          iconOnly
-          disabled={currentPage === 1}
-          onClick={() => onPageChange(currentPage, 'first')}
-        />
-
-        {/* Previous page button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={ChevronLeft}
-          iconOnly
-          disabled={currentPage === 1}
-          onClick={() => onPageChange(currentPage, 'prev')}
-        />
-
-        {/* Page numbers */}
+        {/* Navigation buttons - Compact on mobile */}
         <div className="flex items-center gap-1">
-          {pageNumbers.map((page, index) => {
-            if (page === '...') {
+          {/* First page button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={ChevronsLeft}
+            iconOnly
+            disabled={currentPage === 1}
+            onClick={() => onPageChange(1)}
+          />
+
+          {/* Previous page button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={ChevronLeft}
+            iconOnly
+            disabled={currentPage === 1}
+            onClick={() => onPageChange(currentPage - 1)}
+          />
+
+          {/* Page numbers - Scrollable on very small screens */}
+          <div className="flex items-center gap-1 overflow-x-auto max-w-[200px] sm:max-w-none">
+            {pageNumbers.map((page, index) => {
+              if (page === '...') {
+                return (
+                  <span
+                    key={`ellipsis-${index}`}
+                    className="px-1 sm:px-2 text-xs sm:text-sm flex-shrink-0"
+                    style={{
+                      color: isDarkMode
+                        ? COLORS.text.light
+                        : COLORS.text.secondary,
+                    }}
+                  >
+                    ...
+                  </span>
+                );
+              }
+
+              const isActive = page === currentPage;
+
               return (
-                <span
-                  key={`ellipsis-${index}`}
-                  className="px-2 text-sm"
+                <button
+                  key={page}
+                  onClick={() => onPageChange(page)}
+                  className="px-2 sm:px-3 py-1 text-xs sm:text-sm rounded-lg transition-colors flex-shrink-0 min-w-[28px] sm:min-w-[32px]"
                   style={{
-                    color: isDarkMode
-                      ? COLORS.text.light
-                      : COLORS.text.secondary,
+                    backgroundColor: isActive ? COLORS.info : 'transparent',
+                    color: isActive
+                      ? '#ffffff'
+                      : isDarkMode
+                      ? COLORS.text.white
+                      : COLORS.text.primary,
+                    fontWeight: isActive ? '600' : '400',
+                  }}
+                  onMouseEnter={e => {
+                    if (!isActive) {
+                      e.currentTarget.style.backgroundColor = isDarkMode
+                        ? COLORS.surface.darkHover
+                        : COLORS.surface.lightHover;
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (!isActive) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }
                   }}
                 >
-                  ...
-                </span>
+                  {page}
+                </button>
               );
-            }
+            })}
+          </div>
 
-            const isActive = page === currentPage;
+          {/* Next page button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={ChevronRight}
+            iconOnly
+            disabled={currentPage === totalPages}
+            onClick={() => onPageChange(currentPage + 1)}
+          />
 
-            return (
-              <button
-                key={page}
-                onClick={() => onPageChange(page)}
-                className="px-3 py-1 text-sm rounded-lg transition-colors"
-                style={{
-                  backgroundColor: isActive ? COLORS.info : 'transparent',
-                  color: isActive
-                    ? '#ffffff'
-                    : isDarkMode
-                    ? COLORS.text.white
-                    : COLORS.text.primary,
-                  fontWeight: isActive ? '600' : '400',
-                }}
-                onMouseEnter={e => {
-                  if (!isActive) {
-                    e.currentTarget.style.backgroundColor = isDarkMode
-                      ? COLORS.surface.darkHover
-                      : COLORS.surface.lightHover;
-                  }
-                }}
-                onMouseLeave={e => {
-                  if (!isActive) {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }
-                }}
-              >
-                {page}
-              </button>
-            );
-          })}
+          {/* Last page button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={ChevronsRight}
+            iconOnly
+            disabled={currentPage === totalPages}
+            onClick={() => onPageChange(totalPages)}
+          />
         </div>
-
-        {/* Next page button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={ChevronRight}
-          iconOnly
-          disabled={currentPage === totalPages}
-          onClick={() => onPageChange(currentPage, 'next')}
-        />
-
-        {/* Last page button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={ChevronsRight}
-          iconOnly
-          disabled={currentPage === totalPages}
-          onClick={() => onPageChange(currentPage, 'last')}
-        />
       </div>
     </div>
   );

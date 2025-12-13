@@ -1,3 +1,4 @@
+// File: /src/pages/DoctorPages/features/DoctorAppointment.jsx
 import { useCallback, useEffect, useState } from 'react';
 import { Filter, X, Calendar, Search } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -7,8 +8,8 @@ import { Button } from '../../../components/ui/button';
 import Modal from '../../../components/ui/Modal';
 import Pagination from '../../../components/ui/pagination';
 import { Select } from '../../../components/ui/select';
+import { LoadingSpinner } from '../../../components/ui/loading-spinner';
 
-import LoadingOverlay from '../../../components/shared/LoadingOverlay';
 import AppointmentsTable from '../../../components/shared/AppointmentsTable';
 
 import AppointmentDetailModal from '../components/Appointment/AppointmentDetailModal';
@@ -39,19 +40,7 @@ const DoctorAppointment = () => {
   ).length;
 
   // ===== Pagination handlers =====
-  const handlePageChange = (currentPage, movement) => {
-    const totalPages = pagination.totalPages;
-    let newPage = currentPage;
-    if (currentPage < totalPages && movement === 'next') {
-      newPage++;
-    } else if (currentPage !== totalPages && movement === 'last') {
-      newPage = totalPages;
-    } else if (currentPage !== 1 && movement === 'prev') {
-      newPage--;
-    } else if (currentPage !== 1 && movement === 'first') {
-      newPage = 1;
-    }
-
+  const handlePageChange = newPage => {
     setCurrentPage(newPage);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -126,11 +115,12 @@ const DoctorAppointment = () => {
   }, [getDoctorAppointments, currentUser, filters, currentPage, limit]);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
+      {/* Header - Fixed width constraints */}
+      <header className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-lg mb-4 overflow-hidden">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 sm:px-6 py-4 gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <div className="min-w-0 flex-shrink">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
               My Appointments
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -138,11 +128,12 @@ const DoctorAppointment = () => {
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-3 w-full sm:w-auto">
+          <div className="flex flex-wrap gap-3 w-full sm:w-auto flex-shrink-0">
             <Button
               variant="outline"
               icon={Filter}
               onClick={() => setShowFilters(!showFilters)}
+              className="flex-1 sm:flex-none"
             >
               <span className="hidden sm:inline">Filters</span>
               <span className="sm:hidden">Filter</span>
@@ -155,6 +146,7 @@ const DoctorAppointment = () => {
           </div>
         </div>
 
+        {/* Filters Panel */}
         {showFilters && (
           <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 sm:px-6 py-4">
             <div className="flex items-center justify-between mb-4">
@@ -190,7 +182,7 @@ const DoctorAppointment = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
               {/* Status Filter */}
               <Select
                 label="Status"
@@ -331,63 +323,65 @@ const DoctorAppointment = () => {
         )}
       </header>
 
-      <div className="py-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-          {isLoading ? (
-            <LoadingOverlay />
-          ) : appointments.length > 0 ? (
-            <>
-              <AppointmentsTable
-                currentUser={currentUser}
-                appointments={appointments}
-                onViewDetails={viewAppointment}
-                onStartConsultation={handleStartConsultation}
-                onAddNotes={handleAddNotes}
-                onPrescribe={handlePrescribe}
-                showColumns={[
-                  'person',
-                  'date',
-                  'time',
-                  'method',
-                  'status',
-                  'priority',
-                  'actions',
-                ]}
-              />
+      {/* Content Area - Fixed width constraints */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-20">
+            <LoadingSpinner size="lg" />
+          </div>
+        ) : appointments.length > 0 ? (
+          <>
+            <AppointmentsTable
+              currentUser={currentUser}
+              appointments={appointments}
+              onViewDetails={viewAppointment}
+              onStartConsultation={handleStartConsultation}
+              onAddNotes={handleAddNotes}
+              onPrescribe={handlePrescribe}
+              showColumns={[
+                'person',
+                'date',
+                'time',
+                'method',
+                'status',
+                'priority',
+                'actions',
+              ]}
+            />
 
-              <Pagination
-                currentPage={currentPage}
-                totalPages={pagination.totalPages}
-                totalItems={pagination.total}
-                itemsPerPage={limit}
-                onPageChange={handlePageChange}
-                onItemsPerPageChange={handleItemsPerPageChange}
-              />
-            </>
-          ) : (
-            /* Empty State */
-            <div className="p-16 text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full mb-4">
-                <Calendar size={32} className="text-gray-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                No appointments found
-              </h3>
-              <p className="text-gray-500 dark:text-gray-400 mb-6">
-                {activeFiltersCount > 0
-                  ? 'Try adjusting your filters to see more results'
-                  : "You don't have any appointments scheduled"}
-              </p>
-              {activeFiltersCount > 0 && (
-                <Button variant="outline" onClick={handleClearFilters}>
-                  Clear Filters
-                </Button>
-              )}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={pagination.totalPages}
+              totalItems={pagination.total}
+              itemsPerPage={limit}
+              onPageChange={handlePageChange}
+              onItemsPerPageChange={handleItemsPerPageChange}
+            />
+          </>
+        ) : (
+          /* Empty State */
+          <div className="p-16 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full mb-4">
+              <Calendar size={32} className="text-gray-400" />
             </div>
-          )}
-        </div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              No appointments found
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">
+              {activeFiltersCount > 0
+                ? 'Try adjusting your filters to see more results'
+                : "You don't have any appointments scheduled"}
+            </p>
+            {activeFiltersCount > 0 && (
+              <Button variant="outline" onClick={handleClearFilters}>
+                Clear Filters
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
+      {/* MODAL */}
       <Modal
         isOpen={showDetails}
         onClose={() => setShowDetails(false)}

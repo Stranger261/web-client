@@ -1,18 +1,18 @@
 // File: /src/pages/PatientPages/features/PatientAppointment.jsx
 import { useCallback, useEffect, useState } from 'react';
-
+import { Filter, Plus, X, Calendar, Search } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useAppointment } from '../../../contexts/AppointmentContext';
-import { Filter, Plus, X, Calendar, Search } from 'lucide-react';
 
-import LoadingOverlay from '../../../components/shared/LoadingOverlay';
 import { Button } from '../../../components/ui/button';
-
-import AppointmentsTable from '../../../components/shared/AppointmentsTable';
-import CreateAppointment from '../components/Appointment/CreateAppointment';
 import Modal from '../../../components/ui/Modal';
 import Pagination from '../../../components/ui/pagination';
 import { Select } from '../../../components/ui/select';
+import { LoadingSpinner } from '../../../components/ui/loading-spinner';
+
+import AppointmentsTable from '../../../components/shared/AppointmentsTable';
+
+import CreateAppointment from '../components/Appointment/CreateAppointment';
 import AppointmentDetailModal from '../components/Appointment/AppointmentDetailModal';
 
 const PatientAppointment = () => {
@@ -32,6 +32,7 @@ const PatientAppointment = () => {
     from_date: '',
     to_date: '',
     appointment_type: '',
+    search: '',
   });
 
   const activeFiltersCount = Object.values(filters).filter(
@@ -39,19 +40,7 @@ const PatientAppointment = () => {
   ).length;
 
   // ===== Pagination handlers =====
-  const handlePageChange = (currentPage, movement) => {
-    const totalPages = pagination.totalPages;
-    let newPage = currentPage;
-    if (currentPage < totalPages && movement === 'next') {
-      newPage++;
-    } else if (currentPage !== totalPages && movement === 'last') {
-      newPage = totalPages;
-    } else if (currentPage !== 1 && movement === 'prev') {
-      newPage--;
-    } else if (currentPage !== 1 && movement === 'first') {
-      newPage = 1;
-    }
-
+  const handlePageChange = newPage => {
     setCurrentPage(newPage);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -77,12 +66,12 @@ const PatientAppointment = () => {
       from_date: '',
       to_date: '',
       appointment_type: '',
+      search: '',
     });
     setCurrentPage(1);
   };
 
   const viewAppointment = appt => {
-    console.log(appt);
     setSelectedAppt(appt);
     setShowDetails(true);
   };
@@ -92,25 +81,25 @@ const PatientAppointment = () => {
     const apiFilter = {
       page: currentPage,
       limit,
-      // Only include filters that have values
       ...(filters.status && { status: filters.status }),
       ...(filters.appointment_type && {
         appointment_type: filters.appointment_type,
       }),
       ...(filters.from_date && { from_date: filters.from_date }),
       ...(filters.to_date && { to_date: filters.to_date }),
+      ...(filters.search && { search: filters.search }),
     };
 
-    getPatientAppointments(currentUser.patient.patient_uuid, apiFilter);
+    getPatientAppointments(currentUser?.patient?.patient_uuid, apiFilter);
   }, [getPatientAppointments, currentUser, filters, currentPage, limit]);
 
   return (
-    <div className="space-y-6">
-      {/* Header Card - Same style as dashboard */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-6 py-4 gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Header */}
+      <header className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-lg mb-4 overflow-hidden">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 sm:px-6 py-4 gap-4">
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
               My Appointments
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -118,13 +107,15 @@ const PatientAppointment = () => {
             </p>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3 w-full sm:w-auto flex-shrink-0">
             <Button
               variant="outline"
               icon={Filter}
               onClick={() => setShowFilters(!showFilters)}
+              className="flex-1 sm:flex-none"
             >
-              Filters
+              <span className="hidden sm:inline">Filters</span>
+              <span className="sm:hidden">Filter</span>
               {activeFiltersCount > 0 && (
                 <span className="ml-1 px-2.5 py-0.5 bg-blue-600 text-white text-xs font-bold rounded-full">
                   {activeFiltersCount}
@@ -132,19 +123,21 @@ const PatientAppointment = () => {
               )}
             </Button>
 
-            {/* New Appointment Button */}
             <Button
               variant="create"
               icon={Plus}
               onClick={() => setShowCreate(true)}
+              className="flex-1 sm:flex-none"
             >
-              New Appointment
+              <span className="hidden sm:inline">New Appointment</span>
+              <span className="sm:hidden">New</span>
             </Button>
           </div>
         </div>
 
+        {/* Filters Panel */}
         {showFilters && (
-          <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4">
+          <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 sm:px-6 py-4">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Search className="text-blue-600" size={18} />
@@ -160,10 +153,28 @@ const PatientAppointment = () => {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Search Bar */}
+            <div className="mb-4">
+              <div className="relative">
+                <Search
+                  size={18}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                />
+                <input
+                  type="text"
+                  name="search"
+                  value={filters.search}
+                  onChange={handleFilterChange}
+                  placeholder="Search by doctor name or reason..."
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Status Filter */}
               <Select
-                label="Appointment Status"
+                label="Status"
                 name="status"
                 value={filters.status}
                 onChange={handleFilterChange}
@@ -173,11 +184,13 @@ const PatientAppointment = () => {
                   { value: 'completed', label: 'Completed' },
                   { value: 'cancelled', label: 'Cancelled' },
                   { value: 'rescheduled', label: 'Rescheduled' },
+                  { value: 'no-show', label: 'No Show' },
                 ]}
               />
 
+              {/* Appointment Type */}
               <Select
-                label="Appointment type"
+                label="Appointment Type"
                 name="appointment_type"
                 value={filters.appointment_type}
                 onChange={handleFilterChange}
@@ -203,8 +216,7 @@ const PatientAppointment = () => {
                     name="from_date"
                     value={filters.from_date}
                     onChange={handleFilterChange}
-                    className="w-full pl-10 pr-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white"
-                    style={{ fontSize: '16px' }}
+                    className="w-full pl-10 pr-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-gray-900 dark:text-white"
                   />
                 </div>
               </div>
@@ -223,107 +235,71 @@ const PatientAppointment = () => {
                     name="to_date"
                     value={filters.to_date}
                     onChange={handleFilterChange}
-                    className="w-full pl-10 pr-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white"
-                    style={{ fontSize: '16px' }}
+                    className="w-full pl-10 pr-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-gray-900 dark:text-white"
                   />
                 </div>
               </div>
+            </div>
 
-              {/* Clear Button */}
-              <div className="flex items-end">
-                <Button
-                  variant="outline"
-                  onClick={handleClearFilters}
-                  disabled={activeFiltersCount === 0}
-                >
-                  <X size={16} className="mr-1" />
-                  Clear All
-                </Button>
-              </div>
+            {/* Clear Button */}
+            <div className="mt-4 flex justify-end">
+              <Button
+                variant="outline"
+                onClick={handleClearFilters}
+                disabled={activeFiltersCount === 0}
+              >
+                <X size={16} className="mr-1" />
+                Clear All Filters
+              </Button>
             </div>
 
             {/* Active Filters Pills */}
             {activeFiltersCount > 0 && (
               <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex items-center gap-2 flex-wrap">
                 <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                  Active:
+                  Active Filters:
                 </span>
-                {filters.status && (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-xs font-medium border border-blue-200 dark:border-blue-800">
-                    Status: {filters.status}
-                    <button
-                      onClick={() =>
-                        handleFilterChange({
-                          target: { name: 'status', value: '' },
-                        })
-                      }
-                      className="hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-sm p-0.5"
+                {Object.entries(filters).map(([key, value]) => {
+                  if (!value || key === 'search') return null;
+                  return (
+                    <span
+                      key={key}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-xs font-medium border border-blue-200 dark:border-blue-800"
                     >
-                      <X size={12} />
-                    </button>
-                  </span>
-                )}
-                {filters.appointment_type && (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-md text-xs font-medium border border-green-200 dark:border-green-800">
-                    Type: {filters.appointment_type}
-                    <button
-                      onClick={() =>
-                        handleFilterChange({
-                          target: { name: 'appointment_type', value: '' },
-                        })
-                      }
-                      className="hover:bg-green-100 dark:hover:bg-green-900/50 rounded-sm p-0.5"
-                    >
-                      <X size={12} />
-                    </button>
-                  </span>
-                )}
-                {filters.from_date && (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-md text-xs font-medium border border-purple-200 dark:border-purple-800">
-                    From: {filters.from_date}
-                    <button
-                      onClick={() =>
-                        handleFilterChange({
-                          target: { name: 'from_date', value: '' },
-                        })
-                      }
-                      className="hover:bg-purple-100 dark:hover:bg-purple-900/50 rounded-sm p-0.5"
-                    >
-                      <X size={12} />
-                    </button>
-                  </span>
-                )}
-                {filters.to_date && (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-md text-xs font-medium border border-orange-200 dark:border-orange-800">
-                    To: {filters.to_date}
-                    <button
-                      onClick={() =>
-                        handleFilterChange({
-                          target: { name: 'to_date', value: '' },
-                        })
-                      }
-                      className="hover:bg-orange-100 dark:hover:bg-orange-900/50 rounded-sm p-0.5"
-                    >
-                      <X size={12} />
-                    </button>
-                  </span>
-                )}
+                      {key.replace('_', ' ')}: {value}
+                      <button
+                        onClick={() =>
+                          handleFilterChange({
+                            target: { name: key, value: '' },
+                          })
+                        }
+                        className="hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-sm p-0.5"
+                      >
+                        <X size={12} />
+                      </button>
+                    </span>
+                  );
+                })}
               </div>
             )}
           </div>
         )}
-      </div>
+      </header>
 
-      {/* Appointments Content Card - Same style as dashboard cards */}
-      {isLoading ? (
-        <LoadingOverlay />
-      ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-          {appointments.length > 0 ? (
-            <>
+      {/* Content Area with padding for cards */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-20">
+            <LoadingSpinner size="lg" />
+          </div>
+        ) : appointments.length > 0 ? (
+          <>
+            {/* Add padding wrapper for cards, table handles its own padding */}
+            <div>
               <AppointmentsTable
                 currentUser={currentUser}
                 appointments={appointments}
+                onViewDetails={viewAppointment}
                 showColumns={[
                   'person',
                   'date',
@@ -332,50 +308,50 @@ const PatientAppointment = () => {
                   'appointment_type',
                   'actions',
                 ]}
-                onViewDetails={viewAppointment}
               />
-
-              <Pagination
-                currentPage={currentPage}
-                totalPages={pagination.totalPages}
-                totalItems={pagination.total}
-                itemsPerPage={limit}
-                onPageChange={handlePageChange}
-                onItemsPerPageChange={handleItemsPerPageChange}
-              />
-            </>
-          ) : (
-            /* Empty State */
-            <div className="p-16 text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full mb-4">
-                <Calendar size={32} className="text-gray-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                No appointments found
-              </h3>
-              <p className="text-gray-500 dark:text-gray-400 mb-6">
-                {activeFiltersCount > 0
-                  ? 'Try adjusting your filters to see more results'
-                  : "You don't have any appointments yet. Create your first one!"}
-              </p>
-              {activeFiltersCount > 0 ? (
-                <Button variant="outline" onClick={handleClearFilters}>
-                  Clear Filters
-                </Button>
-              ) : (
-                <Button
-                  variant="create"
-                  icon={Plus}
-                  onClick={() => setShowCreate(true)}
-                >
-                  Schedule Appointment
-                </Button>
-              )}
             </div>
-          )}
-        </div>
-      )}
 
+            <Pagination
+              currentPage={currentPage}
+              totalPages={pagination.totalPages}
+              totalItems={pagination.total}
+              itemsPerPage={limit}
+              onPageChange={handlePageChange}
+              onItemsPerPageChange={handleItemsPerPageChange}
+            />
+          </>
+        ) : (
+          /* Empty State */
+          <div className="p-16 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full mb-4">
+              <Calendar size={32} className="text-gray-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              No appointments found
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">
+              {activeFiltersCount > 0
+                ? 'Try adjusting your filters to see more results'
+                : "You don't have any appointments scheduled"}
+            </p>
+            {activeFiltersCount > 0 ? (
+              <Button variant="outline" onClick={handleClearFilters}>
+                Clear Filters
+              </Button>
+            ) : (
+              <Button
+                variant="create"
+                icon={Plus}
+                onClick={() => setShowCreate(true)}
+              >
+                Schedule Appointment
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* MODALS */}
       <Modal
         isOpen={showCreate}
         onClose={() => setShowCreate(false)}
@@ -387,7 +363,7 @@ const PatientAppointment = () => {
       <Modal
         isOpen={showDetails}
         onClose={() => setShowDetails(false)}
-        title="Appointment details"
+        title="Appointment Details"
       >
         <AppointmentDetailModal
           isOpen={showDetails}

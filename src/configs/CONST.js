@@ -12,6 +12,13 @@ export const GOOGLEMAPSURL = `https://google.com/maps/dir/?api=1&destination=${e
 // export const PATIENT_SERVICE_BASE_URL = 'http://localhost:56732/api/v1';
 // export const APPOINTMENT_SERVICE_BASE_URL = 'http://localhost:56733/api/v1';
 
+// mobile urls
+
+// export const AUTH_SERVICE_BASE_URL = 'http://192.168.100.11:56731/api/v1';
+// export const PATIENT_SERVICE_BASE_URL = 'http://192.168.100.11:56732/api/v1';
+// export const APPOINTMENT_SERVICE_BASE_URL =
+//   'http://192.168.100.11:56733/api/v1';
+
 export const AUTH_SERVICE_BASE_URL =
   'https://auth.health-ease-hospital.com/api/v1';
 export const PATIENT_SERVICE_BASE_URL =

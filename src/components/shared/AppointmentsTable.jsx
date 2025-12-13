@@ -57,19 +57,27 @@ const AppointmentsTable = ({
   // Get patient display info
   const getPatientDisplay = appointment => {
     const { patient, createdBy } = appointment;
+    const { person } = patient;
+    const { user } = person;
+    const fullName = `${person?.first_name} ${person?.middle_name || ''} ${
+      person?.last_name
+    }`;
 
-    if (patient && typeof patient === 'object' && patient.fullName) {
+    if (patient && typeof patient === 'object' && fullName) {
       return {
-        name: patient.displayName || patient.fullName,
-        subInfo: patient.medicalRecordNumber
-          ? `MRN: ${patient.medicalRecordNumber}`
-          : `Age: ${patient.age || 'N/A'}`,
+        name: fullName,
+        mrn: patient.mrn || 'N/A',
+        age: patient.age || 'N/A',
+        phone: user.phone || '',
+        email: user.email || '',
       };
     }
 
     if (createdBy && createdBy.role === 'patient') {
       return {
-        name: `${createdBy.firstname || ''} ${createdBy.lastname || ''}`.trim(),
+        name: `${createdBy.first_name || ''} ${
+          createdBy.last_name || ''
+        }`.trim(),
         subInfo: createdBy.phone || createdBy.email || '',
       };
     }
@@ -77,7 +85,7 @@ const AppointmentsTable = ({
     return {
       name:
         typeof patient === 'string'
-          ? `Patient ID: ${patient}`
+          ? `Patient UUID: ${patient.patient_uuid}`
           : 'Unknown Patient',
       subInfo: '',
     };
@@ -121,113 +129,126 @@ const AppointmentsTable = ({
   // Card View Component
   const AppointmentCard = ({ appointment }) => {
     const person = getPersonDisplay(appointment);
-    const [showActions, setShowActions] = useState(false);
 
     return (
-      <div className="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-750 rounded-lg border border-gray-200 dark:border-gray-700 transition-colors">
-        <div className="flex items-center space-x-4 flex-1 min-w-0">
-          <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg flex-shrink-0">
+      <div className="flex flex-col gap-2.5 p-3 hover:bg-gray-50 dark:hover:bg-gray-750 rounded-lg border border-gray-200 dark:border-gray-700 transition-colors max-w-full">
+        {/* Header Row */}
+        <div className="flex items-start gap-2 w-full">
+          <div className="bg-blue-50 dark:bg-blue-900/30 p-2 rounded-lg flex-shrink-0">
             {currentUser.role === 'patient' ? (
-              <Stethoscope className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              <Stethoscope className="h-4 w-4 text-blue-600 dark:text-blue-400" />
             ) : (
-              <User className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              <User className="h-4 w-4 text-blue-600 dark:text-blue-400" />
             )}
           </div>
+
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <h3 className="font-semibold text-sm text-gray-900 dark:text-white truncate">
                 {person.name}
               </h3>
               {appointment.priority === 'high' && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full text-xs font-semibold">
-                  <AlertCircle size={12} />
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full text-[10px] font-semibold flex-shrink-0">
+                  <AlertCircle size={9} />
                   HIGH
                 </span>
               )}
             </div>
             {person.subInfo && (
-              <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
+              <p className="text-[11px] text-gray-600 dark:text-gray-400 truncate mt-0.5">
                 {person.subInfo}
               </p>
             )}
-            <div className="flex flex-wrap items-center gap-3 mt-2">
-              <span className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                <Calendar className="h-3 w-3 mr-1" />
-                {formatDate(appointment.appointment_date)}
-              </span>
-              <span className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                <Clock className="h-3 w-3 mr-1" />
-                {appointment.start_time
-                  ? `${formatTime(appointment.start_time)} - ${formatTime(
-                      appointment.end_time
-                    )}`
-                  : 'TBD'}
-              </span>
-              {appointment.location && (
-                <span className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                  <MapPin className="h-3 w-3 mr-1" />
-                  {appointment.location}
-                </span>
-              )}
-            </div>
-            {appointment.reason && (
-              <p className="text-sm text-gray-700 dark:text-gray-300 mt-2 line-clamp-1">
-                {appointment.reason}
-              </p>
-            )}
           </div>
+
+          <Badge
+            variant={getStatusVariant(appointment.status)}
+            className="flex-shrink-0 text-[10px] px-2 py-0.5"
+          >
+            {appointment.status.charAt(0).toUpperCase() +
+              appointment.status.slice(1)}
+          </Badge>
         </div>
 
-        <div className="flex items-center space-x-3 flex-shrink-0">
-          <div className="flex flex-col items-end gap-2">
-            <Badge variant={getStatusVariant(appointment.status)}>
-              {appointment.status.charAt(0).toUpperCase() +
-                appointment.status.slice(1)}
-            </Badge>
-            {showColumns.includes('appointment_type') && (
-              <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md text-xs font-medium">
-                {appointment.appointment_type}
-              </span>
-            )}
-          </div>
+        {/* Info Row */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+          <span className="flex items-center text-gray-600 dark:text-gray-400 flex-shrink-0">
+            <Calendar className="h-3 w-3 mr-1" />
+            <span className="whitespace-nowrap">
+              {formatDate(appointment.appointment_date)}
+            </span>
+          </span>
+          <span className="flex items-center text-gray-600 dark:text-gray-400 flex-shrink-0">
+            <Clock className="h-3 w-3 mr-1" />
+            <span className="whitespace-nowrap">
+              {appointment.start_time
+                ? `${formatTime(appointment.start_time)}-${formatTime(
+                    appointment.end_time
+                  )}`
+                : 'TBD'}
+            </span>
+          </span>
+          {showColumns.includes('appointment_type') && (
+            <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-[10px] font-medium flex-shrink-0">
+              {appointment.appointment_type}
+            </span>
+          )}
+        </div>
 
+        {/* Location Row */}
+        {appointment.location && (
+          <div className="flex items-center text-[11px] text-gray-600 dark:text-gray-400">
+            <MapPin className="h-3 w-3 mr-1 flex-shrink-0" />
+            <span className="truncate">{appointment.location}</span>
+          </div>
+        )}
+
+        {/* Reason */}
+        {appointment.reason && (
+          <p className="text-[11px] text-gray-700 dark:text-gray-300 line-clamp-2 leading-relaxed">
+            {appointment.reason}
+          </p>
+        )}
+
+        {/* Actions Row */}
+        <div className="flex items-center justify-between gap-2 pt-2 border-t border-gray-200 dark:border-gray-700">
           {/* Doctor Actions */}
           {currentUser.role === 'doctor' && (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 flex-shrink-0">
               {appointment.consultation_method === 'video' &&
                 onStartConsultation && (
                   <button
                     onClick={() => onStartConsultation(appointment)}
-                    className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                    className="p-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-md hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
                     title="Start Video Call"
                   >
-                    <Video size={16} />
+                    <Video size={13} />
                   </button>
                 )}
               {appointment.consultation_method === 'phone' &&
                 onStartConsultation && (
                   <button
                     onClick={() => onStartConsultation(appointment)}
-                    className="p-2 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+                    className="p-1.5 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-md hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
                     title="Start Phone Call"
                   >
-                    <Phone size={16} />
+                    <Phone size={13} />
                   </button>
                 )}
               {appointment.has_notes && (
                 <span
-                  className="p-2 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-lg"
+                  className="p-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-md"
                   title="Has Clinical Notes"
                 >
-                  <FileText size={16} />
+                  <FileText size={13} />
                 </span>
               )}
               {appointment.has_prescription && (
                 <span
-                  className="p-2 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-lg"
+                  className="p-1.5 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-md"
                   title="Has Prescription"
                 >
-                  <Pill size={16} />
+                  <Pill size={13} />
                 </span>
               )}
             </div>
@@ -237,6 +258,7 @@ const AppointmentsTable = ({
             variant="ghost"
             size="sm"
             onClick={() => onViewDetails(appointment)}
+            className="ml-auto text-xs px-3 py-1 h-7"
           >
             Details
           </Button>
@@ -249,13 +271,13 @@ const AppointmentsTable = ({
   if (view === 'card') {
     return (
       <div
-        className={`space-y-4 p-4 transition-opacity duration-300 ${
+        className={`space-y-2.5 p-2 transition-opacity duration-300 w-full ${
           changing ? 'opacity-50' : 'opacity-100'
         }`}
       >
         {appointments.map(appointment => (
           <AppointmentCard
-            key={appointment.appointment_uuid || appointment.id}
+            key={appointment.appointment_id}
             appointment={appointment}
           />
         ))}
@@ -558,7 +580,7 @@ const AppointmentsTable = ({
 
   return (
     <div
-      className={`transition-opacity duration-300 ${
+      className={`transition-opacity duration-300 overflow-x-auto ${
         changing ? 'opacity-50' : 'opacity-100'
       }`}
     >

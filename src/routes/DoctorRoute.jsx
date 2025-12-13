@@ -5,10 +5,9 @@ import AuthProvider from '../contexts/AuthContext';
 import AppointmentProvider from '../contexts/AppointmentContext';
 import ScheduleProvider from '../contexts/ScheduleContext';
 
-import BaseLayout from '../layouts/BaseLayout';
-
 import DoctorDashboard from '../pages/Doctor/features/DoctorDashboard';
 import DoctorAppointments from '../pages/Doctor/features/DoctorAppointments';
+import ConditionalLayout from '../layouts/ConditionalLayout';
 
 const DoctorRoute = (
   <Route
@@ -18,7 +17,7 @@ const DoctorRoute = (
         <AuthProvider>
           <AppointmentProvider>
             <ScheduleProvider>
-              <BaseLayout />
+              <ConditionalLayout />
             </ScheduleProvider>
           </AppointmentProvider>
         </AuthProvider>
