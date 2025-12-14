@@ -8,6 +8,7 @@ import ScheduleProvider from '../contexts/ScheduleContext';
 import DoctorDashboard from '../pages/Doctor/features/DoctorDashboard';
 import DoctorAppointments from '../pages/Doctor/features/DoctorAppointments';
 import ConditionalLayout from '../layouts/ConditionalLayout';
+import PatientAppointment from '../pages/Patient/features/PatientAppointment';
 
 const DoctorRoute = (
   <Route

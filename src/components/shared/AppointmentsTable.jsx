@@ -114,6 +114,11 @@ const AppointmentsTable = ({
 
   // Get status variant for badge
   const getStatusVariant = status => {
+    if (!status) return 'default';
+
+    // Normalize status to lowercase and handle various formats
+    const normalizedStatus = status.toLowerCase().trim();
+
     const statusMap = {
       confirmed: 'success',
       cancelled: 'danger',
@@ -123,15 +128,16 @@ const AppointmentsTable = ({
       'checked-in': 'success',
       'no-show': 'danger',
     };
-    return statusMap[status] || 'default';
+
+    return statusMap[normalizedStatus] || 'default';
   };
 
-  // Card View Component
+  // Card View Component - FIXED LAYOUT
   const AppointmentCard = ({ appointment }) => {
     const person = getPersonDisplay(appointment);
 
     return (
-      <div className="flex flex-col gap-2.5 p-3 hover:bg-gray-50 dark:hover:bg-gray-750 rounded-lg border border-gray-200 dark:border-gray-700 transition-colors max-w-full">
+      <div className="flex flex-col gap-2.5 p-3 hover:bg-gray-50 dark:hover:bg-gray-750 rounded-lg border border-gray-200 dark:border-gray-700 transition-colors w-full">
         {/* Header Row */}
         <div className="flex items-start gap-2 w-full">
           <div className="bg-blue-50 dark:bg-blue-900/30 p-2 rounded-lg flex-shrink-0">
@@ -143,10 +149,20 @@ const AppointmentsTable = ({
           </div>
 
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <h3 className="font-semibold text-sm text-gray-900 dark:text-white truncate">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="font-semibold text-sm text-gray-900 dark:text-white">
                 {person.name}
               </h3>
+
+              <Badge
+                variant={getStatusVariant(appointment.status)}
+                className="inline-flex text-[10px] px-2.5 py-1"
+              >
+                {appointment.status
+                  ? appointment.status.charAt(0).toUpperCase() +
+                    appointment.status.slice(1)
+                  : 'Unknown'}
+              </Badge>
               {appointment.priority === 'high' && (
                 <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full text-[10px] font-semibold flex-shrink-0">
                   <AlertCircle size={9} />
@@ -155,23 +171,15 @@ const AppointmentsTable = ({
               )}
             </div>
             {person.subInfo && (
-              <p className="text-[11px] text-gray-600 dark:text-gray-400 truncate mt-0.5">
+              <p className="text-[11px] text-gray-600 dark:text-gray-400 mt-0.5">
                 {person.subInfo}
               </p>
             )}
           </div>
-
-          <Badge
-            variant={getStatusVariant(appointment.status)}
-            className="flex-shrink-0 text-[10px] px-2 py-0.5"
-          >
-            {appointment.status.charAt(0).toUpperCase() +
-              appointment.status.slice(1)}
-          </Badge>
         </div>
 
-        {/* Info Row */}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+        {/* Date, Time and Status Row */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px]">
           <span className="flex items-center text-gray-600 dark:text-gray-400 flex-shrink-0">
             <Calendar className="h-3 w-3 mr-1" />
             <span className="whitespace-nowrap">
@@ -188,8 +196,12 @@ const AppointmentsTable = ({
                 : 'TBD'}
             </span>
           </span>
+        </div>
+
+        {/* Status Badge on its own line */}
+        <div>
           {showColumns.includes('appointment_type') && (
-            <span className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-[10px] font-medium flex-shrink-0">
+            <span className="inline-flex w-fit px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-[10px] font-medium">
               {appointment.appointment_type}
             </span>
           )}
@@ -271,7 +283,7 @@ const AppointmentsTable = ({
   if (view === 'card') {
     return (
       <div
-        className={`space-y-2.5 p-2 transition-opacity duration-300 w-full ${
+        className={`space-y-2.5 px-4 py-2 transition-opacity duration-300 w-full ${
           changing ? 'opacity-50' : 'opacity-100'
         }`}
       >

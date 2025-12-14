@@ -76,6 +76,7 @@ const DoctorAppointment = () => {
   const viewAppointment = appt => {
     setSelectedAppt(appt);
     setShowDetails(true);
+    console.log(appt);
   };
 
   const handleStartConsultation = appt => {
@@ -344,6 +345,7 @@ const DoctorAppointment = () => {
                 'time',
                 'method',
                 'status',
+                'appointment_type',
                 'priority',
                 'actions',
               ]}
