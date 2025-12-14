@@ -14,17 +14,17 @@ export const GOOGLEMAPSURL = `https://google.com/maps/dir/?api=1&destination=${e
 
 // mobile urls
 
-export const AUTH_SERVICE_BASE_URL = 'http://192.168.100.11:56731/api/v1';
-export const PATIENT_SERVICE_BASE_URL = 'http://192.168.100.11:56732/api/v1';
-export const APPOINTMENT_SERVICE_BASE_URL =
-  'http://192.168.100.11:56733/api/v1';
-
-// export const AUTH_SERVICE_BASE_URL =
-//   'https://auth.health-ease-hospital.com/api/v1';
-// export const PATIENT_SERVICE_BASE_URL =
-//   'https://auth.health-ease-hospital.com/api/v1';
+// export const AUTH_SERVICE_BASE_URL = 'http://192.168.100.11:56731/api/v1';
+// export const PATIENT_SERVICE_BASE_URL = 'http://192.168.100.11:56732/api/v1';
 // export const APPOINTMENT_SERVICE_BASE_URL =
-//   'https://auth.health-ease-hospital.com/api/v1';
+//   'http://192.168.100.11:56733/api/v1';
+
+export const AUTH_SERVICE_BASE_URL =
+  'https://auth.health-ease-hospital.com/api/v1';
+export const PATIENT_SERVICE_BASE_URL =
+  'https://auth.health-ease-hospital.com/api/v1';
+export const APPOINTMENT_SERVICE_BASE_URL =
+  'https://auth.health-ease-hospital.com/api/v1';
 
 // Other constants
 export const DEFAULT_TIMEOUT = 30000; // 30 seconds
