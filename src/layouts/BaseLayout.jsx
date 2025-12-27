@@ -1,5 +1,5 @@
 // File: /src/layouts/BaseLayout.jsx
-import { useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { Outlet, useNavigate } from 'react-router-dom';
 import {
@@ -9,23 +9,56 @@ import {
   Moon,
   Search,
   ChevronDown,
+  X,
+  Check,
+  Clock,
+  AlertCircle,
+  RefreshCw,
+  Calendar,
 } from 'lucide-react';
 
 import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationContext';
+
 import LoadingOverlay from '../components/shared/LoadingOverlay';
 import Sidebar from '../components/shared/Sidebar';
 import { COLORS, GRADIENTS } from '../configs/CONST';
 import { normalizedWord } from '../utils/normalizedWord';
+import { useSocket } from '../contexts/SocketContext';
+import { Button } from '../components/ui/button';
+import { formatNotificationTime } from '../utils/FormatTime';
 
 const BaseLayout = () => {
   const navigate = useNavigate();
+  const { isLoading, currentUser, logout } = useAuth();
+  const {
+    notifications,
+    setNotifications,
+    getUserNotifications,
+    readNotification,
+    readAllNotification,
+    notifPagination,
+  } = useNotification();
+  const { isConnected, socket } = useSocket();
+
   const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
-  const [notifications, setNotifications] = useState(3);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const { isLoading, currentUser, logout } = useAuth();
+  const notificationScrollRef = useRef(null);
+
+  // Load notifications only when opening for the first time
+  useEffect(() => {
+    getUserNotifications();
+  }, []);
+
+  const unreadCount = notifications?.filter(n => !n.is_read)?.length || 0;
+  const hasMore = notifPagination.currentPage < notifPagination.totalPages;
+
   const uuidDisplay =
     currentUser?.staff?.staff_uuid ||
     currentUser?.person?.patient?.patient_uuid;
@@ -43,6 +76,110 @@ const BaseLayout = () => {
     }
   };
 
+  const toggleNotifications = () => {
+    setIsNotifOpen(prev => !prev);
+    // Don't reset pagination here, let useEffect handle initial load
+  };
+
+  const markAsRead = async id => {
+    const notif = notifications.find(n => n.notification_id === id);
+    if (notif?.is_read) return;
+
+    try {
+      await readNotification(id);
+      setNotifications(prev =>
+        prev?.map(notif =>
+          notif.notification_id === id ? { ...notif, is_read: true } : notif
+        )
+      );
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      setNotifications(prev =>
+        prev?.map(notif => ({ ...notif, is_read: true }))
+      );
+      await readAllNotification();
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      // Reset notifications array before loading page 1
+      setNotifications([]);
+      await getUserNotifications();
+    } catch (error) {
+      console.error('Error refreshing notifications:', error);
+      toast.error('Failed to refresh notifications');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const loadMore = useCallback(async () => {
+    if (isLoadingMore || !hasMore) return;
+
+    setIsLoadingMore(true);
+    try {
+      const nextPage = notifPagination.currentPage + 1;
+      const filters = {
+        status: '',
+        limit: notifPagination.limit,
+        page: nextPage,
+      };
+      // Call getUserNotifications which should append the new page to existing notifications
+      const res = await getUserNotifications(filters);
+      const moreNotif = res.notification;
+      const latestNotifDisplay = [...notifications, ...moreNotif];
+      setNotifications(latestNotifDisplay);
+    } catch (error) {
+      console.error('Error loading more notifications:', error);
+      toast.error('Failed to load more notifications');
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [
+    isLoadingMore,
+    hasMore,
+    notifPagination.currentPage,
+    getUserNotifications,
+    notifPagination.limit,
+  ]);
+
+  const handleScroll = useCallback(
+    e => {
+      const { scrollTop, scrollHeight, clientHeight } = e.target;
+      // Trigger load more when user scrolls to bottom (with 50px threshold)
+      if (
+        scrollHeight - scrollTop <= clientHeight + 50 &&
+        hasMore &&
+        !isLoadingMore
+      ) {
+        loadMore();
+      }
+    },
+    [hasMore, isLoadingMore, loadMore]
+  );
+
+  const getNotificationIcon = type => {
+    switch (type) {
+      case 'new_appointment':
+        return Calendar;
+      case 'alert':
+        return AlertCircle;
+      case 'success':
+        return Check;
+      default:
+        return Clock;
+    }
+  };
+
   const logoutHandler = async () => {
     setLoggingOut(true);
     try {
@@ -57,6 +194,41 @@ const BaseLayout = () => {
       setLoggingOut(false);
     }
   };
+
+  useEffect(() => {
+    if (!socket || !isConnected) {
+      return;
+    }
+
+    const doctor_uuid = currentUser?.person?.staff?.staff_uuid;
+    const lastname = currentUser?.person?.last_name;
+
+    if (doctor_uuid && lastname && currentUser.role === 'doctor') {
+      socket.emit('doctor-room', {
+        doctor_uuid,
+        lastname,
+      });
+
+      socket.on('new-appointment-booked', data => {
+        // Clear notifications and reload from page 1 to get the new one
+        setNotifications([]);
+        getUserNotifications();
+        toast.success('New appointment booked!');
+      });
+    }
+
+    return () => {
+      if (socket) {
+        socket.off('new-appointment-booked');
+      }
+    };
+  }, [
+    isConnected,
+    socket,
+    currentUser,
+    getUserNotifications,
+    setNotifications,
+  ]);
 
   if (isLoading || loggingOut) {
     return <LoadingOverlay />;
@@ -76,7 +248,7 @@ const BaseLayout = () => {
           : COLORS.background.main,
       }}
     >
-      {/* --- Desktop Sidebar --- */}
+      {/* Desktop Sidebar */}
       <div className="hidden lg:block fixed left-0 top-0 h-full z-30">
         <Sidebar
           isOpen={isDesktopSidebarOpen}
@@ -86,10 +258,9 @@ const BaseLayout = () => {
         />
       </div>
 
-      {/* --- Mobile Sidebar (overlay) --- */}
+      {/* Mobile Sidebar */}
       {isMobileSidebarOpen && (
         <div className="fixed inset-0 z-40 flex lg:hidden">
-          {/* Backdrop */}
           <div
             className="fixed inset-0 bg-black bg-opacity-50"
             onClick={() => setIsMobileSidebarOpen(false)}
@@ -105,7 +276,7 @@ const BaseLayout = () => {
         </div>
       )}
 
-      {/* --- Main Content --- */}
+      {/* Main Content */}
       <div
         className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${
           isDesktopSidebarOpen ? 'lg:ml-64' : 'lg:ml-20'
@@ -135,49 +306,218 @@ const BaseLayout = () => {
 
           <div className="flex items-center space-x-6">
             {/* Dark Mode Toggle */}
-            <button
+            <Button
+              variant="ghost"
+              size="md"
+              icon={darkMode ? Sun : Moon}
+              iconOnly
               onClick={toggleDarkMode}
-              className="p-2 rounded-full transition-colors"
-              style={{
-                backgroundColor: darkMode
-                  ? COLORS.surface.darkHover
-                  : COLORS.button.hover,
-              }}
               aria-label="Toggle dark mode"
-            >
-              {darkMode ? (
-                <Sun
-                  className="h-5 w-5"
-                  style={{ color: COLORS.status.yellow }}
-                />
-              ) : (
-                <Moon
-                  className="h-5 w-5"
-                  style={{ color: COLORS.text.primary }}
-                />
-              )}
-            </button>
+            />
 
-            {/* Notifications */}
+            {/* Notifications - Desktop */}
             <div className="relative">
-              <button
-                className="p-2 rounded-full transition-colors relative"
-                style={{
-                  backgroundColor: darkMode
-                    ? COLORS.surface.darkHover
-                    : COLORS.button.hover,
-                }}
-              >
-                <Bell className="h-5 w-5" />
-                {notifications > 0 && (
-                  <span
-                    className="absolute -top-1 -right-1 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
-                    style={{ backgroundColor: COLORS.status.red }}
+              <Button
+                variant="ghost"
+                size="md"
+                icon={Bell}
+                iconOnly
+                onClick={toggleNotifications}
+                className="relative"
+              />
+              {unreadCount > 0 && (
+                <span
+                  className="absolute -top-1 -right-1 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-semibold"
+                  style={{ backgroundColor: COLORS.status.red }}
+                >
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+
+              {/* Desktop Notification Dropdown */}
+              {isNotifOpen && (
+                <div
+                  className="absolute right-0 mt-2 w-96 rounded-lg shadow-lg overflow-hidden"
+                  style={{
+                    backgroundColor: darkMode
+                      ? COLORS.surface.dark
+                      : COLORS.surface.light,
+                    border: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}`,
+                  }}
+                >
+                  {/* Header */}
+                  <div
+                    className="flex items-center justify-between px-4 py-3 border-b"
+                    style={{
+                      borderColor: darkMode ? '#374151' : '#e5e7eb',
+                    }}
                   >
-                    {notifications}
-                  </span>
-                )}
-              </button>
+                    <div>
+                      <h3 className="font-semibold text-lg">Notifications</h3>
+                      {notifPagination.total > 0 && (
+                        <p
+                          className="text-xs"
+                          style={{ color: COLORS.text.secondary }}
+                        >
+                          {notifPagination.total} total
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        icon={RefreshCw}
+                        iconOnly
+                        onClick={handleRefresh}
+                        disabled={isRefreshing}
+                        className={isRefreshing ? 'animate-spin' : ''}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleMarkAllAsRead}
+                        disabled={unreadCount === 0}
+                      >
+                        Mark all read
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Notification List */}
+                  <div
+                    ref={notificationScrollRef}
+                    className="max-h-96 overflow-y-auto"
+                    onScroll={handleScroll}
+                  >
+                    {!notifications || notifications.length === 0 ? (
+                      <div className="px-4 py-12 text-center flex flex-col items-center gap-3">
+                        <Bell
+                          className="h-12 w-12 opacity-30"
+                          style={{ color: COLORS.text.secondary }}
+                        />
+                        <div>
+                          <p
+                            className="font-medium mb-1"
+                            style={{ color: COLORS.text.secondary }}
+                          >
+                            No notifications
+                          </p>
+                          <p
+                            className="text-sm mb-3"
+                            style={{ color: COLORS.text.secondary }}
+                          >
+                            You're all caught up!
+                          </p>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            icon={RefreshCw}
+                            onClick={handleRefresh}
+                            disabled={isRefreshing}
+                          >
+                            Refresh
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {notifications.map(notif => {
+                          const NotifIcon = getNotificationIcon(notif.type);
+                          return (
+                            <div
+                              key={notif.notification_id}
+                              className="px-4 py-3 border-b hover:bg-opacity-50 cursor-pointer transition-colors"
+                              style={{
+                                backgroundColor: !notif.is_read
+                                  ? darkMode
+                                    ? 'rgba(59, 130, 246, 0.1)'
+                                    : 'rgba(59, 130, 246, 0.05)'
+                                  : 'transparent',
+                                borderColor: darkMode ? '#374151' : '#e5e7eb',
+                              }}
+                              onClick={() => markAsRead(notif.notification_id)}
+                            >
+                              <div className="flex items-start gap-3">
+                                <div
+                                  className="p-2 rounded-full flex-shrink-0"
+                                  style={{
+                                    backgroundColor: darkMode
+                                      ? 'rgba(59, 130, 246, 0.2)'
+                                      : 'rgba(59, 130, 246, 0.1)',
+                                  }}
+                                >
+                                  <NotifIcon
+                                    className="h-4 w-4"
+                                    style={{ color: COLORS.primary }}
+                                  />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <p className="font-medium text-sm">
+                                      {notif.title}
+                                    </p>
+                                    {!notif.is_read && (
+                                      <div
+                                        className="w-2 h-2 rounded-full mt-1 flex-shrink-0"
+                                        style={{
+                                          backgroundColor: COLORS.primary,
+                                        }}
+                                      />
+                                    )}
+                                  </div>
+                                  <p
+                                    className="text-sm mt-1"
+                                    style={{ color: COLORS.text.secondary }}
+                                  >
+                                    {notif.message}
+                                  </p>
+                                  <p
+                                    className="text-xs mt-1"
+                                    style={{ color: COLORS.text.secondary }}
+                                  >
+                                    {formatNotificationTime(notif.created_at)}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {isLoadingMore && (
+                          <div className="px-4 py-3 text-center">
+                            <RefreshCw
+                              className="h-5 w-5 animate-spin mx-auto"
+                              style={{ color: COLORS.primary }}
+                            />
+                          </div>
+                        )}
+                        {hasMore && !isLoadingMore && (
+                          <div className="px-4 py-3 text-center">
+                            <button
+                              onClick={loadMore}
+                              className="text-sm font-medium hover:underline transition-colors"
+                              style={{ color: COLORS.primary }}
+                            >
+                              Load more ({notifPagination.currentPage} of{' '}
+                              {notifPagination.totalPages})
+                            </button>
+                          </div>
+                        )}
+                        {!hasMore && notifications.length > 0 && (
+                          <div className="px-4 py-3 text-center">
+                            <p
+                              className="text-xs"
+                              style={{ color: COLORS.text.secondary }}
+                            >
+                              No more notifications
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* User Profile */}
@@ -242,50 +582,231 @@ const BaseLayout = () => {
           </div>
 
           <div className="flex items-center space-x-3">
-            <button
+            <Button
+              variant="ghost"
+              size="md"
+              icon={darkMode ? Sun : Moon}
+              iconOnly
               onClick={toggleDarkMode}
-              className="p-2 rounded-full"
-              style={{
-                backgroundColor: darkMode
-                  ? COLORS.surface.darkHover
-                  : 'transparent',
-              }}
-            >
-              {darkMode ? (
-                <Sun
-                  className="h-5 w-5"
-                  style={{ color: COLORS.status.yellow }}
-                />
-              ) : (
-                <Moon className="h-5 w-5" />
-              )}
-            </button>
+            />
 
-            <button className="p-2 relative">
-              <Bell className="h-5 w-5" />
-              {notifications > 0 && (
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="md"
+                icon={Bell}
+                iconOnly
+                onClick={toggleNotifications}
+                className="relative"
+              />
+              {unreadCount > 0 && (
                 <span
-                  className="absolute top-1 right-1 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center"
+                  className="absolute top-1 right-1 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-semibold"
                   style={{ backgroundColor: COLORS.status.red }}
                 >
-                  {notifications}
+                  {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
-            </button>
+            </div>
 
-            <button
-              className="p-2 rounded-md"
+            <Button
+              variant="ghost"
+              size="md"
+              icon={MenuIcon}
+              iconOnly
               onClick={() => setIsMobileSidebarOpen(true)}
-              style={{
-                backgroundColor: darkMode
-                  ? COLORS.surface.darkHover
-                  : 'transparent',
-              }}
-            >
-              <MenuIcon size={24} />
-            </button>
+            />
           </div>
         </header>
+
+        {/* Mobile Notification Overlay */}
+        {isNotifOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden">
+            <div
+              className="absolute inset-0 bg-black bg-opacity-50"
+              onClick={() => setIsNotifOpen(false)}
+            />
+            <div
+              className="absolute inset-0 flex flex-col"
+              style={{
+                backgroundColor: darkMode
+                  ? COLORS.surface.dark
+                  : COLORS.surface.light,
+              }}
+            >
+              {/* Mobile Notification Header */}
+              <div
+                className="flex items-center justify-between px-4 py-4 border-b"
+                style={{
+                  borderColor: darkMode ? '#374151' : '#e5e7eb',
+                }}
+              >
+                <div>
+                  <h3 className="font-semibold text-lg">Notifications</h3>
+                  {notifPagination.total > 0 && (
+                    <p
+                      className="text-xs"
+                      style={{ color: COLORS.text.secondary }}
+                    >
+                      {notifPagination.total} total
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    icon={RefreshCw}
+                    iconOnly
+                    onClick={handleRefresh}
+                    disabled={isRefreshing}
+                    className={isRefreshing ? 'animate-spin' : ''}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleMarkAllAsRead}
+                    disabled={unreadCount === 0}
+                  >
+                    Mark all read
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="md"
+                    icon={X}
+                    iconOnly
+                    onClick={() => setIsNotifOpen(false)}
+                  />
+                </div>
+              </div>
+
+              {/* Mobile Notification List */}
+              <div className="flex-1 overflow-y-auto" onScroll={handleScroll}>
+                {!notifications || notifications.length === 0 ? (
+                  <div className="px-4 py-16 text-center flex flex-col items-center gap-3">
+                    <Bell
+                      className="h-16 w-16 opacity-30"
+                      style={{ color: COLORS.text.secondary }}
+                    />
+                    <div>
+                      <p
+                        className="font-medium text-lg mb-2"
+                        style={{ color: COLORS.text.secondary }}
+                      >
+                        No notifications
+                      </p>
+                      <p
+                        className="text-sm mb-4"
+                        style={{ color: COLORS.text.secondary }}
+                      >
+                        You're all caught up!
+                      </p>
+                      <Button
+                        variant="ghost"
+                        size="md"
+                        icon={RefreshCw}
+                        onClick={handleRefresh}
+                        disabled={isRefreshing}
+                      >
+                        Refresh
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {notifications.map(notif => {
+                      const NotifIcon = getNotificationIcon(notif.type);
+                      return (
+                        <div
+                          key={notif.notification_id}
+                          className="px-4 py-4 border-b active:bg-opacity-70 transition-colors"
+                          style={{
+                            backgroundColor: !notif.is_read
+                              ? darkMode
+                                ? 'rgba(59, 130, 246, 0.1)'
+                                : 'rgba(59, 130, 246, 0.05)'
+                              : 'transparent',
+                            borderColor: darkMode ? '#374151' : '#e5e7eb',
+                          }}
+                          onClick={() => markAsRead(notif.notification_id)}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div
+                              className="p-2 rounded-full flex-shrink-0"
+                              style={{
+                                backgroundColor: darkMode
+                                  ? 'rgba(59, 130, 246, 0.2)'
+                                  : 'rgba(59, 130, 246, 0.1)',
+                              }}
+                            >
+                              <NotifIcon
+                                className="h-5 w-5"
+                                style={{ color: COLORS.primary }}
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2">
+                                <p className="font-medium">{notif.title}</p>
+                                {!notif.is_read && (
+                                  <div
+                                    className="w-2 h-2 rounded-full mt-1 flex-shrink-0"
+                                    style={{ backgroundColor: COLORS.primary }}
+                                  />
+                                )}
+                              </div>
+                              <p
+                                className="text-sm mt-1"
+                                style={{ color: COLORS.text.secondary }}
+                              >
+                                {notif.message}
+                              </p>
+                              <p
+                                className="text-xs mt-2"
+                                style={{ color: COLORS.text.secondary }}
+                              >
+                                {formatNotificationTime(notif.created_at)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {isLoadingMore && (
+                      <div className="px-4 py-4 text-center">
+                        <RefreshCw
+                          className="h-6 w-6 animate-spin mx-auto"
+                          style={{ color: COLORS.primary }}
+                        />
+                      </div>
+                    )}
+                    {hasMore && !isLoadingMore && (
+                      <div className="px-4 py-4 text-center">
+                        <button
+                          onClick={loadMore}
+                          className="text-sm font-medium hover:underline transition-colors"
+                          style={{ color: COLORS.primary }}
+                        >
+                          Load more ({notifPagination.currentPage} of{' '}
+                          {notifPagination.totalPages})
+                        </button>
+                      </div>
+                    )}
+                    {!hasMore && notifications.length > 0 && (
+                      <div className="px-4 py-4 text-center">
+                        <p
+                          className="text-xs"
+                          style={{ color: COLORS.text.secondary }}
+                        >
+                          No more notifications
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         <main
           className="flex-1 overflow-x-hidden"

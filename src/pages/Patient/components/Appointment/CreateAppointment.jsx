@@ -1,6 +1,6 @@
 // src/pages/CreateAppointment.jsx
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
 
@@ -17,6 +17,8 @@ import { ConfirmationStep } from './Steps/ConfirmationStep.jsx';
 import InstructionBanner from './Steps/InstructionBanner.jsx';
 import LoadingOverlay from '../../../../components/shared/LoadingOverlay';
 import { LoadingSpinner } from '../../../../components/ui/loading-spinner.jsx';
+import { useSocket } from '../../../../contexts/SocketContext.jsx';
+import { toastInfo } from '../../../../components/ui/toast-custom.jsx';
 
 const CreateAppointment = ({ onClose }) => {
   const {
@@ -29,24 +31,74 @@ const CreateAppointment = ({ onClose }) => {
     clearSchedules,
     isLoading,
   } = useSchedule();
+  const { currentUser } = useAuth();
   const { bookUserAppointment, isBooking, refreshAppointments } =
     useAppointment();
-  const { currentUser } = useAuth();
+
+  // for socket
+  const { isConnected, socket } = useSocket();
+  const currentRoomRef = useRef(new Set());
 
   const [currentStep, setCurrentStep] = useState(0);
   const [appointmentDetails, setAppointmentDetails] = useState({
     department: null,
-    doctor: undefined, // Initial state for "no choice made"
-    assignedDoctor: null, // For the "Any Doctor" flow
+    doctor: undefined,
+    assignedDoctor: null,
     date: null,
     time: null,
     reason: '',
   });
+  // for updates
+  const [slotBeingBooked, setSlotBeingBooked] = useState(null);
+  const [takenSlot, setTakenSlot] = useState(null);
 
   useEffect(() => {
     getDepartments();
     getAllDoctors();
   }, [getDepartments, getAllDoctors]);
+
+  // for slot-taken
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleSlotTaken = data => {
+      if (slotBeingBooked && slotBeingBooked.time === data.time) {
+        setSlotBeingBooked(null);
+        return;
+      }
+
+      const currentDate = appointmentDetails.date;
+      if (!currentDate) return;
+
+      const dateKey = format(currentDate, 'yyyy-MM-dd');
+
+      if (dateKey === data.date) {
+        setTakenSlot({
+          time: data.time,
+          date: data.date,
+          doctor_uuid: data.doctor_uuid,
+          timeStamp: Date.now(),
+        });
+
+        if (currentStep === 2) {
+          toastInfo(`Time slot ${data.time} was just booked`);
+        }
+      }
+    };
+
+    socket.on('slot-taken', handleSlotTaken);
+
+    return () => {
+      socket.off('slot-taken', handleSlotTaken);
+    };
+  }, [
+    socket,
+    appointmentDetails.doctor,
+    appointmentDetails.date,
+    appointmentDetails.time,
+    slotBeingBooked,
+    currentStep,
+  ]);
 
   const doctorsInSelectedDept = useMemo(() => {
     if (!appointmentDetails.department || !allDoctors) return [];
@@ -56,7 +108,6 @@ const CreateAppointment = ({ onClose }) => {
   }, [appointmentDetails.department, allDoctors]);
 
   const handleSelect = (field, value) => {
-    console.log(appointmentDetails);
     setAppointmentDetails(prev => ({ ...prev, [field]: value }));
   };
 
@@ -72,9 +123,12 @@ const CreateAppointment = ({ onClose }) => {
     nextStep();
   };
 
-  // FIX: This now accepts a single object argument and destructures it.
-  const handleDateTimeSelect = ({ date, time, assignedDoctor }) => {
+  const handleDateSelect = date => {
     handleSelect('date', date);
+  };
+
+  // FIX: This now accepts a single object argument and destructures it.
+  const handleDateTimeSelect = ({ time, assignedDoctor }) => {
     handleSelect('time', time);
     if (assignedDoctor) {
       handleSelect('assignedDoctor', assignedDoctor);
@@ -105,13 +159,30 @@ const CreateAppointment = ({ onClose }) => {
       reason: appointmentDetails.reason,
     };
 
+    setSlotBeingBooked(appointmentDetails.time?.time);
+
     try {
       const res = await bookUserAppointment(payload);
       await refreshAppointments(currentUser.patient.patient_uuid);
+
+      if (currentRoomRef.current && socket) {
+        const doctor = appointmentDetails.doctor;
+        const date = appointmentDetails.date;
+
+        if (doctor && date) {
+          socket.emit('leave-appointment-room', {
+            doctor_uuid: doctor.staff_uuid,
+            date: format(date, 'yyyy-MM-dd'),
+          });
+          currentRoomRef.current = null;
+        }
+      }
+
       nextStep();
       toast.success(res.message);
     } catch (error) {
       toast.error(`Booking failed: ${error.message || 'Something went wrong'}`);
+      setSlotBeingBooked(null);
     }
   };
 
@@ -119,6 +190,20 @@ const CreateAppointment = ({ onClose }) => {
   const prevStep = () => {
     if (currentStep === 2) {
       clearSchedules();
+
+      // leave room if go back to step before date and time
+      if (currentRoomRef.current && socket) {
+        const doctor = appointmentDetails.doctor;
+        const date = appointmentDetails.date;
+
+        if (doctor && date) {
+          socket.emit('leave-appointment-room', {
+            doctor_uuid: doctor.staff_uuid,
+            date: format(date, 'yyyy-MM-dd'),
+          });
+          currentRoomRef.current = null;
+        }
+      }
     }
     setCurrentStep(prev => (prev > 0 ? prev - 1 : prev));
   };
@@ -163,6 +248,8 @@ const CreateAppointment = ({ onClose }) => {
             selectedDoctor={appointmentDetails.doctor}
             selectedDepartment={appointmentDetails.department}
             onDateTimeSelect={handleDateTimeSelect}
+            onDateSelect={handleDateSelect}
+            takenSlot={takenSlot}
           />
         );
       case 3:

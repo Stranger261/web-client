@@ -802,21 +802,23 @@ export const IdentificationForm = ({
         )}
 
         <div className="flex justify-between pt-6 border-t">
-          <Button type="button" variant="outline" onClick={onBack}>
-            Back
-          </Button>
-          <Button
-            type="submit"
-            loading={isSubmitting}
-            disabled={
-              !idImage || !data.id_type || !data.id_number || isSubmitting
-            }
-            onClick={handleSubmit}
-          >
-            {isSubmitting
-              ? 'Submitting...'
-              : 'Complete Profile & Verify Identity'}
-          </Button>
+          <div className="mr-4">
+            <Button type="button" variant="outline" onClick={onBack}>
+              Back
+            </Button>
+          </div>
+          <div className="">
+            <Button
+              type="submit"
+              loading={isSubmitting}
+              disabled={
+                !idImage || !data.id_type || !data.id_number || isSubmitting
+              }
+              onClick={handleSubmit}
+            >
+              {isSubmitting ? 'Submitting...' : 'Complete Profile'}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

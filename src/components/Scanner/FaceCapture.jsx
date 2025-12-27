@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   CheckCircle,
   XCircle,
@@ -106,6 +106,13 @@ function FaceCapture() {
       console.log('🎥 Starting camera...');
       setStatus({ message: 'Accessing camera...', type: 'info' });
 
+      // Check if mediaDevices API is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error(
+          'Camera API not available. This requires HTTPS or localhost connection.'
+        );
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           width: { ideal: 640 },
@@ -165,12 +172,32 @@ function FaceCapture() {
         }
       }, 1000);
     } catch (error) {
+      console.error('❌ Camera error:', error);
+
+      let errorMessage = 'Camera access failed. ';
+
+      // Specific error handling
+      if (error.message.includes('not available')) {
+        errorMessage +=
+          'Camera API requires HTTPS or localhost. When using ADB, set up Chrome DevTools port forwarding (chrome://inspect#devices) or ensure your connection is secure.';
+      } else if (error.name === 'NotAllowedError') {
+        errorMessage +=
+          'Camera permission denied. Please allow camera access in your browser settings and refresh the page.';
+      } else if (error.name === 'NotFoundError') {
+        errorMessage += 'No camera found on this device.';
+      } else if (error.name === 'NotReadableError') {
+        errorMessage += 'Camera is already in use by another application.';
+      } else if (error.name === 'OverconstrainedError') {
+        errorMessage +=
+          'Camera constraints not supported. Try a different camera.';
+      } else {
+        errorMessage += error.message;
+      }
+
       setStatus({
-        message:
-          'Camera access denied. Please allow camera access and refresh.',
+        message: errorMessage,
         type: 'error',
       });
-      console.error('❌ Camera error:', error);
     }
   };
 

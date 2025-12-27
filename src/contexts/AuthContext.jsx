@@ -15,21 +15,6 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // DEBUG: Monitor all state changes
-  useEffect(() => {
-    console.log('🔄 AUTH STATE CHANGED:', {
-      currentUser: currentUser
-        ? {
-            email: currentUser.email,
-            role: currentUser.role,
-            registration_status: currentUser.registration_status,
-          }
-        : null,
-      hasToken: !!token,
-      isLoading,
-    });
-  }, [currentUser, token, isLoading]);
-
   const fetchCurrentUser = async () => {
     try {
       setIsLoading(true);
@@ -59,7 +44,6 @@ export const AuthProvider = ({ children }) => {
     try {
       setIsLoading(true);
       const user = await authApi.login(email, password);
-      console.log(user);
 
       setCurrentUser(user.data.user);
       setToken(user.data.token || true);

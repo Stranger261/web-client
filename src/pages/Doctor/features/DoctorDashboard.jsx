@@ -23,9 +23,16 @@ import {
 } from 'lucide-react';
 import Badge from '../../../components/ui/badge';
 
+import { useSocket } from '../../../contexts/SocketContext';
+import { useAuth } from '../../../contexts/AuthContext';
+
 import { COLORS } from '../../../configs/CONST';
+import { useEffect } from 'react';
 
 const DoctorDashboard = () => {
+  const { currentUser } = useAuth();
+  const { socket, isConnected } = useSocket();
+
   const [darkMode, setDarkMode] = useState(false);
 
   // Mock data
@@ -173,6 +180,7 @@ const DoctorDashboard = () => {
     }
     return null;
   };
+
 
   return (
     <div className="space-y-6 p-4">

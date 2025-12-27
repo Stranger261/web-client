@@ -1,13 +1,10 @@
 import axios from 'axios';
-import {
-  APPOINTMENT_SERVICE_BASE_URL,
-  INTERNAL_API_KEY,
-} from '../configs/CONST';
+import { DEVELOPMENT_BASE_URL, INTERNAL_API_KEY } from '../configs/CONST';
 
 class appointmentSerevice {
   constructor() {
     this.appointmentApi = axios.create({
-      baseURL: `${APPOINTMENT_SERVICE_BASE_URL}/appointments`,
+      baseURL: `${DEVELOPMENT_BASE_URL}/appointments`,
       withCredentials: true,
       headers: {
         'x-internal-api-key': INTERNAL_API_KEY,
@@ -21,8 +18,6 @@ class appointmentSerevice {
         '/book',
         appointmentData
       );
-
-      console.log(bookedAppointment);
 
       return bookedAppointment.data;
     } catch (error) {
@@ -63,7 +58,7 @@ class appointmentSerevice {
     try {
       const doctorAppointments = await this.appointmentApi.get(
         `/doctors/${doctorUuid}/appointments`,
-        filters
+        { params: filters }
       );
 
       return doctorAppointments.data;

@@ -32,7 +32,6 @@ const LoginPage = () => {
     }
 
     setErrors(newErrors);
-    console.log(Object.keys(newErrors));
     return Object.keys(newErrors).length === 0;
   };
 
@@ -46,17 +45,13 @@ const LoginPage = () => {
     try {
       await new Promise(res => setTimeout(res, 1000));
       const response = await login(formData);
-      const delay = new Promise(res => setTimeout(res, 1000));
 
-      console.log(response);
-      // const [apiCallRes, ]
       toast.success(response?.message || 'Login successfully.');
       if (response.data.user.registration_status === 'completed') {
-        navigate(
-          `/${response.data.user.role}/${
-            response.data.user.role === 'patient' ? 'my-' : ''
-          }dashboard`
-        );
+        const targetPath = `/${response.data.user.role}/${
+          response.data.user.role === 'patient' ? 'my-' : ''
+        }dashboard`;
+        navigate(targetPath);
       } else {
         navigate('/patient/complete-registration');
       }

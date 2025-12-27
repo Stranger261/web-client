@@ -19,7 +19,6 @@ export const AppointmentProvider = ({ children }) => {
     try {
       setIsBooking(true);
       const res = await appointmentApi.bookUserAppointment(appointmentData);
-      console.log(res);
 
       return res;
     } catch (error) {

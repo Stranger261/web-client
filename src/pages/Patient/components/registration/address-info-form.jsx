@@ -376,10 +376,14 @@ export const AddressInfoForm = ({ data, onChange, onNext, onBack }) => {
       />
 
       <div className="flex justify-between pt-6 border-t">
-        <Button type="button" variant="outline" onClick={onBack}>
-          Back
-        </Button>
-        <Button type="submit">Continue to Emergency Contact</Button>
+        <div className="mr-4 ">
+          <Button type="button" variant="outline" onClick={onBack}>
+            Back
+          </Button>
+        </div>
+        <div className="ml-4 ">
+          <Button type="submit">Continue</Button>
+        </div>
       </div>
     </form>
   );

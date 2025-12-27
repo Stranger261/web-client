@@ -1,10 +1,10 @@
 import axios from 'axios';
-import { AUTH_SERVICE_BASE_URL, INTERNAL_API_KEY } from '../configs/CONST';
+import { DEVELOPMENT_BASE_URL, INTERNAL_API_KEY } from '../configs/CONST';
 
 class faceService {
   constructor() {
     this.faceApi = axios.create({
-      baseURL: AUTH_SERVICE_BASE_URL,
+      baseURL: DEVELOPMENT_BASE_URL,
       withCredentials: true,
       headers: {
         'x-internal-api-key': INTERNAL_API_KEY,

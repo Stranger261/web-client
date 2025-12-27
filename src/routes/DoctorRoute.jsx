@@ -4,24 +4,29 @@ import ProtectedRoute from './ProtectedRoute';
 import AuthProvider from '../contexts/AuthContext';
 import AppointmentProvider from '../contexts/AppointmentContext';
 import ScheduleProvider from '../contexts/ScheduleContext';
+import SocketProvider from '../contexts/SocketContext';
 
 import DoctorDashboard from '../pages/Doctor/features/DoctorDashboard';
 import DoctorAppointments from '../pages/Doctor/features/DoctorAppointments';
 import ConditionalLayout from '../layouts/ConditionalLayout';
-import PatientAppointment from '../pages/Patient/features/PatientAppointment';
+import NotificationProvider from '../contexts/NotificationContext';
 
 const DoctorRoute = (
   <Route
     path="/doctor"
     element={
       <ProtectedRoute requiredRole="doctor">
-        <AuthProvider>
-          <AppointmentProvider>
-            <ScheduleProvider>
-              <ConditionalLayout />
-            </ScheduleProvider>
-          </AppointmentProvider>
-        </AuthProvider>
+        <SocketProvider>
+          <NotificationProvider>
+            <AuthProvider>
+              <AppointmentProvider>
+                <ScheduleProvider>
+                  <ConditionalLayout />
+                </ScheduleProvider>
+              </AppointmentProvider>
+            </AuthProvider>
+          </NotificationProvider>
+        </SocketProvider>
       </ProtectedRoute>
     }
   >

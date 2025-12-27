@@ -1,35 +1,97 @@
 // src/components/Steps/DateTimeStep.jsx
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
+
 import { useSchedule } from '../../../../../contexts/ScheduleContext';
+
 import Calendar from '../../../../../components/shared/Calendar';
+
 import { formatTime } from '../../../../../utils/FormatTime';
+import { useSocket } from '../../../../../contexts/SocketContext';
 
 export const DateTimeStep = ({
   selectedDoctor,
   selectedDepartment,
   onDateTimeSelect,
+  onDateSelect,
+  takenSlot,
 }) => {
+  const { isConnected, socket } = useSocket();
+  const currentRoomRef = useRef(new Set());
+
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
+  const [localTimeSlot, setLocalTimeSlot] = useState([]);
+
+  const [takenSlotsByDate, setTakenSlotsByDate] = useState({});
+
   const { doctorSchedule, combinedSchedule, isLoading } = useSchedule();
 
   const handleDateClick = date => {
-    console.log(date);
     setSelectedDate(date);
     setSelectedTimeSlot(null);
+
+    if (onDateSelect) {
+      onDateSelect(date);
+    }
   };
 
   const handleTimeSelect = slot => {
-    console.log(slot);
     setSelectedTimeSlot(slot);
     onDateTimeSelect({
-      date: selectedDate,
       time: slot,
       assignedDoctor: slot.doctorId,
     });
   };
+
+  // join-room for any doctor
+  useEffect(() => {
+    if (!socket || !isConnected || !selectedDate) return;
+
+    const dateKey = format(selectedDate, 'yyyy-MM-dd');
+    const newRooms = new Set();
+
+    if (selectedDoctor) {
+      const roomName = `${selectedDoctor.staff_uuid}_${dateKey}`;
+      newRooms.add(roomName);
+    } else {
+      const allAvailableDoctors = combinedSchedule || [];
+
+      allAvailableDoctors.forEach(sched => {
+        if (sched?.doctor?.staff_uuid) {
+          const roomName = `${sched.doctor.staff_uuid}_${dateKey}`;
+          newRooms.add(roomName);
+        }
+      });
+    }
+
+    // leave unnecessary room
+    currentRoomRef.current.forEach(oldRoom => {
+      if (!newRooms.has(oldRoom)) {
+        const [doctor_uuid, date] = oldRoom.split('_');
+        socket.emit('leave-appointment-room', { doctor_uuid, date });
+      }
+    });
+
+    newRooms.forEach(newRoom => {
+      if (!currentRoomRef.current.has(newRoom)) {
+        const [doctor_uuid, date] = newRoom.split('_');
+        socket.emit('join-appointment-room', { doctor_uuid, date });
+      }
+    });
+
+    currentRoomRef.current = newRooms;
+
+    // clean up
+    return () => {
+      currentRoomRef.current.forEach(room => {
+        const [doctor_uuid, date] = room.split('_');
+        socket.emit('leave-appointment-room', { doctor_uuid, date });
+      });
+      currentRoomRef.current.clear();
+    };
+  }, [socket, isConnected, selectedDate, selectedDoctor, combinedSchedule]);
 
   const availabilityForDay = useMemo(() => {
     if (!selectedDate) return { timeSlots: [] };
@@ -88,6 +150,50 @@ export const DateTimeStep = ({
     return { timeSlots: [] };
   }, [selectedDate, doctorSchedule, combinedSchedule, selectedDoctor]);
 
+  useEffect(() => {
+    if (availabilityForDay?.timeSlots && selectedDate) {
+      const dateKey = format(selectedDate, 'yyyy-MM-dd');
+
+      const takenForThisDate = takenSlotsByDate[dateKey] || [];
+
+      const filteredSlots = availabilityForDay.timeSlots.filter(
+        slot => !takenForThisDate.includes(slot.time)
+      );
+
+      setLocalTimeSlot(filteredSlots);
+    }
+  }, [availabilityForDay, selectedDate, takenSlotsByDate]);
+
+  // slot update
+  useEffect(() => {
+    if (takenSlot?.time && takenSlot?.date) {
+      setTakenSlotsByDate(prev => {
+        const dateKey = takenSlot.date;
+        const existingTakenSlots = prev[dateKey] || [];
+
+        if (existingTakenSlots.includes(takenSlot.time)) {
+          return prev;
+        }
+
+        const updated = {
+          ...prev,
+          [dateKey]: [...existingTakenSlots, takenSlot.time],
+        };
+
+        return updated;
+      });
+
+      if (selectedDate) {
+        const currentDateKey = format(selectedDate, 'yyyy-MM-dd');
+        if (currentDateKey === takenSlot.date) {
+          setLocalTimeSlot(prevSlots =>
+            prevSlots.filter(slot => slot.time !== takenSlot.time)
+          );
+        }
+      }
+    }
+  }, [takenSlot, selectedDate]);
+
   if (!selectedDepartment) {
     return (
       <p className="text-center text-gray-500">
@@ -127,7 +233,7 @@ export const DateTimeStep = ({
         </div>
       );
 
-    if (availabilityForDay?.timeSlots.length === 0)
+    if (localTimeSlot.length === 0)
       return (
         <div className="flex flex-col items-center justify-center py-12 text-gray-400">
           <svg
@@ -149,9 +255,7 @@ export const DateTimeStep = ({
         </div>
       );
 
-    const availableCount = availabilityForDay.timeSlots.filter(
-      s => !s.is_booked
-    ).length;
+    const availableCount = localTimeSlot.filter(s => !s.is_booked).length;
 
     return (
       <>
@@ -166,7 +270,7 @@ export const DateTimeStep = ({
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-80 overflow-y-auto pr-1">
-          {availabilityForDay?.timeSlots.map((slot, index) => {
+          {localTimeSlot.map((slot, index) => {
             const slotKey = `${slot.time}-${slot.doctorId || index}`;
             const isSelected =
               selectedTimeSlot?.time === slot.time &&
@@ -243,6 +347,7 @@ export const DateTimeStep = ({
           <Calendar
             selectedDate={selectedDate}
             handleDateClick={handleDateClick}
+            takenSlotsByDate={takenSlotsByDate}
           />
         </div>
 

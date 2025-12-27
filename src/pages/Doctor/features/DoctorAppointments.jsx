@@ -1,8 +1,10 @@
 // File: /src/pages/DoctorPages/features/DoctorAppointment.jsx
 import { useCallback, useEffect, useState } from 'react';
 import { Filter, X, Calendar, Search } from 'lucide-react';
+
 import { useAuth } from '../../../contexts/AuthContext';
 import { useAppointment } from '../../../contexts/AppointmentContext';
+import { useSocket } from '../../../contexts/SocketContext';
 
 import { Button } from '../../../components/ui/button';
 import Modal from '../../../components/ui/Modal';
@@ -18,6 +20,7 @@ const DoctorAppointment = () => {
   const { currentUser } = useAuth();
   const { isLoading, appointments, pagination, getDoctorAppointments } =
     useAppointment();
+  const { socket, isConnected } = useSocket();
 
   const [showDetails, setShowDetails] = useState(false);
   const [selectedAppt, setSelectedAppt] = useState(null);
@@ -30,10 +33,12 @@ const DoctorAppointment = () => {
     from_date: '',
     to_date: '',
     appointment_type: '',
-    consultation_method: '',
     priority: '',
     search: '',
   });
+
+  // socket appointments
+  const [updatedAppointments, setUpdatedAppointments] = useState([]);
 
   const activeFiltersCount = Object.values(filters).filter(
     v => v !== ''
@@ -66,7 +71,6 @@ const DoctorAppointment = () => {
       from_date: '',
       to_date: '',
       appointment_type: '',
-      consultation_method: '',
       priority: '',
       search: '',
     });
@@ -94,6 +98,10 @@ const DoctorAppointment = () => {
     console.log('Creating prescription for:', appt);
   };
 
+  useEffect(() => {
+    setUpdatedAppointments(appointments);
+  }, [appointments]);
+
   // ===== Fetch data on filter/page changes =====
   useEffect(() => {
     const apiFilter = {
@@ -102,9 +110,6 @@ const DoctorAppointment = () => {
       ...(filters.status && { status: filters.status }),
       ...(filters.appointment_type && {
         appointment_type: filters.appointment_type,
-      }),
-      ...(filters.consultation_method && {
-        consultation_method: filters.consultation_method,
       }),
       ...(filters.priority && { priority: filters.priority }),
       ...(filters.from_date && { from_date: filters.from_date }),
@@ -214,19 +219,6 @@ const DoctorAppointment = () => {
                 ]}
               />
 
-              {/* Consultation Method */}
-              <Select
-                label="Consultation Method"
-                name="consultation_method"
-                value={filters.consultation_method}
-                onChange={handleFilterChange}
-                options={[
-                  { value: 'in-person', label: 'In-Person' },
-                  { value: 'video', label: 'Video Call' },
-                  { value: 'phone', label: 'Phone Call' },
-                ]}
-              />
-
               {/* Priority */}
               <Select
                 label="Priority"
@@ -330,11 +322,11 @@ const DoctorAppointment = () => {
           <div className="flex items-center justify-center py-20">
             <LoadingSpinner size="lg" />
           </div>
-        ) : appointments.length > 0 ? (
+        ) : updatedAppointments.length > 0 ? (
           <>
             <AppointmentsTable
               currentUser={currentUser}
-              appointments={appointments}
+              appointments={updatedAppointments}
               onViewDetails={viewAppointment}
               onStartConsultation={handleStartConsultation}
               onAddNotes={handleAddNotes}
@@ -343,7 +335,6 @@ const DoctorAppointment = () => {
                 'person',
                 'date',
                 'time',
-                'method',
                 'status',
                 'appointment_type',
                 'priority',

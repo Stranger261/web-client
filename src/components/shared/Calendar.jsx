@@ -14,7 +14,7 @@ import {
 } from 'date-fns';
 import { useSchedule } from '../../contexts/ScheduleContext';
 
-const Calendar = ({ selectedDate, handleDateClick }) => {
+const Calendar = ({ selectedDate, handleDateClick, takenSlotsByDate = {} }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const { changeMonth, doctorSchedule, combinedSchedule } = useSchedule();
 
@@ -42,6 +42,8 @@ const Calendar = ({ selectedDate, handleDateClick }) => {
       doctorSchedule.availableSlots.forEach(slot => {
         const dateKey = slot.date;
 
+        const takenForThisDate = takenSlotsByDate[dateKey] || [];
+
         if (!availabilityMap.has(dateKey)) {
           availabilityMap.set(dateKey, {
             hasAvailableSlots: false,
@@ -49,8 +51,11 @@ const Calendar = ({ selectedDate, handleDateClick }) => {
           });
         }
 
-        availabilityMap.get(dateKey).hasAvailableSlots = true;
-        availabilityMap.get(dateKey).slots.push(slot);
+        //  Skip if slot is taken for this date
+        if (!takenForThisDate.includes(slot.time)) {
+          availabilityMap.get(dateKey).hasAvailableSlots = true;
+          availabilityMap.get(dateKey).slots.push(slot);
+        }
       });
     }
 
@@ -63,6 +68,8 @@ const Calendar = ({ selectedDate, handleDateClick }) => {
           schedule.availableSlots.forEach(slot => {
             const dateKey = slot.date;
 
+            const takenForThisDate = takenSlotsByDate[dateKey] || [];
+
             if (!availabilityMap.has(dateKey)) {
               availabilityMap.set(dateKey, {
                 hasAvailableSlots: false,
@@ -70,16 +77,18 @@ const Calendar = ({ selectedDate, handleDateClick }) => {
               });
             }
 
-            availabilityMap.get(dateKey).hasAvailableSlots = true;
-            availabilityMap
-              .get(dateKey)
-              .slots.push({ ...slot, doctor: schedule.doctor });
+            if (!takenForThisDate.includes(slot.time)) {
+              availabilityMap.get(dateKey).hasAvailableSlots = true;
+              availabilityMap
+                .get(dateKey)
+                .slots.push({ ...slot, doctor: schedule.doctor });
+            }
           });
         }
       });
     }
     return availabilityMap;
-  }, [doctorSchedule, combinedSchedule]);
+  }, [doctorSchedule, combinedSchedule, takenSlotsByDate]);
 
   const renderHeader = () => (
     <div className="flex justify-between items-center mb-4">

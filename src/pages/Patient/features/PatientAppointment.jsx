@@ -48,11 +48,13 @@ const PatientAppointment = () => {
   const handleItemsPerPageChange = useCallback(newLimit => {
     setLimit(newLimit);
     setCurrentPage(1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   // ===== Filter handlers =====
   const handleFilterChange = e => {
     const { name, value } = e.target;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     setFilters(prev => ({
       ...prev,
       [name]: value,
@@ -61,6 +63,7 @@ const PatientAppointment = () => {
   };
 
   const handleClearFilters = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     setFilters({
       status: '',
       from_date: '',

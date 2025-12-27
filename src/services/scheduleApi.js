@@ -1,13 +1,10 @@
 import axios from 'axios';
-import {
-  APPOINTMENT_SERVICE_BASE_URL,
-  INTERNAL_API_KEY,
-} from '../configs/CONST';
+import { DEVELOPMENT_BASE_URL, INTERNAL_API_KEY } from '../configs/CONST';
 
 class ScheduleService {
   constructor() {
     this.scheduleApi = axios.create({
-      baseURL: `${APPOINTMENT_SERVICE_BASE_URL}/doctors`,
+      baseURL: `${DEVELOPMENT_BASE_URL}/doctors`,
       withCredentials: true,
       headers: {
         'x-internal-api-key': INTERNAL_API_KEY,

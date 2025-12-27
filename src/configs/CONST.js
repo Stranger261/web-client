@@ -1,3 +1,4 @@
+// LANDING PAGE
 export const LEAFLET = {
   HOSPITALADDRESS: '82 J. P. Rizal St., Manggahan 1860 Rodriguez, Philippines',
   HOSPITAL_COORDS: [14.72414951530476, 121.14176532431448],
@@ -8,23 +9,10 @@ export const GOOGLEMAPSURL = `https://google.com/maps/dir/?api=1&destination=${e
 )}`;
 
 // URLs
-// export const AUTH_SERVICE_BASE_URL = 'http://localhost:56731/api/v1';
-// export const PATIENT_SERVICE_BASE_URL = 'http://localhost:56732/api/v1';
-// export const APPOINTMENT_SERVICE_BASE_URL = 'http://localhost:56733/api/v1';
+export const DEVELOPMENT_BASE_URL = 'http://localhost:56741/api/v1';
+export const SOCKET_URL = 'http://localhost:56741';
 
-// mobile urls
-
-// export const AUTH_SERVICE_BASE_URL = 'http://192.168.100.11:56731/api/v1';
-// export const PATIENT_SERVICE_BASE_URL = 'http://192.168.100.11:56732/api/v1';
-// export const APPOINTMENT_SERVICE_BASE_URL =
-//   'http://192.168.100.11:56733/api/v1';
-
-export const AUTH_SERVICE_BASE_URL =
-  'https://auth.health-ease-hospital.com/api/v1';
-export const PATIENT_SERVICE_BASE_URL =
-  'https://auth.health-ease-hospital.com/api/v1';
-export const APPOINTMENT_SERVICE_BASE_URL =
-  'https://auth.health-ease-hospital.com/api/v1';
+// export const SOCKET_URL = 'https://auth.health-ease-hospital.com'
 
 // Other constants
 export const DEFAULT_TIMEOUT = 30000; // 30 seconds
@@ -240,5 +228,8 @@ export const GRADIENTS = {
 
 // pagination
 export const ITEMS_PER_PAGE = 10;
+
+// notification
+export const ITEMS_PER_NOTIF = 3;
 
 export default COLORS;

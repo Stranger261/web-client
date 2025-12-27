@@ -13,18 +13,25 @@ import PatientAppointment from '../pages/Patient/features/PatientAppointment';
 import PatientMedicalHistory from '../pages/Patient/features/PatientMedicalHistory';
 import PatientDetails from '../pages/Patient/features/PatientDetails';
 import PatientSettings from '../pages/Patient/features/PatientSettings';
+import SocketProvider from '../contexts/SocketContext';
+import NotificationProvider from '../contexts/NotificationContext';
+
 const PatientRoute = (
   <Route
     path="/patient"
     element={
       <ProtectedRoute requiredRole="patient">
-        <AuthProvider>
-          <AppointmentProvider>
-            <ScheduleProvider>
-              <ConditionalLayout />
-            </ScheduleProvider>
-          </AppointmentProvider>
-        </AuthProvider>
+        <SocketProvider>
+          <NotificationProvider>
+            <AuthProvider>
+              <AppointmentProvider>
+                <ScheduleProvider>
+                  <ConditionalLayout />
+                </ScheduleProvider>
+              </AppointmentProvider>
+            </AuthProvider>
+          </NotificationProvider>
+        </SocketProvider>
       </ProtectedRoute>
     }
   >

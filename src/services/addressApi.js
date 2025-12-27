@@ -1,8 +1,8 @@
 import axios from 'axios';
-import { INTERNAL_API_KEY, PATIENT_SERVICE_BASE_URL } from '../configs/CONST';
+import { INTERNAL_API_KEY, DEVELOPMENT_BASE_URL } from '../configs/CONST';
 
 const patientApi = axios.create({
-  baseURL: PATIENT_SERVICE_BASE_URL,
+  baseURL: DEVELOPMENT_BASE_URL,
   withCredentials: true,
   headers: {
     'x-internal-api-key': INTERNAL_API_KEY,

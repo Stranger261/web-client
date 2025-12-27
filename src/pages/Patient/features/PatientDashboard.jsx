@@ -41,7 +41,6 @@ import Card, { CardHeader, CardBody } from '../../../components/ui/card';
 import Badge from '../../../components/ui/badge';
 const PatientDashboard = () => {
   const { currentUser } = useAuth();
-  console.log(currentUser);
   const [upcomingAppointments, setUpcomingAppointments] = useState([
     {
       id: '1',
