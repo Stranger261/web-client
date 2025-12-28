@@ -71,6 +71,7 @@ export const DateTimeStep = ({
       if (!newRooms.has(oldRoom)) {
         const [doctor_uuid, date] = oldRoom.split('_');
         socket.emit('leave-appointment-room', { doctor_uuid, date });
+        console.log(`leaving room ${doctor_uuid}_${date}`);
       }
     });
 
@@ -84,11 +85,13 @@ export const DateTimeStep = ({
 
     currentRoomRef.current = newRooms;
 
+    console.log(`current room: ${currentRoomRef.current}`);
     // clean up
     return () => {
       currentRoomRef.current.forEach(room => {
         const [doctor_uuid, date] = room.split('_');
         socket.emit('leave-appointment-room', { doctor_uuid, date });
+        console.log(`leaving room ${doctor_uuid}_${date}`);
       });
       currentRoomRef.current.clear();
     };
