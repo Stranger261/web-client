@@ -25,6 +25,7 @@ const SocketProvider = ({ children }) => {
 
     socketInstance.on('disconnect', () => {
       setIsConnected(false);
+      console.log('disconnected');
     });
 
     socketInstance.on('reconnect', attemptNumber => {
