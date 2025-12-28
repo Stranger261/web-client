@@ -19,8 +19,8 @@ const SocketProvider = ({ children }) => {
     });
 
     socketInstance.on('connect', () => {
-      setIsConnected(true);
       console.log('socket connected');
+      setIsConnected(true);
     });
 
     socketInstance.on('disconnect', () => {
