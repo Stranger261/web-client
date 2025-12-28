@@ -78,6 +78,7 @@ export const DateTimeStep = ({
       if (!currentRoomRef.current.has(newRoom)) {
         const [doctor_uuid, date] = newRoom.split('_');
         socket.emit('join-appointment-room', { doctor_uuid, date });
+        console.log(`join room ${doctor_uuid}_${date}`);
       }
     });
 
