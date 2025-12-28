@@ -47,6 +47,7 @@ export const DateTimeStep = ({
 
   // join-room for any doctor
   useEffect(() => {
+    console.log('this page is called');
     if (!socket || !isConnected || !selectedDate) return;
 
     const dateKey = format(selectedDate, 'yyyy-MM-dd');
