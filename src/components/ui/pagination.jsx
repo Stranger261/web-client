@@ -17,6 +17,7 @@ const Pagination = ({
   className = '',
 }) => {
   const isDarkMode = document.documentElement.classList.contains('dark');
+  console.log(currentPage);
 
   // Calculate item range
   const startItem = (currentPage - 1) * itemsPerPage + 1;
@@ -113,6 +114,7 @@ const Pagination = ({
                 : COLORS.border.light,
             }}
           >
+            {/* <option value={1}>1</option> */}
             <option value={10}>10</option>
             <option value={20}>20</option>
             <option value={50}>50</option>

@@ -53,12 +53,12 @@ const Sidebar = ({ isOpen, toggleSidebar, onLogout, currentUser }) => {
             <img
               src="../images/logo.png"
               alt="HVill Hospital Logo"
-              className="h-6 w-6 object-contain"
+              className="h-8 w-8 object-contain"
             />
           </div>
           {isOpen && (
             <div>
-              <h1 className="font-bold text-lg">H VILL</h1>
+              <h1 className="font-bold text-md">H VILL</h1>
               <p className="text-xs text-gray-300">Hospital</p>
             </div>
           )}

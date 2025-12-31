@@ -10,6 +10,8 @@ import DoctorDashboard from '../pages/Doctor/features/DoctorDashboard';
 import DoctorAppointments from '../pages/Doctor/features/DoctorAppointments';
 import ConditionalLayout from '../layouts/ConditionalLayout';
 import NotificationProvider from '../contexts/NotificationContext';
+import DoctorPatients from '../pages/Doctor/features/DoctorPatients';
+import PatientProvider from '../contexts/PatientContext';
 
 const DoctorRoute = (
   <Route
@@ -21,7 +23,9 @@ const DoctorRoute = (
             <AuthProvider>
               <AppointmentProvider>
                 <ScheduleProvider>
-                  <ConditionalLayout />
+                  <PatientProvider>
+                    <ConditionalLayout />
+                  </PatientProvider>
                 </ScheduleProvider>
               </AppointmentProvider>
             </AuthProvider>
@@ -32,6 +36,7 @@ const DoctorRoute = (
   >
     <Route path="dashboard" element={<DoctorDashboard />} />
     <Route path="appointments" element={<DoctorAppointments />} />
+    <Route path="my-patients" element={<DoctorPatients />} />
   </Route>
 );
 

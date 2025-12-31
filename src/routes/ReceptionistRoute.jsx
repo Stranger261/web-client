@@ -8,6 +8,7 @@ import AppointmentProvider from '../contexts/AppointmentContext';
 import ConditionalLayout from '../layouts/ConditionalLayout';
 // components
 import ReceptionistDashboard from '../pages/Receptionist/features/ReceptionistDashboard';
+import NotificationProvider from '../contexts/NotificationContext';
 
 const ReceptionistRoute = (
   <Route
@@ -15,13 +16,15 @@ const ReceptionistRoute = (
     element={
       <ProtectedRoute requiredRole="receptionist">
         <SocketProvider>
-          <AuthProvider>
-            <AppointmentProvider>
-              <ScheduleProvider>
-                <ConditionalLayout />
-              </ScheduleProvider>
-            </AppointmentProvider>
-          </AuthProvider>
+          <NotificationProvider>
+            <AuthProvider>
+              <AppointmentProvider>
+                <ScheduleProvider>
+                  <ConditionalLayout />
+                </ScheduleProvider>
+              </AppointmentProvider>
+            </AuthProvider>
+          </NotificationProvider>
         </SocketProvider>
       </ProtectedRoute>
     }

@@ -121,7 +121,7 @@ const DoctorAppointment = () => {
   }, [getDoctorAppointments, currentUser, filters, currentPage, limit]);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
+    <div className="h-full bg-gray-50 dark:bg-gray-900 p-4">
       {/* Header - Fixed width constraints */}
       <header className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-lg mb-4 overflow-hidden">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 sm:px-6 py-4 gap-4">

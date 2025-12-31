@@ -7,7 +7,7 @@ const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [notifPagination, setNotifPagination] = useState({
     currentPage: 1,
-    limit: 3,
+    limit: 5,
     total: 0,
     totalPages: 1,
   });
