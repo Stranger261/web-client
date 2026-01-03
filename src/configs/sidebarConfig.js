@@ -12,6 +12,7 @@ import {
   StethoscopeIcon,
   BedIcon,
   ClipboardListIcon,
+  Video,
 } from 'lucide-react';
 
 export const sidebarConfig = {
@@ -50,6 +51,7 @@ export const sidebarConfig = {
       path: '/doctor/medical-records',
       icon: FileTextIcon,
     },
+    { name: 'Video conference', path: '/doctor/video-call', icon: Video },
     { name: 'Reports', path: '/doctor/reports', icon: BarChartIcon },
     { name: 'Settings', path: '/doctor/settings', icon: SettingsIcon },
   ],
@@ -108,7 +110,9 @@ export const sidebarConfig = {
       path: '/patient/my-medical-history',
       icon: FileTextIcon,
     },
+    { name: 'Video conference', path: '/patient/video-call', icon: Video },
     { name: 'My Details', path: '/patient/my-details', icon: User },
+
     // NEW
     // {
     //   name: 'Billing History',

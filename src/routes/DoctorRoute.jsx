@@ -12,6 +12,8 @@ import ConditionalLayout from '../layouts/ConditionalLayout';
 import NotificationProvider from '../contexts/NotificationContext';
 import DoctorPatients from '../pages/Doctor/features/DoctorPatients';
 import PatientProvider from '../contexts/PatientContext';
+import DoctorVideoCall from '../pages/Doctor/features/DoctorVideoCall';
+import VideoCallProvider from '../contexts/VideoCallContext';
 
 const DoctorRoute = (
   <Route
@@ -37,6 +39,14 @@ const DoctorRoute = (
     <Route path="dashboard" element={<DoctorDashboard />} />
     <Route path="appointments" element={<DoctorAppointments />} />
     <Route path="my-patients" element={<DoctorPatients />} />
+    <Route
+      path="video-call"
+      element={
+        <VideoCallProvider>
+          <DoctorVideoCall />
+        </VideoCallProvider>
+      }
+    />
   </Route>
 );
 

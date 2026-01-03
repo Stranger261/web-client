@@ -10,7 +10,6 @@ const SocketProvider = ({ children }) => {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    console.log('this is called');
     const socketInstance = io(SOCKET_URL, {
       transports: ['websocket'],
       reconnection: true,
