@@ -8,31 +8,46 @@ import {
 } from 'react';
 import { useAuth } from './AuthContext';
 import { useSocket } from './SocketContext';
-
 import { toast } from 'react-hot-toast';
+import videoApi from '../services/videoApi';
+import { useNavigate } from 'react-router';
 
 const VideoCallContext = createContext();
 
 const VideoCallProvider = ({ children }) => {
+  const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { socket, isConnected } = useSocket();
 
+  // State
   const [myPeerId, setMyPeerId] = useState(null);
+  const [mySocketId, setMySocketId] = useState(null);
   const [inCall, setInCall] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
-  const [incomingCall, setIncomingCall] = useState(null);
   const [callStatus, setCallStatus] = useState('idle');
+  const [isLoading, setIsLoading] = useState(false);
+  const [canRejoin, setCanRejoin] = useState(false);
+  const [roomParticipants, setRoomParticipants] = useState([]);
+  const [localStreamReady, setLocalStreamReady] = useState(false);
+  const [remoteStreamReady, setRemoteStreamReady] = useState(false);
+  const [scheduledDuration, setScheduledDuration] = useState(30);
 
+  // Refs
   const localStreamRef = useRef(null);
   const remoteStreamRef = useRef(null);
   const peerConnectionRef = useRef(null);
   const callTimerRef = useRef(null);
-  const currentSessionRef = useRef(null);
+  const currentRoomRef = useRef(null);
   const remoteUserRef = useRef(null);
+  const toastShownRef = useRef({
+    callStarted: false,
+    videoConnected: false,
+  });
 
-  // webRTC config
+  const name = `${currentUser?.person?.first_name} ${currentUser?.person?.last_name}`;
+
   const rtcConfig = {
     iceServers: [
       { urls: 'stun:stun.l.google.com:19302' },
@@ -41,63 +56,189 @@ const VideoCallProvider = ({ children }) => {
     ],
   };
 
+  // Socket event handlers
   useEffect(() => {
     if (!socket || !isConnected || !currentUser) return;
 
-    console.log('🎥 Registering for video calls...');
-
     socket.emit('video:register', {
       userId: currentUser.user_id,
-      name: `${currentUser?.person?.first_name} ${currentUser?.person?.last_name}`,
-      role: currentUser?.role,
+      name,
+      role: currentUser.role,
       peerId: currentUser.user_uuid,
     });
 
-    // listen for registration confirmation
     socket.on('video:registered', data => {
-      console.log(data);
+      console.log('✅ Registered:', data);
       setMyPeerId(data.peerId);
+      setMySocketId(data.socketId);
     });
 
-    // listen for incoming calls
-    socket.on('video:call-incoming', handleIncomingCall);
+    socket.on('video:room-users-updated', async data => {
+      console.log(
+        '📊 Room users updated:',
+        data.participantsCount,
+        'participants'
+      );
+      setRoomParticipants(data.participants);
 
-    // user call got accepted
-    socket.on('video:call-accepted', handleAcceptedCall);
+      if (data.participantsCount >= 2) {
+        if (!inCall) {
+          setInCall(true);
+          startCallTimer();
 
-    // user call got rejected
-    socket.on('video:call-rejected', handleCallRejected);
+          // ✅ Show toast only once
+          if (!toastShownRef.current.callStarted) {
+            toast.success('Call started');
+            toastShownRef.current.callStarted = true;
+          }
+        }
 
-    // ice candidate
+        // Skip if peer connection already exists
+        if (peerConnectionRef.current) {
+          console.log('⚠️ Peer connection exists, skipping');
+          return;
+        }
+
+        const myIndex = data.participants.findIndex(
+          p => p.socketId === socket.id
+        );
+        const otherUser = data.participants.find(p => p.socketId !== socket.id);
+
+        // Only User #1 creates offer
+        if (myIndex === 0 && otherUser && localStreamRef.current) {
+          console.log('👤 User #1 - Creating offer');
+          const pc = createPeerConnection(otherUser.socketId, data.roomId);
+          peerConnectionRef.current = pc;
+          currentRoomRef.current = data.roomId;
+          remoteUserRef.current = otherUser.socketId;
+          setCallStatus('connecting');
+
+          try {
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            socket.emit('video:offer', {
+              roomId: data.roomId,
+              to: otherUser.socketId,
+              offer,
+            });
+            console.log('✅ Offer sent');
+          } catch (error) {
+            console.error('❌ Offer error:', error);
+          }
+        } else if (myIndex === 1) {
+          console.log('👤 User #2 - Waiting for offer');
+          setCallStatus('connecting');
+        }
+      } else {
+        setCallStatus('waiting');
+        if (inCall) {
+          toast('Waiting for other participant...');
+        }
+      }
+    });
+
+    socket.on('video:offer', async data => {
+      console.log('📥 Received offer from:', data.fromName);
+
+      if (!peerConnectionRef.current && localStreamRef.current) {
+        console.log('🔗 Creating answer');
+        const pc = createPeerConnection(data.from, data.roomId);
+        peerConnectionRef.current = pc;
+        currentRoomRef.current = data.roomId;
+        remoteUserRef.current = data.from;
+
+        try {
+          await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+
+          // Process queued ICE candidates
+          if (pc.pendingCandidates?.length > 0) {
+            console.log(
+              '🧊 Adding queued candidates:',
+              pc.pendingCandidates.length
+            );
+            for (const candidate of pc.pendingCandidates) {
+              await pc.addIceCandidate(new RTCIceCandidate(candidate));
+            }
+            pc.pendingCandidates = [];
+          }
+
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          socket.emit('video:answer', {
+            roomId: data.roomId,
+            to: data.from,
+            answer,
+          });
+          console.log('✅ Answer sent');
+        } catch (error) {
+          console.error('❌ Answer error:', error);
+        }
+      }
+    });
+
+    socket.on('video:answer', async data => {
+      console.log('📥 Received answer');
+      if (peerConnectionRef.current) {
+        try {
+          await peerConnectionRef.current.setRemoteDescription(
+            new RTCSessionDescription(data.answer)
+          );
+
+          // Process queued ICE candidates
+          const pc = peerConnectionRef.current;
+          if (pc.pendingCandidates?.length > 0) {
+            console.log(
+              '🧊 Adding queued candidates:',
+              pc.pendingCandidates.length
+            );
+            for (const candidate of pc.pendingCandidates) {
+              await pc.addIceCandidate(new RTCIceCandidate(candidate));
+            }
+            pc.pendingCandidates = [];
+          }
+
+          console.log('✅ Answer applied');
+        } catch (error) {
+          console.error('❌ Answer error:', error);
+        }
+      }
+    });
+
+    socket.on('video:user-left', data => {
+      console.log('👋 User left:', data.name);
+
+      if (data.isDisconnect) {
+        toast(`${data.name} disconnected`, { icon: '🔌' });
+      } else {
+        toast(`${data.name} left the call`);
+      }
+
+      setCallStatus('waiting');
+      setRemoteStreamReady(false);
+      remoteStreamRef.current = null;
+
+      if (peerConnectionRef.current) {
+        peerConnectionRef.current.close();
+        peerConnectionRef.current = null;
+      }
+    });
+
     socket.on('video:ice-candidate', handleRemoteICECandidate);
-
-    // if other user ended the call
-    socket.on('video:call-ended', handleRemoteCallEnded);
-
-    // if something went wrong
-    socket.on('video:call-error', handleCallError);
-
-    // if users change or audio or video
-    socket.on('video:media-peer-change', handlePeerMediaChange);
 
     return () => {
       socket.off('video:registered');
-      socket.off('video:incoming-call');
-      socket.off('video:call-accepted');
-      socket.off('video:call-rejected');
+      socket.off('video:room-users-updated');
+      socket.off('video:user-left');
+      socket.off('video:offer');
+      socket.off('video:answer');
       socket.off('video:ice-candidate');
-      socket.off('video:call-ended');
-      socket.off('video:call-error');
-      socket.off('video:peer-media-change');
-
-      cleanupCall();
     };
-  }, [currentUser, socket, isConnected]);
+  }, [currentUser, socket, isConnected, inCall]);
 
-  // media stream functions
+  // Media stream functions
   const startLocalStream = useCallback(async () => {
     try {
-      console.log('🎥 Starting local stream...');
+      console.log('🎥 Starting local stream');
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: {
@@ -108,311 +249,294 @@ const VideoCallProvider = ({ children }) => {
       });
 
       localStreamRef.current = stream;
-
+      setLocalStreamReady(true);
+      console.log('✅ Local stream ready');
       return stream;
     } catch (error) {
-      console.error('❌ Error accessing media devices:', error);
-      toast.error(
-        'Could not access camera/microphone. Please check permissions.'
-      );
+      console.error('❌ Media error:', error);
+      toast.error('Could not access camera/microphone');
       throw error;
     }
   }, []);
 
   const stopLocalStream = useCallback(() => {
     if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => {
-        track.stop();
-        console.log('🛑 Stopped track:', track.kind);
-      });
+      localStreamRef.current.getTracks().forEach(track => track.stop());
       localStreamRef.current = null;
+      setLocalStreamReady(false);
+      console.log('🛑 Local stream stopped');
     }
-  }, []);
-
-  // peer connection setup
-  const createPeerConnection = () => {
-    console.log('🔗 Creating peer connection...');
-    const pc = new RTCPeerConnection(rtcConfig);
-
-    // Add local stream tracks
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => {
-        pc.addTrack(track, localStreamRef.current);
-        console.log('➕ Added local track:', track.kind);
-      });
-    }
-
-    // handle remote stream
-    pc.ontrack = event => {
-      console.log('📥 Received remote track:', event.track.kind);
-      if (event.streams && event.streams[0]) {
-        remoteStreamRef.current = event.streams[0];
-        console.log('✅ Remote stream set');
-      }
-    };
-
-    // Handle ICE candidates
-    pc.onicecandidate = event => {
-      if (event.candidate) {
-        console.log('🧊 Sending ICE candidate');
-        socket.emit('video:ice-candidate', {
-          to: remoteUserRef.current,
-          candidate: event.candidate,
-        });
-      }
-    };
-
-    // Handle connection state changes
-    pc.onconnectionstatechange = () => {
-      console.log('🔄 Connection state:', pc.connectionState);
-      if (pc.connectionState === 'connected') {
-        setCallStatus('connected');
-        toast.success('Call connected!');
-      } else if (pc.connectionState === 'failed') {
-        toast.error('Connection failed');
-        // endCall();
-      }
-    };
-
-    // Handle ICE connection state
-    pc.oniceconnectionstatechange = () => {
-      console.log('🧊 ICE connection state:', pc.iceConnectionState);
-    };
-
-    return pc;
-  };
-
-  // call the other user
-  const handleCallUser = useCallback(async remotePeerId => {
-    try {
-      if (inCall) {
-        toast.error('You are already in call.');
-        return;
-      }
-
-      console.log(`📞 Calling user: ${remotePeerId}`);
-      setCallStatus('calling');
-      remoteUserRef.current = remotePeerId;
-
-      // start local stream
-      await startLocalStream();
-
-      // create peer connection
-      const pc = createPeerConnection();
-      peerConnectionRef.current = pc;
-
-      // create offer
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      console.log('📤 Created offer');
-      console.log(myPeerId);
-      // Send offer through signaling server
-      socket.emit('video:call-user', {
-        to: remotePeerId,
-        offer,
-        from: myPeerId,
-        callerInfo: {
-          name: `${currentUser.person?.first_name} ${currentUser.person?.last_name}`,
-          role: currentUser.role,
-        },
-      });
-
-      setInCall(true);
-      toast('Calling...', { icon: '📞' });
-    } catch (error) {
-      console.error('❌ Error initiating call:', error);
-      toast.error('Failed to start call');
-      cleanupCall();
-    }
-  }, []);
-
-  // getting called from another user
-  const handleIncomingCall = useCallback(async data => {
-    console.log('📞 Incoming call from:', data.from);
-    console.log('Caller info:', data.callerInfo);
-
-    setIncomingCall({
-      from: data.from,
-      offer: data.offer,
-      sessionId: data.sessionId,
-      callerInfo: data.callerInfo,
-    });
-
-    setCallStatus('ringing');
-
-    toast('Incoming call from ' + data.callerInfo.name, {
-      icon: '📞',
-      duration: 3000,
-    });
-  }, []);
-
-  // if another user answer the call
-  const handleAnswerCall = useCallback(async () => {
-    try {
-      if (!incomingCall) return;
-
-      console.log('✅ Answering call...');
-      setCallStatus('connecting');
-
-      remoteUserRef.current = incomingCall.from;
-      currentSessionRef.current = incomingCall.sessionId;
-
-      // Start local stream
-      await startLocalStream();
-
-      // Create peer connection
-      const pc = createPeerConnection();
-      peerConnectionRef.current = pc;
-
-      // Set remote description (the offer)
-      await pc.setRemoteDescription(
-        new RTCSessionDescription(incomingCall.offer)
-      );
-
-      // create answer
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      console.log('📤 Created answer');
-
-      socket.emit('video:call-answered', {
-        to: incomingCall.from,
-        answer,
-        sessionId: incomingCall.sessionId,
-      });
-
-      setInCall(true);
-      setIncomingCall(null);
-      startCallTimer('Call connected');
-
-      toast.success('Call connected!');
-    } catch (error) {
-      console.error('❌ Error answering call:', error);
-      toast.error('Failed to answer call');
-      cleanupCall();
-    }
-  });
-
-  // accept call from another user
-  const handleAcceptedCall = useCallback(
-    async data => {
-      try {
-        console.log('🎉 Call accepted!');
-
-        if (peerConnectionRef.current) {
-          await peerConnectionRef.current.setRemoteDescription(
-            new RTCSessionDescription(data.answer)
-          );
-          console.log('📥 Set remote description (answer)');
-
-          currentSessionRef.current = data.sessionId;
-          startCallTimer();
-          setCallStatus('connected');
-        }
-      } catch (error) {
-        console.error('❌ Error handling call acceptance:', error);
-        toast.error('Error connecting call');
-      }
-    },
-    [socket]
-  );
-
-  // reject the call from another user
-  const handleRejectCall = useCallback(() => {
-    if (!incomingCall) return;
-
-    console.log('❌ Rejecting call');
-
-    socket.emit('video:call-rejected', {
-      to: incomingCall.from,
-      sessionId: incomingCall.sessionId,
-      reason: 'Call declined.',
-    });
-
-    setIncomingCall(null);
-    setCallStatus('idle');
-    toast('Call rejected');
-  }, [socket, incomingCall]);
-
-  // manage the call by other user's rejection
-  const handleCallRejected = useCallback(data => {
-    console.log('❌ Call was rejected:', data.reason);
-    toast.error(data.reason || 'Call was declined');
-    cleanupCall();
   }, []);
 
   const handleRemoteICECandidate = useCallback(async data => {
     try {
       if (peerConnectionRef.current && data.candidate) {
-        await peerConnectionRef.current.addIceCandidate(
-          new RTCIceCandidate(data.candidate)
-        );
-        console.log('🧊 Added remote ICE candidate');
+        if (peerConnectionRef.current.remoteDescription) {
+          await peerConnectionRef.current.addIceCandidate(
+            new RTCIceCandidate(data.candidate)
+          );
+          console.log('🧊 ICE candidate added');
+        } else {
+          // Queue candidates if remote description not set yet
+          if (!peerConnectionRef.current.pendingCandidates) {
+            peerConnectionRef.current.pendingCandidates = [];
+          }
+          peerConnectionRef.current.pendingCandidates.push(data.candidate);
+          console.log('⏳ ICE candidate queued');
+        }
       }
     } catch (error) {
-      console.error('❌ Error adding ICE candidate:', error);
+      console.error('❌ ICE error:', error);
     }
   }, []);
 
-  // for ending the call
-  const handleEndCall = useCallback(() => {
-    console.log('📴 Ending call...');
+  const createPeerConnection = useCallback(
+    (otherSocketId, roomId) => {
+      console.log('🔗 Creating peer connection');
+      const pc = new RTCPeerConnection(rtcConfig);
 
-    if (remoteUserRef.current) {
-      socket.emit('video:end-call', {
-        to: remoteUserRef.current,
-        sessionId: currentSessionRef.current,
-      });
-    }
+      // Add local tracks
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach(track => {
+          pc.addTrack(track, localStreamRef.current);
+          console.log('➕ Added track:', track.kind);
+        });
+      }
 
-    cleanupCall();
-    toast('Call ended');
-  }, [socket]);
+      // Handle remote tracks
+      pc.ontrack = event => {
+        console.log('📥 Remote track:', event.track.kind);
+        if (event.streams?.[0]) {
+          remoteStreamRef.current = event.streams[0];
+          setRemoteStreamReady(true);
+          setCallStatus('connected');
 
-  // manage if other user ended the call
-  const handleRemoteCallEnded = useCallback(() => {
-    console.log('📴 Remote user ended call');
-    toast('Call ended by other user');
-    cleanupCall();
-  }, []);
+          // ✅ Show toast only once
+          if (!toastShownRef.current.videoConnected) {
+            toast.success('Video connected');
+            toastShownRef.current.videoConnected = true;
+          }
+        }
+      };
 
-  // if the call error from both user
-  const handleCallError = error => {
-    console.error('❌ Call error:', error);
-    toast.error(error.error || 'Call error occurred');
-    cleanupCall();
-  };
+      // ICE candidates
+      pc.onicecandidate = event => {
+        if (event.candidate) {
+          socket.emit('video:ice-candidate', {
+            roomId,
+            to: otherSocketId,
+            candidate: event.candidate,
+          });
+        }
+      };
 
-  // clean up or back from the start state.
+      // Connection state
+      pc.onconnectionstatechange = () => {
+        console.log('🔄 Connection:', pc.connectionState);
+        if (pc.connectionState === 'failed') {
+          toast.error('Connection failed');
+        }
+      };
+
+      return pc;
+    },
+    [socket]
+  );
+
   const cleanupCall = useCallback(() => {
-    console.log('🧹 Cleaning up call...');
+    console.log('🧹 Cleanup');
 
     if (peerConnectionRef.current) {
       peerConnectionRef.current.close();
       peerConnectionRef.current = null;
     }
+
+    if (callTimerRef.current) {
+      clearInterval(callTimerRef.current);
+      callTimerRef.current = null;
+    }
+
     stopLocalStream();
 
     remoteStreamRef.current = null;
     remoteUserRef.current = null;
-    currentSessionRef.current = null;
+    currentRoomRef.current = null;
 
     setInCall(false);
     setCallStatus('idle');
     setCallDuration(0);
-    setIncomingCall(null);
     setIsMuted(false);
     setIsVideoOff(false);
+    setRemoteStreamReady(false);
+    setLocalStreamReady(false);
 
-    if (callTimerRef.current) {
-      callTimerRef.current = null;
-    }
+    // Reset toast flags
+    toastShownRef.current = {
+      callStarted: false,
+      videoConnected: false,
+    };
   }, [stopLocalStream]);
 
   const startCallTimer = () => {
+    if (callTimerRef.current) clearInterval(callTimerRef.current);
     callTimerRef.current = setInterval(
       () => setCallDuration(prev => prev + 1),
       1000
     );
+  };
+
+  const handleEndCall = useCallback(() => {
+    console.log('📴 Ending call');
+    if (remoteUserRef.current) {
+      socket.emit('video:end-call', {
+        to: remoteUserRef.current,
+        sessionId: currentRoomRef.current,
+      });
+    }
+    cleanupCall();
+  }, [socket, cleanupCall]);
+
+  // API functions
+  const getTodaysOnlineConsultation = async filters => {
+    try {
+      return await videoApi.getTodaysOnlineConsultation(filters);
+    } catch (error) {
+      toast.error(
+        error?.response?.data?.message || 'Failed to get consultations'
+      );
+      throw error;
+    }
+  };
+
+  const joinRoom = async data => {
+    try {
+      setIsLoading(true);
+      setCallStatus('connecting');
+
+      // ✅ Check room status first
+      const roomStatus = await checkRoomStatus(data.roomId);
+      const status = roomStatus.data;
+
+      if (!status.exists) {
+        toast.error('Consultation room not found');
+        navigate(`/${currentUser.role}/video-call`, { replace: true });
+        setIsLoading(false);
+        return;
+      }
+
+      if (status.isCompleted) {
+        toast.error('This consultation has ended');
+        navigate(`/${currentUser.role}/video-call`, { replace: true });
+        setIsLoading(false);
+        return;
+      }
+
+      if (status.canRejoin) {
+        console.log('🔄 Can rejoin - calling rejoin');
+        setIsLoading(false);
+        await rejoinRoom({
+          roomId: data.roomId,
+          socketId: data.mySocketId,
+          peerId: data.myPeerId,
+        });
+        return;
+      }
+
+      if (!status.canJoin) {
+        toast.error('Cannot join this consultation');
+        navigate(`/${currentUser.role}/video-call`, { replace: true });
+        setIsLoading(false);
+        return;
+      }
+
+      // ✅ Room is valid, proceed with join
+      const joinedRoom = await videoApi.joinRoom({
+        peerId: data.myPeerId,
+        socketId: data.mySocketId,
+        roomId: data.roomId,
+      });
+
+      if (joinedRoom.success) {
+        await startLocalStream();
+        socket.emit('video:join-room', { roomId: data.roomId });
+        setScheduledDuration(data.scheduledDuration || 30);
+        setCallStatus('waiting');
+        toast.success('Joined consultation');
+      }
+
+      return joinedRoom;
+    } catch (error) {
+      const errorMsg = error?.response?.data?.message || 'Failed to join';
+      toast.error(errorMsg);
+
+      if (error?.response?.status === 403 || error?.response?.status === 404) {
+        navigate(`/${currentUser.role}/video-call`, { replace: true });
+      }
+
+      setCallStatus('idle');
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const leaveRoom = async ({ roomId, duration }) => {
+    try {
+      socket.emit('video:leave-room', { roomId });
+      const leftRoom = await videoApi.leaveRoom({ roomId, duration });
+
+      const message = leftRoom.data?.consultationEnded
+        ? 'Consultation ended'
+        : 'Left consultation';
+      toast.success(message);
+
+      handleEndCall();
+      navigate(`/${currentUser.role}/video-call`, { replace: true });
+
+      return leftRoom;
+    } catch (error) {
+      toast.error(error?.response?.data?.message || 'Failed to leave');
+      console.error(error);
+    }
+  };
+
+  const rejoinRoom = async ({ roomId, socketId, peerId }) => {
+    try {
+      setIsLoading(true);
+      setCanRejoin(false);
+
+      const rejoinedRoom = await videoApi.rejoinRoom({
+        roomId,
+        socketId,
+        peerId,
+      });
+
+      if (rejoinedRoom.success) {
+        await startLocalStream();
+        socket.emit('video:join-room', { roomId });
+        navigate(`/${currentUser?.role}/video-call/${roomId}`, {
+          replace: true,
+        });
+        toast.success('Reconnected');
+      }
+
+      return rejoinedRoom;
+    } catch (error) {
+      console.error('Rejoin error:', error);
+      toast.error('Failed to reconnect');
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const checkRoomStatus = async roomId => {
+    try {
+      return await videoApi.checkRoomStatus(roomId);
+    } catch (error) {
+      toast.error(error?.response?.data?.message || 'Failed to check status');
+      throw error;
+    }
   };
 
   const toggleMute = () => {
@@ -420,21 +544,20 @@ const VideoCallProvider = ({ children }) => {
       const audioTrack = localStreamRef.current.getAudioTracks()[0];
       if (audioTrack) {
         audioTrack.enabled = !audioTrack.enabled;
-        const newMutedState = !audioTrack.enabled;
+        setIsMuted(!audioTrack.enabled);
 
-        setIsMuted(newMutedState);
-
-        // notify the other user that the current user is changing the mute detail
-        if (remoteStreamRef.current) {
+        if (remoteUserRef.current) {
           socket.emit('video:media-change', {
-            to: remoteStreamRef.current,
+            to: remoteUserRef.current,
             type: 'audio',
             enabled: audioTrack.enabled,
           });
         }
 
-        toast(newMutedState ? 'Microphone muted' : 'Microphone unmuted', {
-          icon: newMutedState ? '🔇' : '🔊',
+        const message = audioTrack.enabled ? 'Microphone on' : 'Microphone off';
+        toast(message, {
+          icon: audioTrack.enabled ? '🔊' : '🔇',
+          duration: 1500,
         });
       }
     }
@@ -445,9 +568,7 @@ const VideoCallProvider = ({ children }) => {
       const videoTrack = localStreamRef.current.getVideoTracks()[0];
       if (videoTrack) {
         videoTrack.enabled = !videoTrack.enabled;
-        const newVideoOffState = !videoTrack.enabled;
-
-        setIsVideoOff(newVideoOffState);
+        setIsVideoOff(!videoTrack.enabled);
 
         if (remoteUserRef.current) {
           socket.emit('video:media-change', {
@@ -460,33 +581,31 @@ const VideoCallProvider = ({ children }) => {
     }
   };
 
-  const handlePeerMediaChange = data => {
-    console.log('🎛️ Peer media change:', data);
-    // You can use this to show UI indicators that peer muted/disabled video
-  };
-
   const value = {
-    // states
     myPeerId,
+    mySocketId,
     inCall,
     isMuted,
     isVideoOff,
     callDuration,
-    incomingCall,
     callStatus,
-
-    // ref
+    canRejoin,
+    scheduledDuration,
+    isLoading,
+    roomParticipants,
     localStreamRef,
     remoteStreamRef,
-
-    // functions
-    handleCallUser,
-    handleAnswerCall,
-    handleRejectCall,
+    localStreamReady,
+    remoteStreamReady,
     handleEndCall,
     toggleMute,
     toggleVideo,
     startLocalStream,
+    getTodaysOnlineConsultation,
+    joinRoom,
+    leaveRoom,
+    rejoinRoom,
+    checkRoomStatus,
   };
 
   return (
@@ -498,11 +617,9 @@ const VideoCallProvider = ({ children }) => {
 
 export const useVideoCall = () => {
   const context = useContext(VideoCallContext);
-
   if (!context) {
-    console.log('useVideoCall must be use within VideoCall Provider');
+    throw new Error('useVideoCall must be used within VideoCallProvider');
   }
-
   return context;
 };
 

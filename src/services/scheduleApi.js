@@ -8,6 +8,7 @@ class ScheduleService {
       withCredentials: true,
       headers: {
         'x-internal-api-key': INTERNAL_API_KEY,
+        'Content-Type': 'application/json',
       },
     });
   }
@@ -53,6 +54,7 @@ class ScheduleService {
         `/doctors/${doctorUuid}/availability`,
         { params: { startDate, endDate } }
       );
+      console.log(doctorsAvailability.data);
 
       return doctorsAvailability.data;
     } catch (error) {

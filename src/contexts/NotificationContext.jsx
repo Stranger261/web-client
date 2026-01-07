@@ -11,6 +11,7 @@ const NotificationProvider = ({ children }) => {
     total: 0,
     totalPages: 1,
   });
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {}, []);
 
@@ -19,10 +20,22 @@ const NotificationProvider = ({ children }) => {
       const userNotification = await notificationApi.getUserNotification(
         filters
       );
+      await getUserNotificationCount();
       setNotifications(userNotification.data?.notification);
       setNotifPagination(userNotification.data?.pagination);
 
       return userNotification?.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  };
+
+  const getUserNotificationCount = async () => {
+    try {
+      const notifCount = await notificationApi.getUserNotificationCount();
+      setUnreadCount(notifCount.data.unreadNotifCount);
+
+      return notifCount;
     } catch (error) {
       throw error.response?.data || error;
     }
@@ -34,7 +47,7 @@ const NotificationProvider = ({ children }) => {
         notifId
       );
 
-      console.log(latestNotification);
+      await getUserNotificationCount();
 
       return latestNotification?.data;
     } catch (error) {
@@ -46,6 +59,7 @@ const NotificationProvider = ({ children }) => {
     try {
       const res = await notificationApi.markedReadAllNotif();
 
+      await getUserNotificationCount();
       return res.data;
     } catch (error) {
       throw error.response?.data || error;
@@ -55,6 +69,7 @@ const NotificationProvider = ({ children }) => {
   const value = {
     notifications,
     notifPagination,
+    unreadCount,
     setNotifications,
     getUserNotifications,
     readNotification,

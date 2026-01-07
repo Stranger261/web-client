@@ -15,6 +15,7 @@ import {
   AlertCircle,
   RefreshCw,
   Calendar,
+  Video,
 } from 'lucide-react';
 
 import { useAuth } from '../contexts/AuthContext';
@@ -33,6 +34,7 @@ const BaseLayout = () => {
   const { isLoading, currentUser, logout } = useAuth();
   const {
     notifications,
+    unreadCount,
     setNotifications,
     getUserNotifications,
     readNotification,
@@ -56,7 +58,6 @@ const BaseLayout = () => {
     getUserNotifications();
   }, []);
 
-  const unreadCount = notifications?.filter(n => !n.is_read)?.length || 0;
   const hasMore = notifPagination.currentPage < notifPagination.totalPages;
 
   const uuidDisplay =
@@ -171,6 +172,8 @@ const BaseLayout = () => {
     switch (type) {
       case 'new_appointment':
         return Calendar;
+      case 'room_created':
+        return Video;
       case 'alert':
         return AlertCircle;
       case 'success':
@@ -196,9 +199,7 @@ const BaseLayout = () => {
   };
 
   useEffect(() => {
-    if (!socket || !isConnected) {
-      return;
-    }
+    if (!socket || !isConnected) return;
 
     const doctor_uuid = currentUser?.person?.staff?.staff_uuid;
     const lastname = currentUser?.person?.last_name;
@@ -209,11 +210,22 @@ const BaseLayout = () => {
         lastname,
       });
 
-      socket.on('new-appointment-booked', data => {
+      socket.on('new-appointment-booked', () => {
         // Clear notifications and reload from page 1 to get the new one
         setNotifications([]);
         getUserNotifications();
-        toast.success('New appointment booked!');
+        toast.success('New appointment arrived.');
+      });
+    }
+
+    if (currentUser?.role === 'patient') {
+      const roomName = `${currentUser?.user_uuid}_${currentUser?.person?.last_name}`;
+      socket.emit('room:user', {
+        roomName,
+      });
+
+      socket.on('video:room-created', () => {
+        getUserNotifications();
       });
     }
 

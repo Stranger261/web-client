@@ -17,8 +17,6 @@ const Pagination = ({
   className = '',
 }) => {
   const isDarkMode = document.documentElement.classList.contains('dark');
-  console.log(currentPage);
-
   // Calculate item range
   const startItem = (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);

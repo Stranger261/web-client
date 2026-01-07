@@ -47,6 +47,7 @@ const CreateAppointment = ({ onClose }) => {
     date: null,
     time: null,
     reason: '',
+    isOnlineConsultation: false,
   });
   // for updates
   const [slotBeingBooked, setSlotBeingBooked] = useState(null);
@@ -154,6 +155,7 @@ const CreateAppointment = ({ onClose }) => {
         appointmentDetails.doctor?.staff_uuid ||
         appointmentDetails.time.doctor_uuid,
       appointment_date: appointmentDetails.time?.date,
+      is_online_consultation: appointmentDetails.isOnlineConsultation,
       start_time: appointmentDetails.time?.time,
       end_time: null,
       reason: appointmentDetails.reason,
@@ -257,6 +259,7 @@ const CreateAppointment = ({ onClose }) => {
           <ReasonStep
             onSelect={handleSelect}
             reason={appointmentDetails.reason}
+            isOnlineConsultation={appointmentDetails.isOnlineConsultation}
           />
         );
       case 4:

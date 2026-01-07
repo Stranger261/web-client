@@ -40,7 +40,7 @@ const DoctorRoute = (
     <Route path="appointments" element={<DoctorAppointments />} />
     <Route path="my-patients" element={<DoctorPatients />} />
     <Route
-      path="video-call"
+      path="video-call/:roomId?"
       element={
         <VideoCallProvider>
           <DoctorVideoCall />

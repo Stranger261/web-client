@@ -25,6 +25,17 @@ class notificationService {
     }
   }
 
+  async getUserNotificationCount() {
+    try {
+      const res = await this.notificationApi.get('/user-notificationsCount');
+
+      return res.data;
+    } catch (error) {
+      console.log('Notif api error: ', error);
+      throw error;
+    }
+  }
+
   async readNotification(notifId) {
     try {
       const latestNotif = await this.notificationApi.patch(
