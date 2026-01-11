@@ -91,8 +91,6 @@ export const AddressInfoForm = ({ data, onChange, onNext, onBack }) => {
       const response = await addressAPI.getProvinces(regionCode);
 
       let provincesArray = [];
-
-      // FIXED: Use the same pattern for all API calls
       if (response && response.success && Array.isArray(response.data)) {
         provincesArray = response.data;
       } else if (Array.isArray(response)) {
@@ -108,8 +106,12 @@ export const AddressInfoForm = ({ data, onChange, onNext, onBack }) => {
 
       setProvinces(formattedProvinces);
 
-      // Clear dependent fields
-      onChange({ province_code: '', city_code: '', barangay_code: '' });
+      if (
+        data.province_code &&
+        !formattedProvinces.find(p => p.value === data.province_code)
+      ) {
+        onChange({ province_code: '', city_code: '', barangay_code: '' });
+      }
     } catch (error) {
       console.error('Failed to load provinces:', error);
       setErrors({ province_code: 'Failed to load provinces' });
@@ -125,7 +127,6 @@ export const AddressInfoForm = ({ data, onChange, onNext, onBack }) => {
       const response = await addressAPI.getCities(provinceCode);
 
       let citiesArray = [];
-
       if (response && response.success && Array.isArray(response.data)) {
         citiesArray = response.data;
       } else if (Array.isArray(response)) {
@@ -141,8 +142,12 @@ export const AddressInfoForm = ({ data, onChange, onNext, onBack }) => {
 
       setCities(formattedCities);
 
-      // Clear dependent fields
-      onChange({ city_code: '', barangay_code: '' });
+      if (
+        data.city_code &&
+        !formattedCities.find(c => c.value === data.city_code)
+      ) {
+        onChange({ city_code: '', barangay_code: '' });
+      }
     } catch (error) {
       console.error('Failed to load cities:', error);
       setErrors({ city_code: 'Failed to load cities' });
@@ -158,7 +163,6 @@ export const AddressInfoForm = ({ data, onChange, onNext, onBack }) => {
       const response = await addressAPI.getBarangays(cityCode);
 
       let barangaysArray = [];
-
       if (response && response.success && Array.isArray(response.data)) {
         barangaysArray = response.data;
       } else if (Array.isArray(response)) {
@@ -174,8 +178,12 @@ export const AddressInfoForm = ({ data, onChange, onNext, onBack }) => {
 
       setBarangays(formattedBarangays);
 
-      // Clear dependent field
-      onChange({ barangay_code: '' });
+      if (
+        data.barangay_code &&
+        !formattedBarangays.find(b => b.value === data.barangay_code)
+      ) {
+        onChange({ barangay_code: '' });
+      }
     } catch (error) {
       console.error('Failed to load barangays:', error);
       setErrors({ barangay_code: 'Failed to load barangays' });
@@ -225,24 +233,6 @@ export const AddressInfoForm = ({ data, onChange, onNext, onBack }) => {
         <h2 className="text-2xl font-bold text-gray-900">
           Address Information
         </h2>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() =>
-            console.log('Current state:', {
-              regions,
-              provinces,
-              cities,
-              barangays,
-              data,
-              loading,
-            })
-          }
-          className="text-xs"
-        >
-          Debug State
-        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

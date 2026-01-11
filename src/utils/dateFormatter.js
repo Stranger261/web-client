@@ -1,5 +1,6 @@
 export const formatDate = dateString => {
   // First, create a new Date object from the input string
+  if (!dateString) return 'N/A';
   const date = new Date(dateString);
 
   // Then, call toLocaleDateString on the new Date object
@@ -41,4 +42,22 @@ export const formatDateForInput = dateString => {
   if (!dateString) return '';
   const date = new Date(dateString);
   return date.toISOString().split('T')[0]; // Returns yyyy-MM-dd format
+};
+
+export const formatDateTime = dateString => {
+  if (!dateString) return 'N/A';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+export const truncateText = (text, maxLength = 50) => {
+  if (!text) return 'N/A';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
 };

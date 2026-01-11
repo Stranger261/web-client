@@ -13,7 +13,6 @@ class patientService {
   }
 
   async getDoctorsPatients(doctorUuid, filters = {}) {
-    console.log(filters);
     try {
       const res = await this.patientApi.get(
         `/patients/doctors/${doctorUuid}/patients`,
@@ -25,6 +24,20 @@ class patientService {
       return res.data;
     } catch (error) {
       console.log('Get doctor patients error: ', error);
+      throw error;
+    }
+  }
+
+  async getPatientMedicalHistory(patientUuid, filters) {
+    try {
+      const medHistory = await this.patientApi.get(
+        `patients/${patientUuid}/med-history`,
+        { params: filters }
+      );
+
+      return medHistory.data;
+    } catch (error) {
+      console.log('Get patient medical history failed: ', error);
       throw error;
     }
   }

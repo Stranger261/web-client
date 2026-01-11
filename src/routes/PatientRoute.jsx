@@ -17,6 +17,8 @@ import SocketProvider from '../contexts/SocketContext';
 import NotificationProvider from '../contexts/NotificationContext';
 import PatientVideoConference from '../pages/Patient/features/PatientVideoConference';
 import VideoCallProvider from '../contexts/VideoCallContext';
+import PatientProvider from '../contexts/PatientContext';
+import UpdateProvider from '../contexts/UpdateContext';
 
 const PatientRoute = (
   <Route
@@ -26,11 +28,13 @@ const PatientRoute = (
         <SocketProvider>
           <NotificationProvider>
             <AuthProvider>
-              <AppointmentProvider>
-                <ScheduleProvider>
-                  <ConditionalLayout />
-                </ScheduleProvider>
-              </AppointmentProvider>
+              <PatientProvider>
+                <AppointmentProvider>
+                  <ScheduleProvider>
+                    <ConditionalLayout />
+                  </ScheduleProvider>
+                </AppointmentProvider>
+              </PatientProvider>
             </AuthProvider>
           </NotificationProvider>
         </SocketProvider>
@@ -49,7 +53,14 @@ const PatientRoute = (
         </VideoCallProvider>
       }
     />
-    <Route path="my-details" element={<PatientDetails />} />
+    <Route
+      path="my-details"
+      element={
+        <UpdateProvider>
+          <PatientDetails />
+        </UpdateProvider>
+      }
+    />
     <Route path="my-settings" element={<PatientSettings />} />
   </Route>
 );
