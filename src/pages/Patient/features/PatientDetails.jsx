@@ -9,6 +9,7 @@ import { PATIENT_TABS } from '../components/Details/constants/patientConstants';
 import { PatientHeader } from '../components/Details/PatientHeader';
 import { SecurityAlert } from '../components/Details/SecurityAlert';
 import { TabNavigation } from '../components/Details/TabNavigation';
+
 import { BasicInfoTab } from '../components/Details/tabs/BasicInfoTab';
 import { ContactTab } from '../components/Details/tabs/ContactTab';
 import { MedicalTab } from '../components/Details/tabs/MedicalTab';
