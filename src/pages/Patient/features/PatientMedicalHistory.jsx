@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FileText } from 'lucide-react';
 import Card, { CardHeader, CardBody } from '../../../components/ui/card';
-import Pagination from '../../../components/ui/Pagination';
+import Pagination from '../../../components/ui/pagination';
 
 import MedicalRecordsTable from '../components/MedicalHistory/MedicalRecordsTable';
 import RecordDetailModal from '../components/MedicalHistory/RecordDetailModal';
