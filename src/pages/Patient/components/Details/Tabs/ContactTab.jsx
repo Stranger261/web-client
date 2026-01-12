@@ -1,7 +1,7 @@
 import { Phone, Mail, User, Users, AlertCircle } from 'lucide-react';
 import { COLORS } from '../../../../../configs/CONST';
 import { EditableField } from '../EditableField';
-import { AddressSection } from '../sections/AddressSection';
+import { AddressSection } from '../Sections/AddressSection';
 import { RELATIONSHIP_OPTIONS } from '../constants/patientConstants';
 import { normalizedWord } from '../../../../../utils/normalizedWord';
 

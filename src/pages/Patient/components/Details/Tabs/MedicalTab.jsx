@@ -1,7 +1,7 @@
 import { Heart, Droplet, Activity, AlertCircle } from 'lucide-react';
 import { COLORS } from '../../../../../configs/CONST';
 import { EditableField } from '../EditableField';
-import { InsuranceInfo } from '../sections/InsuranceInfo';
+import { InsuranceInfo } from '../Sections/InsuranceInfo';
 import { AllergiesSection } from '../Sections/AllergySection';
 
 export const MedicalTab = ({ patientData, onFieldUpdate }) => {
