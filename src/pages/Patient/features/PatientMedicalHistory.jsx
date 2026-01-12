@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FileText } from 'lucide-react';
-import Card, { CardHeader, CardBody } from '../../../components/ui/Card';
+import Card, { CardHeader, CardBody } from '../../../components/ui/card';
 import Pagination from '../../../components/ui/Pagination';
 
 import MedicalRecordsTable from '../components/MedicalHistory/MedicalRecordsTable';
