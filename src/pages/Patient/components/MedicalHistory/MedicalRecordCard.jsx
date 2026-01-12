@@ -1,5 +1,5 @@
 import { Calendar, FileText, Stethoscope, Eye } from 'lucide-react';
-import Card, { CardBody } from '../../../../components/ui/Card';
+import Card, { CardBody } from '../../../../components/ui/card';
 import { Button } from '../../../../components/ui/button';
 import { COLORS } from '../../../../configs/CONST';
 import { formatDate, truncateText } from '../../../../utils/dateFormatter';
