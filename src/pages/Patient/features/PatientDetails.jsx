@@ -10,9 +10,9 @@ import { PatientHeader } from '../components/Details/PatientHeader';
 import { SecurityAlert } from '../components/Details/SecurityAlert';
 import { TabNavigation } from '../components/Details/TabNavigation';
 
-import { BasicInfoTab } from '../components/Details/tabs/BasicInfoTab';
-import { ContactTab } from '../components/Details/tabs/ContactTab';
-import { MedicalTab } from '../components/Details/tabs/MedicalTab';
+import { BasicInfoTab } from '../components/Details/Tabs/BasicInfoTab';
+import { ContactTab } from '../components/Details/Tabs/ContactTab';
+import { MedicalTab } from '../components/Details/Tabs/MedicalTab';
 import LoadingOverlay from '../../../components/shared/LoadingOverlay';
 
 const PatientDetails = () => {
