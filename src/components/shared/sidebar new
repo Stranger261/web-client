@@ -1,0 +1,208 @@
+import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Home,
+  Calendar,
+  Users,
+  FileText,
+  Settings,
+  LogOut,
+  Heart,
+  Activity,
+  Stethoscope,
+  Pill,
+  ClipboardList,
+  UserCircle,
+} from 'lucide-react';
+
+// import { COLORS } from '../../configs/CONST';
+import { normalizedWord } from '../../utils/normalizedWord';
+
+const Sidebar = ({
+  isOpen,
+  toggleSidebar,
+  onLogout,
+  currentUser,
+  darkMode,
+}) => {
+  const location = useLocation();
+  const [expandedSection, setExpandedSection] = useState(null);
+
+  const uuidDisplay =
+    currentUser?.staff?.staff_uuid ||
+    currentUser?.person?.patient?.patient_uuid;
+
+  // Navigation items based on user role
+  const getNavItems = () => {
+    const commonItems = [
+      { icon: Home, label: 'Dashboard', path: '/dashboard' },
+      { icon: Calendar, label: 'Appointments', path: '/appointments' },
+    ];
+
+    if (currentUser?.role === 'doctor') {
+      return [
+        ...commonItems,
+        { icon: Users, label: 'Patients', path: '/patients' },
+        { icon: Activity, label: 'Consultations', path: '/consultations' },
+        { icon: ClipboardList, label: 'Medical Records', path: '/records' },
+        { icon: Pill, label: 'Prescriptions', path: '/prescriptions' },
+      ];
+    }
+
+    if (currentUser?.role === 'patient') {
+      return [
+        ...commonItems,
+        { icon: Stethoscope, label: 'My Doctors', path: '/my-doctors' },
+        { icon: FileText, label: 'Medical History', path: '/medical-history' },
+        { icon: Pill, label: 'Medications', path: '/medications' },
+      ];
+    }
+
+    return commonItems;
+  };
+
+  const navItems = getNavItems();
+
+  const isActive = path => location.pathname === path;
+
+  return (
+    <aside
+      className={`sidebar-shadow h-screen flex flex-col transition-all duration-300 ease-in-out ${
+        isOpen ? 'w-64' : 'w-20'
+      }`}
+      style={{
+        background:
+          'linear-gradient(180deg, #0a1929 0%, #0f1f3d 30%, #1a2d4d 100%)',
+      }}
+    >
+      {/* Sidebar Header */}
+      <div className="flex items-center justify-between px-4 py-6 border-b border-blue-100">
+        <div
+          className={`flex items-center gap-3 ${!isOpen && 'justify-center'}`}
+        >
+          <div
+            className="h-10 w-10 rounded-lg grid place-items-center flex-shrink-0"
+            style={{
+              background: 'linear-gradient(135deg, #3d5a80, #2d3e50)',
+              border: '2px solid rgba(96, 165, 250, 0.3)',
+            }}
+          >
+            <Heart className="h-6 w-6 text-blue-400" />
+          </div>
+          {isOpen && (
+            <div>
+              <h1 className="font-bold text-lg text-white">H VILL</h1>
+              <p className="text-xs text-slate-400">Hospital</p>
+            </div>
+          )}
+        </div>
+        <button
+          onClick={toggleSidebar}
+          className="hidden lg:block p-2 rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors"
+        >
+          {isOpen ? (
+            <ChevronLeft className="h-5 w-5 text-blue-400" />
+          ) : (
+            <ChevronRight className="h-5 w-5 text-blue-400" />
+          )}
+        </button>
+      </div>
+
+      {/* User Info */}
+      {isOpen && (
+        <div className="px-4 py-4 border-b border-blue-100">
+          <div className="flex items-center gap-3">
+            <div
+              className="h-12 w-12 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0"
+              style={{
+                background: 'linear-gradient(135deg, #3d5a80, #2d3e50)',
+              }}
+            >
+              {currentUser?.person.first_name?.charAt(0) || 'U'}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-white text-sm truncate">
+                {currentUser?.person.first_name || ''}{' '}
+                {currentUser?.person.last_name || ''}
+              </div>
+              <div className="text-xs text-slate-400 truncate">
+                {normalizedWord(
+                  currentUser.role === 'doctor' ? 'Staff' : currentUser.role
+                )}
+              </div>
+              <div className="text-xs text-blue-400 truncate mt-1">
+                ID: {uuidDisplay?.slice(0, 8) || 'N/A'}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto py-4 px-3">
+        {navItems.map((item, index) => {
+          const Icon = item.icon;
+          const active = isActive(item.path);
+
+          return (
+            <Link
+              key={index}
+              to={item.path}
+              className={`nav-item flex items-center gap-3 px-3 py-3 rounded-lg mb-2 ${
+                active
+                  ? 'bg-blue-100 text-blue-400'
+                  : 'text-slate-300 hover:text-blue-400'
+              } ${!isOpen && 'justify-center'}`}
+              style={{
+                background: active
+                  ? 'linear-gradient(135deg, rgba(61, 90, 128, 0.25) 0%, rgba(45, 62, 80, 0.2) 100%)'
+                  : 'transparent',
+              }}
+            >
+              <Icon
+                className={`h-5 w-5 flex-shrink-0 ${
+                  active ? 'text-blue-400' : ''
+                }`}
+              />
+              {isOpen && (
+                <span className="font-medium text-sm">{item.label}</span>
+              )}
+            </Link>
+          );
+        })}
+
+        <div className="section-divider my-4" />
+
+        {/* Settings */}
+        <Link
+          to="/settings"
+          className={`nav-item flex items-center gap-3 px-3 py-3 rounded-lg mb-2 ${
+            isActive('/settings')
+              ? 'bg-blue-100 text-blue-400'
+              : 'text-slate-300 hover:text-blue-400'
+          } ${!isOpen && 'justify-center'}`}
+        >
+          <Settings className="h-5 w-5 flex-shrink-0" />
+          {isOpen && <span className="font-medium text-sm">Settings</span>}
+        </Link>
+      </nav>
+
+      {/* Logout Button */}
+      <div className="px-3 py-4 border-t border-blue-100">
+        <button
+          onClick={onLogout}
+          className={`nav-item w-full flex items-center gap-3 px-3 py-3 rounded-lg text-slate-300 hover:text-red-400 hover:bg-red-500 hover:bg-opacity-10 ${
+            !isOpen && 'justify-center'
+          }`}
+        >
+          <LogOut className="h-5 w-5 flex-shrink-0" />
+          {isOpen && <span className="font-medium text-sm">Logout</span>}
+        </button>
+      </div>
+    </aside>
+  );
+};
+
+export default Sidebar;

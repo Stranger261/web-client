@@ -46,13 +46,13 @@ export const sidebarConfig = {
     // { name: 'Patient Queue', path: '/doctor/queue', icon: UsersIcon }, // NEW
     { name: 'Appointments', path: '/doctor/appointments', icon: CalendarIcon },
     { name: 'My Patients', path: '/doctor/my-patients', icon: UsersIcon },
-    {
-      name: 'Medical Records',
-      path: '/doctor/medical-records',
-      icon: FileTextIcon,
-    },
+    // {
+    //   name: 'Medical Records',
+    //   path: '/doctor/medical-records',
+    //   icon: FileTextIcon,
+    // },
     { name: 'Video conference', path: '/doctor/video-call', icon: Video },
-    { name: 'Reports', path: '/doctor/reports', icon: BarChartIcon },
+    // { name: 'Reports', path: '/doctor/reports', icon: BarChartIcon },
     { name: 'Settings', path: '/doctor/settings', icon: SettingsIcon },
   ],
 

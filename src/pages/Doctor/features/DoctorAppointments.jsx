@@ -11,10 +11,9 @@ import Modal from '../../../components/ui/Modal';
 import Pagination from '../../../components/ui/pagination';
 import { Select } from '../../../components/ui/select';
 import { LoadingSpinner } from '../../../components/ui/loading-spinner';
+import AppointmentDetailModal from '../../../components/Modals/AppointmentDetailModal';
 
 import AppointmentsTable from '../../../components/shared/AppointmentsTable';
-
-import AppointmentDetailModal from '../components/Appointment/AppointmentDetailModal';
 
 const DoctorAppointment = () => {
   const { currentUser } = useAuth();
@@ -35,6 +34,7 @@ const DoctorAppointment = () => {
     appointment_type: '',
     priority: '',
     search: '',
+    appointment_mode: '',
   });
 
   // socket appointments
@@ -58,6 +58,7 @@ const DoctorAppointment = () => {
   // ===== Filter handlers =====
   const handleFilterChange = e => {
     const { name, value } = e.target;
+    console.log(name, value);
     setFilters(prev => ({
       ...prev,
       [name]: value,
@@ -73,6 +74,7 @@ const DoctorAppointment = () => {
       appointment_type: '',
       priority: '',
       search: '',
+      appointment_mode: '',
     });
     setCurrentPage(1);
   };
@@ -110,6 +112,9 @@ const DoctorAppointment = () => {
       ...(filters.status && { status: filters.status }),
       ...(filters.appointment_type && {
         appointment_type: filters.appointment_type,
+      }),
+      ...(filters.appointment_mode && {
+        appointment_mode: filters.appointment_mode,
       }),
       ...(filters.priority && { priority: filters.priority }),
       ...(filters.from_date && { from_date: filters.from_date }),
@@ -197,11 +202,23 @@ const DoctorAppointment = () => {
                 onChange={handleFilterChange}
                 options={[
                   { value: 'scheduled', label: 'Scheduled' },
-                  { value: 'confirmed', label: 'Confirmed' },
+                  { value: 'in_progress', label: 'In-progress' },
                   { value: 'checked-in', label: 'Checked In' },
                   { value: 'completed', label: 'Completed' },
                   { value: 'cancelled', label: 'Cancelled' },
                   { value: 'no-show', label: 'No Show' },
+                ]}
+              />
+
+              {/* Appointment Mode */}
+              <Select
+                label="Appointment Mode"
+                name="appointment_mode"
+                value={filters.appointment_mode}
+                onChange={handleFilterChange}
+                options={[
+                  { value: 'in-person', label: 'In-person' },
+                  { value: 'online', label: 'Online' },
                 ]}
               />
 
@@ -384,6 +401,7 @@ const DoctorAppointment = () => {
           isOpen={showDetails}
           onClose={() => setShowDetails(false)}
           appointment={selectedAppt}
+          currentUser={currentUser}
         />
       </Modal>
     </div>

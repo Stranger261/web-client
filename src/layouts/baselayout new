@@ -1,0 +1,276 @@
+// File: /src/layouts/BaseLayout.jsx
+import { useEffect, useState } from 'react';
+import { toast } from 'react-hot-toast';
+import { Outlet, useNavigate } from 'react-router-dom';
+
+import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationContext';
+import { useSocket } from '../contexts/SocketContext';
+
+import LoadingOverlay from '../components/shared/LoadingOverlay';
+import DesktopHeader from './components/Header/DesktopHeader';
+import MobileHeader from './components/Header/MobileHeader';
+import Sidebar from '../components/shared/Sidebar';
+import NotificationPanel from './components/Notifications/NotificationPanel';
+import ChangePasswordModal from '../components/Modals/ChangePasswordModal';
+
+import { COLORS } from '../configs/CONST';
+// import '../styles/sidebar-theme.css';
+
+const BaseLayout = () => {
+  const navigate = useNavigate();
+  const { isLoading, currentUser, logout } = useAuth();
+  const {
+    notifications,
+    unreadCount,
+    setNotifications,
+    getUserNotifications,
+    readNotification,
+    readAllNotification,
+    notifPagination,
+  } = useNotification();
+  const { isConnected, socket } = useSocket();
+
+  // UI State
+  const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  // Notification State
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Load notifications on mount
+  useEffect(() => {
+    getUserNotifications();
+  }, []);
+
+  // Socket listeners
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    const doctor_uuid = currentUser?.person?.staff?.staff_uuid;
+    const lastname = currentUser?.person?.last_name;
+
+    if (doctor_uuid && lastname && currentUser.role === 'doctor') {
+      socket.emit('doctor-room', { doctor_uuid, lastname });
+      socket.on('new-appointment-booked', () => {
+        setNotifications([]);
+        getUserNotifications();
+        toast.success('New appointment arrived.');
+      });
+    }
+
+    if (currentUser?.role === 'patient') {
+      const roomName = `${currentUser?.user_uuid}_${currentUser?.person?.last_name}`;
+      socket.emit('room:user', { roomName });
+      socket.on('video:room-created', () => {
+        getUserNotifications();
+      });
+    }
+
+    return () => {
+      if (socket) {
+        socket.off('new-appointment-booked');
+        socket.off('video:room-created');
+      }
+    };
+  }, [
+    isConnected,
+    socket,
+    currentUser,
+    getUserNotifications,
+    setNotifications,
+  ]);
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+    document.documentElement.classList.toggle('dark', !darkMode);
+  };
+
+  const logoutHandler = async () => {
+    setLoggingOut(true);
+    try {
+      await new Promise(res => setTimeout(res, 800));
+      await logout();
+      toast.success('Logged out successfully.');
+      navigate('/login');
+    } catch (error) {
+      console.log(error);
+      toast.error('Failed to log out. Please try again.');
+    } finally {
+      setLoggingOut(false);
+    }
+  };
+
+  // Notification handlers
+  const notificationHandlers = {
+    markAsRead: async id => {
+      const notif = notifications.find(n => n.notification_id === id);
+      if (notif?.is_read) return;
+
+      try {
+        await readNotification(id);
+        setNotifications(prev =>
+          prev?.map(notif =>
+            notif.notification_id === id ? { ...notif, is_read: true } : notif
+          )
+        );
+      } catch (error) {
+        console.error('Error marking notification as read:', error);
+      }
+    },
+    markAllAsRead: async () => {
+      try {
+        setNotifications(prev =>
+          prev?.map(notif => ({ ...notif, is_read: true }))
+        );
+        await readAllNotification();
+      } catch (error) {
+        console.error('Error marking all notifications as read:', error);
+      }
+    },
+    refresh: async () => {
+      setIsRefreshing(true);
+      try {
+        setNotifications([]);
+        await getUserNotifications();
+      } catch (error) {
+        console.error('Error refreshing notifications:', error);
+        toast.error('Failed to refresh notifications');
+      } finally {
+        setIsRefreshing(false);
+      }
+    },
+    loadMore: async () => {
+      if (
+        isLoadingMore ||
+        notifPagination.currentPage >= notifPagination.totalPages
+      )
+        return;
+
+      setIsLoadingMore(true);
+      try {
+        const nextPage = notifPagination.currentPage + 1;
+        const res = await getUserNotifications({
+          status: '',
+          limit: notifPagination.limit,
+          page: nextPage,
+        });
+        setNotifications([...notifications, ...res.notification]);
+      } catch (error) {
+        console.error('Error loading more notifications:', error);
+        toast.error('Failed to load more notifications');
+      } finally {
+        setIsLoadingMore(false);
+      }
+    },
+  };
+
+  if (isLoading || loggingOut) {
+    return <LoadingOverlay />;
+  }
+
+  if (!currentUser && !isLoading) {
+    return null;
+  }
+
+  return (
+    <div className="flex min-h-screen healthcare-gradient">
+      {/* Desktop Sidebar */}
+      <div className="hidden lg:block fixed left-0 top-0 h-full z-30">
+        <Sidebar
+          isOpen={isDesktopSidebarOpen}
+          toggleSidebar={() => setIsDesktopSidebarOpen(!isDesktopSidebarOpen)}
+          onLogout={logoutHandler}
+          currentUser={currentUser}
+          darkMode={darkMode}
+        />
+      </div>
+
+      {/* Mobile Sidebar Overlay */}
+      {isMobileSidebarOpen && (
+        <div className="fixed inset-0 z-40 flex lg:hidden">
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50"
+            onClick={() => setIsMobileSidebarOpen(false)}
+          />
+          <div className="relative z-50">
+            <Sidebar
+              isOpen={true}
+              toggleSidebar={() => setIsMobileSidebarOpen(false)}
+              onLogout={logoutHandler}
+              currentUser={currentUser}
+              darkMode={darkMode}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div
+        className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${
+          isDesktopSidebarOpen ? 'lg:ml-64' : 'lg:ml-20'
+        }`}
+      >
+        {/* Desktop Header */}
+        <DesktopHeader
+          darkMode={darkMode}
+          toggleDarkMode={toggleDarkMode}
+          currentUser={currentUser}
+          unreadCount={unreadCount}
+          isNotifOpen={isNotifOpen}
+          setIsNotifOpen={setIsNotifOpen}
+          onOpenPasswordModal={() => setIsPasswordModalOpen(true)}
+          onLogout={logoutHandler}
+        />
+
+        {/* Mobile Header */}
+        <MobileHeader
+          darkMode={darkMode}
+          toggleDarkMode={toggleDarkMode}
+          unreadCount={unreadCount}
+          toggleNotifications={() => setIsNotifOpen(prev => !prev)}
+          toggleSidebar={() => setIsMobileSidebarOpen(true)}
+        />
+
+        {/* Notification Panel */}
+        <NotificationPanel
+          isOpen={isNotifOpen}
+          onClose={() => setIsNotifOpen(false)}
+          darkMode={darkMode}
+          notifications={notifications}
+          unreadCount={unreadCount}
+          isLoadingMore={isLoadingMore}
+          isRefreshing={isRefreshing}
+          notifPagination={notifPagination}
+          handlers={notificationHandlers}
+        />
+
+        {/* Change Password Modal */}
+        <ChangePasswordModal
+          isOpen={isPasswordModalOpen}
+          onClose={() => setIsPasswordModalOpen(false)}
+          darkMode={darkMode}
+        />
+
+        {/* Main Content Area */}
+        <main
+          className="flex-1 overflow-x-hidden"
+          style={{
+            backgroundColor: darkMode
+              ? COLORS.background.dark
+              : COLORS.background.light,
+          }}
+        >
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default BaseLayout;

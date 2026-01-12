@@ -11,10 +11,11 @@ import {
   DollarSign,
   Activity,
 } from 'lucide-react';
-import { COLORS } from '../../../../configs/CONST';
-import Badge from '../../../../components/ui/badge';
-import { formatDate } from '../../../../utils/dateFormatter';
-import { formatTime } from '../../../../utils/FormatTime';
+import { COLORS } from '../../configs/CONST';
+import Badge from '../ui/badge';
+import { formatDate } from '../../utils/dateFormatter';
+import { formatTime } from '../../utils/FormatTime';
+import { useState } from 'react';
 
 const AppointmentDetailModal = ({
   isOpen,
@@ -23,6 +24,8 @@ const AppointmentDetailModal = ({
   currentUser,
 }) => {
   const isDarkMode = document.documentElement.classList.contains('dark');
+  const [activeTab, setActiveTab] = useState('overview');
+  const [expandedRecord, setExpandedRecord] = useState(null);
 
   if (!appointment) return null;
 
@@ -273,42 +276,43 @@ const AppointmentDetailModal = ({
                   {/* Left Column */}
                   <div className="space-y-6">
                     {/* Doctor Information */}
-                    <div>
-                      <SectionTitle>Doctor Information</SectionTitle>
-                      <div
-                        className="rounded-lg border p-4 space-y-1"
-                        style={{
-                          backgroundColor: isDarkMode
-                            ? COLORS.surface.dark
-                            : 'white',
-                          borderColor: isDarkMode
-                            ? COLORS.border.dark
-                            : COLORS.border.light,
-                        }}
-                      >
-                        <DetailRow
-                          icon={Stethoscope}
-                          label="Doctor Name"
-                          value={doctorName}
-                        />
-                        <DetailRow
-                          icon={Activity}
-                          label="Specialization"
-                          value={appointment.doctor?.specialization}
-                        />
-                        <DetailRow
-                          icon={Hash}
-                          label="License Number"
-                          value={appointment.doctor?.license_number}
-                        />
-                        <DetailRow
-                          icon={MapPin}
-                          label="Department"
-                          value={appointment.department?.department_name}
-                        />
+                    {currentUser.role !== 'doctor' && (
+                      <div>
+                        <SectionTitle>Doctor Information</SectionTitle>
+                        <div
+                          className="rounded-lg border p-4 space-y-1"
+                          style={{
+                            backgroundColor: isDarkMode
+                              ? COLORS.surface.dark
+                              : 'white',
+                            borderColor: isDarkMode
+                              ? COLORS.border.dark
+                              : COLORS.border.light,
+                          }}
+                        >
+                          <DetailRow
+                            icon={Stethoscope}
+                            label="Doctor Name"
+                            value={doctorName}
+                          />
+                          <DetailRow
+                            icon={Activity}
+                            label="Specialization"
+                            value={appointment.doctor?.specialization}
+                          />
+                          <DetailRow
+                            icon={Hash}
+                            label="License Number"
+                            value={appointment.doctor?.license_number}
+                          />
+                          <DetailRow
+                            icon={MapPin}
+                            label="Department"
+                            value={appointment.department?.department_name}
+                          />
+                        </div>
                       </div>
-                    </div>
-
+                    )}
                     {/* Patient Information - Only show for non-patient users */}
                     {currentUser?.role !== 'patient' && (
                       <div>
@@ -373,7 +377,6 @@ const AppointmentDetailModal = ({
                       </div>
                     </div>
                   </div>
-
                   {/* Right Column */}
                   <div className="space-y-6">
                     {/* Schedule Information */}

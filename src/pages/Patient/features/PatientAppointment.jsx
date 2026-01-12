@@ -9,11 +9,11 @@ import Modal from '../../../components/ui/Modal';
 import Pagination from '../../../components/ui/pagination';
 import { Select } from '../../../components/ui/select';
 import { LoadingSpinner } from '../../../components/ui/loading-spinner';
+import AppointmentDetailModal from '../../../components/Modals/AppointmentDetailModal';
 
 import AppointmentsTable from '../../../components/shared/AppointmentsTable';
 
 import CreateAppointment from '../components/Appointment/CreateAppointment';
-import AppointmentDetailModal from '../components/Appointment/AppointmentDetailModal';
 
 const PatientAppointment = () => {
   const { currentUser } = useAuth();
@@ -24,6 +24,7 @@ const PatientAppointment = () => {
   const [showCreate, setShowCreate] = useState(false);
   const [selectedAppt, setSelectedAppt] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
+  // pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [limit, setLimit] = useState(20);
 
@@ -33,6 +34,7 @@ const PatientAppointment = () => {
     to_date: '',
     appointment_type: '',
     search: '',
+    appointment_mode: '',
   });
 
   const activeFiltersCount = Object.values(filters).filter(
@@ -54,6 +56,7 @@ const PatientAppointment = () => {
   // ===== Filter handlers =====
   const handleFilterChange = e => {
     const { name, value } = e.target;
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setFilters(prev => ({
       ...prev,
@@ -70,6 +73,7 @@ const PatientAppointment = () => {
       to_date: '',
       appointment_type: '',
       search: '',
+      appointment_mode: '',
     });
     setCurrentPage(1);
   };
@@ -87,6 +91,9 @@ const PatientAppointment = () => {
       ...(filters.status && { status: filters.status }),
       ...(filters.appointment_type && {
         appointment_type: filters.appointment_type,
+      }),
+      ...(filters.appointment_mode && {
+        appointment_mode: filters.appointment_mode,
       }),
       ...(filters.from_date && { from_date: filters.from_date }),
       ...(filters.to_date && { to_date: filters.to_date }),
@@ -183,11 +190,23 @@ const PatientAppointment = () => {
                 onChange={handleFilterChange}
                 options={[
                   { value: 'scheduled', label: 'Scheduled' },
-                  { value: 'confirmed', label: 'Confirmed' },
+                  { value: 'in_progress', label: 'In-progress' },
                   { value: 'completed', label: 'Completed' },
                   { value: 'cancelled', label: 'Cancelled' },
                   { value: 'rescheduled', label: 'Rescheduled' },
                   { value: 'no-show', label: 'No Show' },
+                ]}
+              />
+
+              {/* Appointment Mode */}
+              <Select
+                label="Appointment Mode"
+                name="appointment_mode"
+                value={filters.appointment_mode}
+                onChange={handleFilterChange}
+                options={[
+                  { value: 'in-person', label: 'In-person' },
+                  { value: 'online', label: 'Online' },
                 ]}
               />
 
@@ -372,6 +391,7 @@ const PatientAppointment = () => {
           isOpen={showDetails}
           onClose={() => setShowDetails(false)}
           appointment={selectedAppt}
+          currentUser={currentUser}
         />
       </Modal>
     </div>

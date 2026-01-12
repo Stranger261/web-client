@@ -1,23 +1,15 @@
 import { createContext, useCallback, useContext, useState } from 'react';
 import patientApi from '../services/patientApi';
-import { ITEMS_PER_PAGE } from '../configs/CONST';
 
 const PatientContext = createContext();
 
 const PatientProvider = ({ children }) => {
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: ITEMS_PER_PAGE,
-    totalPages: 0,
-    total: 0,
-  });
   const [medHistory, setMedHistory] = useState();
 
   const getDoctorsPatients = useCallback(async (doctorUuid, filters) => {
     try {
       const res = await patientApi.getDoctorsPatients(doctorUuid, filters);
 
-      console.log(res);
       return res.data;
     } catch (error) {
       console.error('Get doctors patients sched error: ', error);
@@ -31,11 +23,9 @@ const PatientProvider = ({ children }) => {
         patientUuid,
         filters
       );
-      console.log(medHistory.data.medHistory);
       setMedHistory(medHistory.data.medHistory);
-      setPagination(medHistory.data.pagination);
 
-      return medHistory.data;
+      return medHistory;
     } catch (error) {
       console.log('Get doctor patients error: ', error);
       throw error;
@@ -44,7 +34,6 @@ const PatientProvider = ({ children }) => {
 
   const value = {
     medHistory,
-    pagination,
     getDoctorsPatients,
     getPatientMedHistory,
   };
