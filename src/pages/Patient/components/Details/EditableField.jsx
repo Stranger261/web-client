@@ -2,7 +2,7 @@ import { Lock, Edit2, Check, X } from 'lucide-react';
 import { COLORS } from '../../../../configs/CONST';
 import { useFieldUpdate } from './hooks/useFieldUpdate';
 import { LoadingSpinner } from '../../../../components/ui/loading-spinner';
-import { PhoneInput } from '../../../../components/ui/phoneInput';
+import { PhoneInput } from '../../../../components/ui/PhoneInput';
 import { Input } from '../../../../components/ui/input';
 
 export const EditableField = ({
