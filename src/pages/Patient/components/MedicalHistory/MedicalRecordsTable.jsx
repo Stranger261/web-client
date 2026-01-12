@@ -1,5 +1,5 @@
 import { Eye } from 'lucide-react';
-import Table from '../../../../components/ui/Table';
+import Table from '../../../../components/ui/table';
 import { Button } from '../../../../components/ui/button';
 import { formatDate, truncateText } from '../../../../utils/dateFormatter';
 import MedicalRecordCard from './MedicalRecordCard';
