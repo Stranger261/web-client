@@ -233,5 +233,3 @@ export const ITEMS_PER_PAGE = 10;
 
 // notification
 export const ITEMS_PER_NOTIF = 3;
-
-export default COLORS;
