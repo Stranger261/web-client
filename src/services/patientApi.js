@@ -41,6 +41,20 @@ class patientService {
       throw error;
     }
   }
+
+  async getPatientMedicalRecords(patientUuid, filters) {
+    try {
+      const medRecords = await this.patientApi.get(
+        `patients/${patientUuid}/med-records`,
+        { params: filters }
+      );
+
+      return medRecords.data;
+    } catch (error) {
+      console.log('Get patient medical history failed: ', error);
+      throw error;
+    }
+  }
 }
 
 export default new patientService();

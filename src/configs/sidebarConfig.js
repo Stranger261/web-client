@@ -38,7 +38,7 @@ export const sidebarConfig = {
       icon: CreditCardIcon,
     },
     { name: 'Reports', path: '/receptionist/reports', icon: FileTextIcon },
-    { name: 'Settings', path: '/receptionist/settings', icon: SettingsIcon },
+    // { name: 'Settings', path: '/receptionist/settings', icon: SettingsIcon },
   ],
 
   doctor: [
@@ -53,7 +53,7 @@ export const sidebarConfig = {
     // },
     { name: 'Video conference', path: '/doctor/video-call', icon: Video },
     // { name: 'Reports', path: '/doctor/reports', icon: BarChartIcon },
-    { name: 'Settings', path: '/doctor/settings', icon: SettingsIcon },
+    // { name: 'Settings', path: '/doctor/settings', icon: SettingsIcon },
   ],
 
   nurse: [
@@ -72,7 +72,7 @@ export const sidebarConfig = {
     },
     { name: 'Assistance', path: '/nurse/assistance', icon: StethoscopeIcon },
     { name: 'Reports', path: '/nurse/reports', icon: BarChartIcon },
-    { name: 'Settings', path: '/nurse/settings', icon: SettingsIcon },
+    // { name: 'Settings', path: '/nurse/settings', icon: SettingsIcon },
   ],
 
   admin: [
@@ -91,7 +91,7 @@ export const sidebarConfig = {
       icon: CreditCardIcon,
     },
     { name: 'Reports', path: '/admin/reports', icon: BarChartIcon },
-    { name: 'Settings', path: '/admin/settings', icon: SettingsIcon },
+    // { name: 'Settings', path: '/admin/settings', icon: SettingsIcon },
   ],
 
   patient: [
@@ -119,6 +119,6 @@ export const sidebarConfig = {
     //   path: '/patient/billing-history',
     //   icon: CreditCardIcon,
     // }, // NEW
-    { name: 'Settings', path: '/patient/my-settings', icon: SettingsIcon },
+    // { name: 'Settings', path: '/patient/my-settings', icon: SettingsIcon },
   ],
 };

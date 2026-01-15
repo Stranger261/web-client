@@ -14,6 +14,7 @@ import { LoadingSpinner } from '../../../components/ui/loading-spinner';
 import AppointmentDetailModal from '../../../components/Modals/AppointmentDetailModal';
 
 import AppointmentsTable from '../../../components/shared/AppointmentsTable';
+import { FilterPanel } from '../../../components/ui/filter-panel';
 
 const DoctorAppointment = () => {
   const { currentUser } = useAuth();
@@ -44,6 +45,66 @@ const DoctorAppointment = () => {
     v => v !== ''
   ).length;
 
+  const appointmentFilterConfig = [
+    {
+      type: 'search',
+      name: 'search',
+    },
+    {
+      type: 'select',
+      name: 'status',
+      label: 'Status',
+      options: [
+        { value: 'scheduled', label: 'Scheduled' },
+        { value: 'in_progress', label: 'In-progress' },
+        { value: 'checked-in', label: 'Checked In' },
+        { value: 'completed', label: 'Completed' },
+        { value: 'cancelled', label: 'Cancelled' },
+        { value: 'no-show', label: 'No Show' },
+      ],
+    },
+    {
+      type: 'select',
+      name: 'appointment_mode',
+      label: 'Appointment Mode',
+      options: [
+        { value: 'in-person', label: 'In-person' },
+        { value: 'online', label: 'Online' },
+      ],
+    },
+    {
+      type: 'select',
+      name: 'appointment_type',
+      label: 'Appointment Type',
+      options: [
+        { value: 'consultation', label: 'Consultation' },
+        { value: 'followup', label: 'Follow-up' },
+        { value: 'procedure', label: 'Procedure' },
+        { value: 'checkup', label: 'Check-up' },
+      ],
+    },
+    {
+      type: 'select',
+      name: 'priority',
+      label: 'Priority',
+      options: [
+        { value: 'high', label: 'High' },
+        { value: 'normal', label: 'Normal' },
+        { value: 'low', label: 'Low' },
+      ],
+    },
+    {
+      type: 'date',
+      name: 'from_date',
+      label: 'From Date',
+    },
+    {
+      type: 'date',
+      name: 'to_date',
+      label: 'To Date',
+    },
+  ];
+
   // ===== Pagination handlers =====
   const handlePageChange = newPage => {
     setCurrentPage(newPage);
@@ -54,17 +115,6 @@ const DoctorAppointment = () => {
     setLimit(newLimit);
     setCurrentPage(1);
   }, []);
-
-  // ===== Filter handlers =====
-  const handleFilterChange = e => {
-    const { name, value } = e.target;
-    console.log(name, value);
-    setFilters(prev => ({
-      ...prev,
-      [name]: value,
-    }));
-    setCurrentPage(1);
-  };
 
   const handleClearFilters = () => {
     setFilters({
@@ -77,6 +127,7 @@ const DoctorAppointment = () => {
       appointment_mode: '',
     });
     setCurrentPage(1);
+    setLimit(20);
   };
 
   const viewAppointment = appt => {
@@ -159,177 +210,16 @@ const DoctorAppointment = () => {
 
         {/* Filters Panel */}
         {showFilters && (
-          <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 sm:px-6 py-4">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Search className="text-blue-600" size={18} />
-                <h3 className="text-base font-semibold text-gray-900 dark:text-white">
-                  Filter Appointments
-                </h3>
-              </div>
-              <button
-                onClick={() => setShowFilters(false)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Search Bar */}
-            <div className="mb-4">
-              <div className="relative">
-                <Search
-                  size={18}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                />
-                <input
-                  type="text"
-                  name="search"
-                  value={filters.search}
-                  onChange={handleFilterChange}
-                  placeholder="Search by patient name, MRN, or reason..."
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-              {/* Status Filter */}
-              <Select
-                label="Status"
-                name="status"
-                value={filters.status}
-                onChange={handleFilterChange}
-                options={[
-                  { value: 'scheduled', label: 'Scheduled' },
-                  { value: 'in_progress', label: 'In-progress' },
-                  { value: 'checked-in', label: 'Checked In' },
-                  { value: 'completed', label: 'Completed' },
-                  { value: 'cancelled', label: 'Cancelled' },
-                  { value: 'no-show', label: 'No Show' },
-                ]}
-              />
-
-              {/* Appointment Mode */}
-              <Select
-                label="Appointment Mode"
-                name="appointment_mode"
-                value={filters.appointment_mode}
-                onChange={handleFilterChange}
-                options={[
-                  { value: 'in-person', label: 'In-person' },
-                  { value: 'online', label: 'Online' },
-                ]}
-              />
-
-              {/* Appointment Type */}
-              <Select
-                label="Appointment Type"
-                name="appointment_type"
-                value={filters.appointment_type}
-                onChange={handleFilterChange}
-                options={[
-                  { value: 'consultation', label: 'Consultation' },
-                  { value: 'followup', label: 'Follow-up' },
-                  { value: 'procedure', label: 'Procedure' },
-                  { value: 'checkup', label: 'Check-up' },
-                ]}
-              />
-
-              {/* Priority */}
-              <Select
-                label="Priority"
-                name="priority"
-                value={filters.priority}
-                onChange={handleFilterChange}
-                options={[
-                  { value: 'high', label: 'High' },
-                  { value: 'normal', label: 'Normal' },
-                  { value: 'low', label: 'Low' },
-                ]}
-              />
-
-              {/* From Date Filter */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  From Date
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <Calendar size={16} className="text-gray-400" />
-                  </div>
-                  <input
-                    type="date"
-                    name="from_date"
-                    value={filters.from_date}
-                    onChange={handleFilterChange}
-                    className="w-full pl-10 pr-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-gray-900 dark:text-white"
-                  />
-                </div>
-              </div>
-
-              {/* To Date Filter */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  To Date
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <Calendar size={16} className="text-gray-400" />
-                  </div>
-                  <input
-                    type="date"
-                    name="to_date"
-                    value={filters.to_date}
-                    onChange={handleFilterChange}
-                    className="w-full pl-10 pr-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm text-gray-900 dark:text-white"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Clear Button */}
-            <div className="mt-4 flex justify-end">
-              <Button
-                variant="outline"
-                onClick={handleClearFilters}
-                disabled={activeFiltersCount === 0}
-              >
-                <X size={16} className="mr-1" />
-                Clear All Filters
-              </Button>
-            </div>
-
-            {/* Active Filters Pills */}
-            {activeFiltersCount > 0 && (
-              <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                  Active Filters:
-                </span>
-                {Object.entries(filters).map(([key, value]) => {
-                  if (!value || key === 'search') return null;
-                  return (
-                    <span
-                      key={key}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-xs font-medium border border-blue-200 dark:border-blue-800"
-                    >
-                      {key.replace('_', ' ')}: {value}
-                      <button
-                        onClick={() =>
-                          handleFilterChange({
-                            target: { name: key, value: '' },
-                          })
-                        }
-                        className="hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-sm p-0.5"
-                      >
-                        <X size={12} />
-                      </button>
-                    </span>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          <FilterPanel
+            filters={filters}
+            onFilterChange={setFilters}
+            showFilters={showFilters}
+            onToggleFilters={() => setShowFilters(!showFilters)}
+            filterConfig={appointmentFilterConfig}
+            onClearFilters={handleClearFilters}
+            searchPlaceholder="Search by patient name, MRN, or reason..."
+            title="Filter Appointments"
+          />
         )}
       </header>
 

@@ -28,6 +28,7 @@ import { normalizedWord } from '../utils/normalizedWord';
 import { useSocket } from '../contexts/SocketContext';
 import { Button } from '../components/ui/button';
 import { formatNotificationTime } from '../utils/FormatTime';
+import LiveClockHeader from '../components/shared/LiveClock';
 
 const BaseLayout = () => {
   const navigate = useNavigate();
@@ -296,7 +297,7 @@ const BaseLayout = () => {
       >
         {/* Desktop Header */}
         <header
-          className="hidden lg:flex items-center justify-end px-6 py-4 shadow-sm sticky top-0 z-20"
+          className="hidden lg:flex items-center justify-between px-6 py-4 shadow-sm sticky top-0 z-20"
           style={{
             backgroundColor: darkMode
               ? COLORS.surface.dark
@@ -304,6 +305,7 @@ const BaseLayout = () => {
             color: darkMode ? COLORS.text.white : COLORS.text.primary,
           }}
         >
+          <LiveClockHeader />
           <div className="flex items-center space-x-6">
             {/* Dark Mode Toggle */}
             <Button

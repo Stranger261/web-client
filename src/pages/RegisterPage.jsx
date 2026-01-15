@@ -131,8 +131,6 @@ const RegisterPage = () => {
           password: formData.password,
         });
 
-        console.log(response);
-
         if (response.success) {
           toast.success(
             response.message ||

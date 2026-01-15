@@ -16,6 +16,29 @@ export const formatTime = timeStr => {
 };
 
 /**
+ * Format full date + live time with seconds
+ * e.g. "Jan 16, 2026 · 02:49:32 AM"
+ */
+export const formatLiveDateTime = date => {
+  if (!date) return '';
+
+  const datePart = date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+  });
+
+  const timePart = date.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+  });
+
+  return `${datePart} · ${timePart}`;
+};
+
+/**
  * Format ISO timestamp to relative time (e.g., "5 minutes ago", "2 hours ago")
  * @param {string} isoTimestamp - ISO 8601 timestamp
  * @returns {string} Relative time string

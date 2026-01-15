@@ -126,16 +126,17 @@ const DoctorPatients = () => {
       </div>
 
       {/* Modals */}
+
       <PatientDetailsModal
         isOpen={isViewModalOpen}
         onClose={() => {
           setIsViewModalOpen(false);
           setExpandedRecordId(null);
         }}
-        patient={selectedPatient}
         expandedRecordId={expandedRecordId}
         onToggleRecord={toggleMedicalRecord}
-        isDarkMode={isDarkMode}
+        patient={selectedPatient}
+        medicalRecords={selectedPatient?.medicalRecords || []}
       />
 
       <DeleteConfirmModal

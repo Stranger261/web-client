@@ -1,5 +1,3 @@
-// src/pages/CreateAppointment.jsx
-
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';

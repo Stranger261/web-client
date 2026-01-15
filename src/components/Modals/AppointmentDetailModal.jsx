@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
+
 import {
   Calendar,
   Clock,
@@ -15,7 +16,6 @@ import { COLORS } from '../../configs/CONST';
 import Badge from '../ui/badge';
 import { formatDate } from '../../utils/dateFormatter';
 import { formatTime } from '../../utils/FormatTime';
-import { useState } from 'react';
 
 const AppointmentDetailModal = ({
   isOpen,
@@ -24,8 +24,6 @@ const AppointmentDetailModal = ({
   currentUser,
 }) => {
   const isDarkMode = document.documentElement.classList.contains('dark');
-  const [activeTab, setActiveTab] = useState('overview');
-  const [expandedRecord, setExpandedRecord] = useState(null);
 
   if (!appointment) return null;
 

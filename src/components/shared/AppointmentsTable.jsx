@@ -66,10 +66,10 @@ const AppointmentsTable = ({
     if (patient && typeof patient === 'object' && fullName) {
       return {
         name: fullName,
-        mrn: patient.mrn || 'N/A',
-        age: patient.age || 'N/A',
-        phone: user.phone || '',
-        email: user.email || '',
+        mrn: patient?.mrn || 'N/A',
+        age: patient?.age || 'N/A',
+        phone: user?.phone || '',
+        email: user?.email || '',
       };
     }
 
@@ -78,7 +78,7 @@ const AppointmentsTable = ({
         name: `${createdBy.first_name || ''} ${
           createdBy.last_name || ''
         }`.trim(),
-        subInfo: createdBy.phone || createdBy.email || '',
+        subInfo: createdBy?.phone || createdBy?.email || '',
       };
     }
 

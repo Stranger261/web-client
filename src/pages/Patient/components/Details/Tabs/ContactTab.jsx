@@ -66,16 +66,6 @@ export const ContactTab = ({ patientData, onFieldUpdate, onFieldsUpdate }) => {
           countryCode="+63"
           icon={Phone}
         />
-
-        {/* HOME PHONE with phone validation */}
-        <EditableField
-          label="Phone Number"
-          value={patientData.phone}
-          onSave={onFieldUpdate('phone')}
-          fieldType="phone"
-          countryCode="+63"
-          icon={Phone}
-        />
       </div>
 
       {/* Address Section */}

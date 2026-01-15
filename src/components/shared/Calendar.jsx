@@ -11,6 +11,8 @@ import {
   isSameMonth,
   addDays,
   isAfter,
+  isToday,
+  parse,
 } from 'date-fns';
 import { useSchedule } from '../../contexts/ScheduleContext';
 
@@ -35,14 +37,37 @@ const Calendar = ({ selectedDate, handleDateClick, takenSlotsByDate = {} }) => {
     changeMonth(format(newMonthDate, 'yyyy-MM'));
   };
 
+  // Helper function to check if a time slot is in the past
+  const isTimeSlotPast = (dateStr, timeStr) => {
+    try {
+      // Parse the date and time
+      const slotDateTime = parse(
+        `${dateStr} ${timeStr}`,
+        'yyyy-MM-dd HH:mm:ss',
+        new Date()
+      );
+
+      // Compare with current time
+      return slotDateTime < new Date();
+    } catch (error) {
+      console.error('Error parsing time slot:', error);
+      return false;
+    }
+  };
+
   const dailyAvailability = useMemo(() => {
     const availabilityMap = new Map();
+    const now = new Date();
 
     if (doctorSchedule?.availableSlots) {
       doctorSchedule.availableSlots.forEach(slot => {
         const dateKey = slot.date;
-
         const takenForThisDate = takenSlotsByDate[dateKey] || [];
+
+        // Skip if slot is in the past
+        if (isTimeSlotPast(dateKey, slot.time)) {
+          return;
+        }
 
         if (!availabilityMap.has(dateKey)) {
           availabilityMap.set(dateKey, {
@@ -51,7 +76,7 @@ const Calendar = ({ selectedDate, handleDateClick, takenSlotsByDate = {} }) => {
           });
         }
 
-        //  Skip if slot is taken for this date
+        // Skip if slot is taken for this date
         if (!takenForThisDate.includes(slot.time)) {
           availabilityMap.get(dateKey).hasAvailableSlots = true;
           availabilityMap.get(dateKey).slots.push(slot);
@@ -67,8 +92,12 @@ const Calendar = ({ selectedDate, handleDateClick, takenSlotsByDate = {} }) => {
         ) {
           schedule.availableSlots.forEach(slot => {
             const dateKey = slot.date;
-
             const takenForThisDate = takenSlotsByDate[dateKey] || [];
+
+            // Skip if slot is in the past
+            if (isTimeSlotPast(dateKey, slot.time)) {
+              return;
+            }
 
             if (!availabilityMap.has(dateKey)) {
               availabilityMap.set(dateKey, {

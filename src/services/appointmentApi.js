@@ -71,9 +71,8 @@ class appointmentSerevice {
   async getAppointmentsToday(filters) {
     try {
       const appointmentToday = await this.appointmentApi.get('/today', {
-        filters,
+        params: filters,
       });
-      console.log(appointmentToday);
 
       return appointmentToday.data;
     } catch (error) {

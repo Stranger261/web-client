@@ -14,6 +14,7 @@ export const AppointmentProvider = ({ children }) => {
     total: 0,
     totalPages: 0,
   });
+  const [totalTodaysAppointment, setTotalTodaysAppointment] = useState(0);
 
   const bookUserAppointment = useCallback(async appointmentData => {
     try {
@@ -77,6 +78,22 @@ export const AppointmentProvider = ({ children }) => {
       setAppointments(res.data.appointments || []);
       setPagination(res.data.pagination);
       return res;
+    } catch (error) {
+      console.error('Get doc appointment error: ', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const getAppointmentsToday = useCallback(async filters => {
+    try {
+      const res = await appointmentApi.getAppointmentsToday(filters);
+      console.log(res.data);
+
+      setAppointments(res.data.appointments || []);
+      setPagination(res.data.pagination);
+      setTotalTodaysAppointment(res.data.totalAppointmentsToday);
     } catch (error) {
       console.error('Get doc appointment error: ', error);
       throw error;
@@ -230,6 +247,7 @@ export const AppointmentProvider = ({ children }) => {
     isLoading,
     isBooking,
     pagination,
+    totalTodaysAppointment,
     bookUserAppointment,
     getPatientAppointments,
     getAppointmentById,
@@ -243,6 +261,7 @@ export const AppointmentProvider = ({ children }) => {
     processPayment,
     calculateFee,
     refreshAppointments,
+    getAppointmentsToday,
   };
 
   return (

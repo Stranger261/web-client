@@ -32,10 +32,25 @@ const PatientProvider = ({ children }) => {
     }
   }, []);
 
+  const getPatientMedRecords = useCallback(async (patientUuid, filters) => {
+    try {
+      const medRecords = await patientApi.getPatientMedicalRecords(
+        patientUuid,
+        filters
+      );
+
+      return medRecords;
+    } catch (error) {
+      console.log('Get doctor patients error: ', error);
+      throw error;
+    }
+  }, []);
+
   const value = {
     medHistory,
     getDoctorsPatients,
     getPatientMedHistory,
+    getPatientMedRecords,
   };
 
   return (

@@ -1,7 +1,7 @@
 // src/components/Steps/DateTimeStep.jsx
 
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { format } from 'date-fns';
+import { format, parse, isBefore } from 'date-fns';
 
 import { useSchedule } from '../../../../../contexts/ScheduleContext';
 
@@ -45,9 +45,23 @@ export const DateTimeStep = ({
     });
   };
 
+  // Helper function to check if a time slot is in the past
+  const isTimeSlotPast = (dateStr, timeStr) => {
+    try {
+      const slotDateTime = parse(
+        `${dateStr} ${timeStr}`,
+        'yyyy-MM-dd HH:mm:ss',
+        new Date()
+      );
+      return isBefore(slotDateTime, new Date());
+    } catch (error) {
+      console.error('Error parsing time slot:', error);
+      return false;
+    }
+  };
+
   // join-room for any doctor
   useEffect(() => {
-    console.log('this page is called');
     if (!socket || !isConnected || !selectedDate) return;
 
     const dateKey = format(selectedDate, 'yyyy-MM-dd');
@@ -72,7 +86,6 @@ export const DateTimeStep = ({
       if (!newRooms.has(oldRoom)) {
         const [doctor_uuid, date] = oldRoom.split('_');
         socket.emit('leave-appointment-room', { doctor_uuid, date });
-        console.log(`leaving room ${doctor_uuid}_${date}`);
       }
     });
 
@@ -80,19 +93,16 @@ export const DateTimeStep = ({
       if (!currentRoomRef.current.has(newRoom)) {
         const [doctor_uuid, date] = newRoom.split('_');
         socket.emit('join-appointment-room', { doctor_uuid, date });
-        console.log(`join room ${doctor_uuid}_${date}`);
       }
     });
 
     currentRoomRef.current = newRooms;
 
-    console.log(`current room: ${currentRoomRef.current}`);
     // clean up
     return () => {
       currentRoomRef.current.forEach(room => {
         const [doctor_uuid, date] = room.split('_');
         socket.emit('leave-appointment-room', { doctor_uuid, date });
-        console.log(`leaving room ${doctor_uuid}_${date}`);
       });
       currentRoomRef.current.clear();
     };
@@ -104,7 +114,7 @@ export const DateTimeStep = ({
 
     if (selectedDoctor && doctorSchedule?.availableSlots) {
       const slotsForDay = doctorSchedule.availableSlots.filter(
-        slot => slot.date === dateKey
+        slot => slot.date === dateKey && !isTimeSlotPast(slot.date, slot.time)
       );
 
       const slotsWithDoctor = slotsForDay.map(slot => ({
@@ -127,10 +137,10 @@ export const DateTimeStep = ({
     if (!selectedDoctor && Array.isArray(combinedSchedule)) {
       const allSlotsForDay = [];
       for (const schedule of combinedSchedule) {
-        if (!schedule?.availableSlots) return;
+        if (!schedule?.availableSlots) continue;
 
         const slotsForDay = schedule.availableSlots.filter(
-          slot => slot.date === dateKey
+          slot => slot.date === dateKey && !isTimeSlotPast(slot.date, slot.time)
         );
 
         slotsForDay.forEach(slot => {
