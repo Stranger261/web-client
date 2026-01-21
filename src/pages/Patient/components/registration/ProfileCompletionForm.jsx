@@ -24,8 +24,8 @@ const ProfileCompletionForm = ({ ocrData, onComplete, onBack }) => {
       ? ocrData.fields.sex.toLowerCase() === 'male'
         ? 'male'
         : ocrData.fields.sex.toLowerCase() === 'female'
-        ? 'female'
-        : ''
+          ? 'female'
+          : ''
       : '',
     contact_number: currentUser.phone || '+63',
     email: currentUser?.email || '',
@@ -98,40 +98,46 @@ const ProfileCompletionForm = ({ ocrData, onComplete, onBack }) => {
     <div className="max-w-5xl mx-auto">
       {/* Progress Steps */}
       <div className="mb-8">
-        <div className="flex items-center justify-between relative">
-          {/* Progress Line */}
-          <div className="absolute top-5 left-0 right-0 h-0.5 bg-gray-200 -z-10">
-            <div
-              className="h-full bg-blue-600 transition-all duration-300"
-              style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}
-            />
-          </div>
-
-          {/* Step Circles */}
+        <div className="flex items-center justify-between">
           {steps.map((step, index) => (
-            <div key={index} className="flex flex-col items-center">
-              <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 ${
-                  index < currentStep
-                    ? 'bg-blue-600 text-white'
-                    : index === currentStep
-                    ? 'bg-blue-600 text-white ring-4 ring-blue-100'
-                    : 'bg-white border-2 border-gray-300 text-gray-400'
-                }`}
-              >
-                {index < currentStep ? (
-                  <CheckCircle className="w-5 h-5" />
-                ) : (
-                  index + 1
-                )}
+            <div key={index} className="flex items-center w-full last:w-auto">
+              {/* Step Circle */}
+              <div className="flex flex-col items-center">
+                <div
+                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 ${
+                    index < currentStep
+                      ? 'bg-blue-600 text-white'
+                      : index === currentStep
+                        ? 'bg-blue-600 text-white ring-4 ring-blue-100'
+                        : 'bg-white border-2 border-gray-300 text-gray-400'
+                  }`}
+                >
+                  {index < currentStep ? (
+                    <CheckCircle className="w-5 h-5" />
+                  ) : (
+                    index + 1
+                  )}
+                </div>
+
+                <span
+                  className={`mt-2 text-xs font-medium ${
+                    index <= currentStep ? 'text-gray-900' : 'text-gray-400'
+                  }`}
+                >
+                  {step.name}
+                </span>
               </div>
-              <span
-                className={`mt-2 text-xs font-medium ${
-                  index <= currentStep ? 'text-gray-900' : 'text-gray-400'
-                }`}
-              >
-                {step.name}
-              </span>
+
+              {/* Connector Line (except last step) */}
+              {index < steps.length - 1 && (
+                <div className="flex-1 mx-2">
+                  <div
+                    className={`h-0.5 transition-all duration-300 ${
+                      index < currentStep ? 'bg-blue-600' : 'bg-gray-300'
+                    }`}
+                  />
+                </div>
+              )}
             </div>
           ))}
         </div>

@@ -1,5 +1,5 @@
 import STEPS from '../../../../../configs/STEP';
-import { Step } from '../Steps/Steps';
+import { Step } from './Steps';
 
 const InstructionBanner = ({ currentStep }) => {
   return (

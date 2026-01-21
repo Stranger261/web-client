@@ -4,7 +4,7 @@ import { INTERNAL_API_KEY, DEVELOPMENT_BASE_URL } from '../configs/CONST';
 class patientService {
   constructor() {
     this.patientApi = axios.create({
-      baseURL: DEVELOPMENT_BASE_URL,
+      baseURL: `${DEVELOPMENT_BASE_URL}/patients`,
       headers: {
         'x-internal-api-key': INTERNAL_API_KEY,
       },
@@ -14,12 +14,9 @@ class patientService {
 
   async getDoctorsPatients(doctorUuid, filters = {}) {
     try {
-      const res = await this.patientApi.get(
-        `/patients/doctors/${doctorUuid}/patients`,
-        {
-          params: filters,
-        }
-      );
+      const res = await this.patientApi.get(`/doctors/${doctorUuid}/patients`, {
+        params: filters,
+      });
 
       return res.data;
     } catch (error) {
@@ -31,7 +28,7 @@ class patientService {
   async getPatientMedicalHistory(patientUuid, filters) {
     try {
       const medHistory = await this.patientApi.get(
-        `patients/${patientUuid}/med-history`,
+        `/${patientUuid}/med-history`,
         { params: filters }
       );
 
@@ -45,13 +42,24 @@ class patientService {
   async getPatientMedicalRecords(patientUuid, filters) {
     try {
       const medRecords = await this.patientApi.get(
-        `patients/${patientUuid}/med-records`,
+        `/${patientUuid}/med-records`,
         { params: filters }
       );
 
       return medRecords.data;
     } catch (error) {
       console.log('Get patient medical history failed: ', error);
+      throw error;
+    }
+  }
+
+  async getPatient(search) {
+    try {
+      const patient = await this.patientApi.get('/', { params: { search } });
+
+      return patient.data;
+    } catch (error) {
+      console.log('Get patient failed: ', error);
       throw error;
     }
   }

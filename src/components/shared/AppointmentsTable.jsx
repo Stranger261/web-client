@@ -22,6 +22,7 @@ import Badge from '../ui/badge';
 import { Button } from '../ui/button';
 import { formatDate } from '../../utils/dateFormatter';
 import { formatTime } from '../../utils/FormatTime';
+import { normalizedWord } from '../../utils/normalizedWord';
 
 const AppointmentsTable = ({
   appointments,
@@ -159,8 +160,7 @@ const AppointmentsTable = ({
                 className="inline-flex text-[10px] px-2.5 py-1"
               >
                 {appointment.status
-                  ? appointment.status.charAt(0).toUpperCase() +
-                    appointment.status.slice(1)
+                  ? normalizedWord(appointment.status)
                   : 'Unknown'}
               </Badge>
               {appointment.priority === 'high' && (
@@ -202,7 +202,7 @@ const AppointmentsTable = ({
         <div>
           {showColumns.includes('appointment_type') && (
             <span className="inline-flex w-fit px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-[10px] font-medium">
-              {appointment.appointment_type}
+              {normalizedWord(appointment.appointment_type)}
             </span>
           )}
         </div>
@@ -366,7 +366,9 @@ const AppointmentsTable = ({
       header: 'Status',
       accessor: 'status',
       render: appt => (
-        <Badge variant={getStatusVariant(appt.status)}>{appt.status}</Badge>
+        <Badge variant={getStatusVariant(appt.status)}>
+          {normalizedWord(appt.status)}
+        </Badge>
       ),
     });
   }
@@ -378,7 +380,9 @@ const AppointmentsTable = ({
       accessor: 'appointment_type',
       align: 'center',
       render: appt => (
-        <div className="font-medium truncate">{appt.appointment_type}</div>
+        <div className="font-medium truncate">
+          {normalizedWord(appt.appointment_type)}
+        </div>
       ),
     });
   }

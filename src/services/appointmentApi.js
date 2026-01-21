@@ -16,7 +16,7 @@ class appointmentSerevice {
     try {
       const bookedAppointment = await this.appointmentApi.post(
         '/book',
-        appointmentData
+        appointmentData,
       );
 
       return bookedAppointment.data;
@@ -42,7 +42,7 @@ class appointmentSerevice {
     try {
       const patientAppointment = await this.appointmentApi.get(
         `/patient/${patientUuid}`,
-        { params: filters }
+        { params: filters },
       );
 
       return patientAppointment.data;
@@ -58,7 +58,7 @@ class appointmentSerevice {
     try {
       const doctorAppointments = await this.appointmentApi.get(
         `/doctors/${doctorUuid}/appointments`,
-        { params: filters }
+        { params: filters },
       );
 
       return doctorAppointments.data;
@@ -81,47 +81,32 @@ class appointmentSerevice {
     }
   }
 
-  async checkInAppointment(appointmentId) {
-    try {
-      const checkedInAppointment = await this.appointmentApi.patch(
-        `/${appointmentId}/check-in`
-      );
-      console.log(checkedInAppointment);
-
-      return checkedInAppointment.data;
-    } catch (error) {
-      console.log('check-in appointment failed: ', error);
-      throw error;
-    }
-  }
-
-  async cancelAppointment(appointmentId, reason) {
-    try {
-      const cancelledAppointment = await this.appointmentApi.patch(
-        `/${appointmentId}/cancel`,
-        { reason }
-      );
-      console.log(cancelledAppointment);
-
-      return cancelledAppointment.data;
-    } catch (error) {
-      console.log('check-in appointment failed: ', error);
-      throw error;
-    }
-  }
-
   async rescheduleAppointment(appointmentId, newAppointmentData) {
     try {
       const { new_time, new_date } = newAppointmentData;
       const rescheduledAppointment = await this.appointmentApi.patch(
         `/${appointmentId}/reschedule`,
-        { new_date, new_time }
+        { new_date, new_time },
       );
       console.log(rescheduledAppointment);
 
       return rescheduledAppointment.data;
     } catch (error) {
       console.log('rescheduled appointment failed: ', error);
+      throw error;
+    }
+  }
+
+  async updateAppointmentStatus(appointmentId, newStatus) {
+    try {
+      const res = await this.appointmentApi.patch(
+        `/${appointmentId}/update-status`,
+        { newStatus },
+      );
+
+      return res.data;
+    } catch (error) {
+      console.error(error.message);
       throw error;
     }
   }
@@ -140,7 +125,7 @@ class appointmentSerevice {
     try {
       const extendedAppointment = await this.appointmentApi.patch(
         `/${appointmentId}/extend`,
-        { additionl_minutes }
+        { additionl_minutes },
       );
       console.log(extendedAppointment);
 
@@ -155,7 +140,7 @@ class appointmentSerevice {
     try {
       const completedAppointment = await this.appointmentApi.patch(
         `/${appointmentId}/complete`,
-        { notes }
+        { notes },
       );
       console.log(completedAppointment);
 
@@ -170,7 +155,7 @@ class appointmentSerevice {
     try {
       const processedAppointment = await this.appointmentApi.post(
         `/${appointmentId}/payment`,
-        { paymentData }
+        { paymentData },
       );
       console.log(processedAppointment);
 
@@ -185,7 +170,7 @@ class appointmentSerevice {
     try {
       const fee = await this.appointmentApi.get(
         '/calculate-fee',
-        appointmentDetails
+        appointmentDetails,
       );
       console.log(fee);
 

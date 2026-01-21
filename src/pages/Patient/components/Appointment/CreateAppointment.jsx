@@ -45,6 +45,7 @@ const CreateAppointment = ({ onClose }) => {
     date: null,
     time: null,
     reason: '',
+    appointmentType: 'consultation', // Added appointment type
     isOnlineConsultation: false,
   });
   // for updates
@@ -58,7 +59,7 @@ const CreateAppointment = ({ onClose }) => {
 
   // for slot-taken
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !isConnected) return;
 
     const handleSlotTaken = data => {
       if (slotBeingBooked && slotBeingBooked.time === data.time) {
@@ -97,6 +98,7 @@ const CreateAppointment = ({ onClose }) => {
     appointmentDetails.time,
     slotBeingBooked,
     currentStep,
+    isConnected,
   ]);
 
   const doctorsInSelectedDept = useMemo(() => {
@@ -153,6 +155,7 @@ const CreateAppointment = ({ onClose }) => {
         appointmentDetails.doctor?.staff_uuid ||
         appointmentDetails.time.doctor_uuid,
       appointment_date: appointmentDetails.time?.date,
+      appointment_type: appointmentDetails.appointmentType, // Added appointment type
       is_online_consultation: appointmentDetails.isOnlineConsultation,
       start_time: appointmentDetails.time?.time,
       end_time: null,
@@ -217,6 +220,8 @@ const CreateAppointment = ({ onClose }) => {
       date: null,
       time: null,
       reason: '',
+      appointmentType: 'consultation', // Reset to default
+      isOnlineConsultation: false,
     });
   };
 
@@ -257,6 +262,7 @@ const CreateAppointment = ({ onClose }) => {
           <ReasonStep
             onSelect={handleSelect}
             reason={appointmentDetails.reason}
+            appointmentType={appointmentDetails.appointmentType} // Pass appointment type
             isOnlineConsultation={appointmentDetails.isOnlineConsultation}
           />
         );
@@ -282,7 +288,7 @@ const CreateAppointment = ({ onClose }) => {
       case 2:
         return !appointmentDetails.date || !appointmentDetails.time;
       case 3:
-        return false; // Reason is optional
+        return !appointmentDetails.reason.trim(); // Reason is now required
       default:
         return true;
     }

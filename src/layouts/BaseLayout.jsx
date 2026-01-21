@@ -16,6 +16,7 @@ import {
   RefreshCw,
   Calendar,
   Video,
+  Info,
 } from 'lucide-react';
 
 import { useAuth } from '../contexts/AuthContext';
@@ -91,8 +92,8 @@ const BaseLayout = () => {
       await readNotification(id);
       setNotifications(prev =>
         prev?.map(notif =>
-          notif.notification_id === id ? { ...notif, is_read: true } : notif
-        )
+          notif.notification_id === id ? { ...notif, is_read: true } : notif,
+        ),
       );
     } catch (error) {
       console.error('Error marking notification as read:', error);
@@ -102,7 +103,7 @@ const BaseLayout = () => {
   const handleMarkAllAsRead = async () => {
     try {
       setNotifications(prev =>
-        prev?.map(notif => ({ ...notif, is_read: true }))
+        prev?.map(notif => ({ ...notif, is_read: true })),
       );
       await readAllNotification();
     } catch (error) {
@@ -166,7 +167,7 @@ const BaseLayout = () => {
         loadMore();
       }
     },
-    [hasMore, isLoadingMore, loadMore]
+    [hasMore, isLoadingMore, loadMore],
   );
 
   const getNotificationIcon = type => {
@@ -211,11 +212,17 @@ const BaseLayout = () => {
         lastname,
       });
 
-      socket.on('new-appointment-booked', () => {
+      socket.on('new-appointment-booked', data => {
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        if (data.appointment_date === todayStr) {
+          window.dispatchEvent(new Event('refresh-today-appointments'));
+        }
+
         // Clear notifications and reload from page 1 to get the new one
         setNotifications([]);
         getUserNotifications();
-        toast.success('New appointment arrived.');
+        toast('New appointment arrived.', { icon: <Info />, duration: 3000 });
       });
     }
 
@@ -542,7 +549,7 @@ const BaseLayout = () => {
                   style={{ color: COLORS.text.secondary, maxWidth: '200px' }}
                 >
                   {normalizedWord(
-                    currentUser.role === 'doctor' ? 'Staff' : currentUser.role
+                    currentUser.role === 'doctor' ? 'Staff' : currentUser.role,
                   )}{' '}
                   UUID: {uuidDisplay || 'N/A'}
                 </div>

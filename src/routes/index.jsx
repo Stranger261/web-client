@@ -4,10 +4,12 @@ import PublicRoutes from './PublicRoutes';
 import PatientRoute from './PatientRoute';
 import DoctorRoute from './DoctorRoute';
 import ReceptionistRoute from './ReceptionistRoute';
+import NurseRoute from './NurseRoute';
 
 const AppRoutes = () => {
   return (
     <Routes>
+      {NurseRoute}
       {ReceptionistRoute}
       {DoctorRoute}
       {PatientRoute}

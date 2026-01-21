@@ -34,7 +34,7 @@ export const AppointmentProvider = ({ children }) => {
     try {
       const patientAppointment = await appointmentApi.getPatientAppointments(
         patientUuid,
-        filters
+        filters,
       );
 
       setAppointments(patientAppointment?.data?.appointments || []);
@@ -51,9 +51,8 @@ export const AppointmentProvider = ({ children }) => {
   const getAppointmentById = useCallback(async appointmentId => {
     try {
       setIsLoading(true);
-      const appointment = await appointmentApi.getAppointmentById(
-        appointmentId
-      );
+      const appointment =
+        await appointmentApi.getAppointmentById(appointmentId);
       console.log(appointment);
 
       setCurrentAppointment(appointment?.data?.data);
@@ -72,7 +71,7 @@ export const AppointmentProvider = ({ children }) => {
 
       const res = await appointmentApi.getDoctorAppointments(
         doctorUuid,
-        filters
+        filters,
       );
 
       setAppointments(res.data.appointments || []);
@@ -89,11 +88,12 @@ export const AppointmentProvider = ({ children }) => {
   const getAppointmentsToday = useCallback(async filters => {
     try {
       const res = await appointmentApi.getAppointmentsToday(filters);
-      console.log(res.data);
 
       setAppointments(res.data.appointments || []);
       setPagination(res.data.pagination);
       setTotalTodaysAppointment(res.data.totalAppointmentsToday);
+
+      return res.data;
     } catch (error) {
       console.error('Get doc appointment error: ', error);
       throw error;
@@ -102,35 +102,24 @@ export const AppointmentProvider = ({ children }) => {
     }
   }, []);
 
-  const checkInAppointment = useCallback(async appointmentId => {
-    try {
-      setIsLoading(true);
-      const res = await appointmentApi.checkInAppointment(appointmentId);
-      console.log(res);
-      return res;
-    } catch (error) {
-      console.error('Update status error:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const updateAppointmentStatus = useCallback(
+    async (appointmentId, newStatus) => {
+      try {
+        const res = await appointmentApi.updateAppointmentStatus(
+          appointmentId,
+          newStatus,
+        );
 
-  const cancelAppointment = useCallback(async (appointmentId, reason) => {
-    try {
-      setIsLoading(true);
-      const res = await appointmentApi.cancelAppointment(appointmentId, {
-        reason,
-      });
-      console.log(res);
-      return res;
-    } catch (error) {
-      console.error('Cancel appointment error:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+        return res.data;
+      } catch (error) {
+        console.error('Failed to update appointment status: ', error);
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [],
+  );
 
   const rescheduleAppointment = useCallback(
     async (appointmentId, newDate, newTime) => {
@@ -149,7 +138,7 @@ export const AppointmentProvider = ({ children }) => {
         setIsLoading(false);
       }
     },
-    []
+    [],
   );
 
   const getAppointmentTypes = useCallback(async () => {
@@ -168,7 +157,7 @@ export const AppointmentProvider = ({ children }) => {
         setIsLoading(true);
         const res = await appointmentApi.extendAppointment(
           appointmentId,
-          additional_minutes
+          additional_minutes,
         );
         console.log(res);
 
@@ -180,7 +169,7 @@ export const AppointmentProvider = ({ children }) => {
         setIsLoading(false);
       }
     },
-    []
+    [],
   );
 
   const completeAppointment = useCallback(async (appointmentId, notes) => {
@@ -188,7 +177,7 @@ export const AppointmentProvider = ({ children }) => {
       setIsLoading(true);
       const res = await appointmentApi.completeAppointment(
         appointmentId,
-        notes
+        notes,
       );
       console.log(res);
 
@@ -206,7 +195,7 @@ export const AppointmentProvider = ({ children }) => {
       setIsLoading(true);
       const res = await appointmentApi.processPayment(
         appointmentId,
-        paymentData
+        paymentData,
       );
       console.log(res);
 
@@ -238,7 +227,7 @@ export const AppointmentProvider = ({ children }) => {
     async (patientId, filters = {}) => {
       await getPatientAppointments(patientId, filters);
     },
-    [getPatientAppointments]
+    [getPatientAppointments],
   );
 
   const value = {
@@ -248,12 +237,11 @@ export const AppointmentProvider = ({ children }) => {
     isBooking,
     pagination,
     totalTodaysAppointment,
+    setAppointments,
     bookUserAppointment,
     getPatientAppointments,
     getAppointmentById,
     getDoctorAppointments,
-    checkInAppointment,
-    cancelAppointment,
     rescheduleAppointment,
     getAppointmentTypes,
     extendAppointment,
@@ -262,6 +250,7 @@ export const AppointmentProvider = ({ children }) => {
     calculateFee,
     refreshAppointments,
     getAppointmentsToday,
+    updateAppointmentStatus,
   };
 
   return (

@@ -1,4 +1,3 @@
-// File: /src/pages/PatientPages/features/PatientAppointment.jsx
 import { useCallback, useEffect, useState } from 'react';
 import { Filter, Plus, X, Calendar, Search } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';

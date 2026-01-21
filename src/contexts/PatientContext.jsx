@@ -46,11 +46,23 @@ const PatientProvider = ({ children }) => {
     }
   }, []);
 
+  const getPatient = useCallback(async search => {
+    try {
+      const patient = await patientApi.getPatient(search);
+
+      return patient.data;
+    } catch (error) {
+      console.error('Failed to get patient', error.message);
+      throw error;
+    }
+  }, []);
+
   const value = {
     medHistory,
     getDoctorsPatients,
     getPatientMedHistory,
     getPatientMedRecords,
+    getPatient,
   };
 
   return (

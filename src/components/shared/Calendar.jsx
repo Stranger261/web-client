@@ -11,7 +11,6 @@ import {
   isSameMonth,
   addDays,
   isAfter,
-  isToday,
   parse,
 } from 'date-fns';
 import { useSchedule } from '../../contexts/ScheduleContext';
