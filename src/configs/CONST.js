@@ -5,16 +5,16 @@ export const LEAFLET = {
   ZOOM_LEVEL: 15,
 };
 export const GOOGLEMAPSURL = `https://google.com/maps/dir/?api=1&destination=${encodeURIComponent(
-  LEAFLET.HOSPITALADDRESS
+  LEAFLET.HOSPITALADDRESS,
 )}`;
 
 // URLs
-// export const DEVELOPMENT_BASE_URL = 'http://localhost:56741/api/v1';
-// export const SOCKET_URL = 'http://localhost:56741';
+export const DEVELOPMENT_BASE_URL = 'http://localhost:56741/api/v1';
+export const SOCKET_URL = 'http://localhost:56741';
 
-export const DEVELOPMENT_BASE_URL =
-  'https://auth.health-ease-hospital.com/api/v1';
-export const SOCKET_URL = 'https://auth.health-ease-hospital.com';
+// export const DEVELOPMENT_BASE_URL =
+//   'https://auth.health-ease-hospital.com/api/v1';
+// export const SOCKET_URL = 'https://auth.health-ease-hospital.com';
 
 // Other constants
 export const DEFAULT_TIMEOUT = 30000; // 30 seconds

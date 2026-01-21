@@ -16,7 +16,7 @@ import EmptyState from '../ui/EmptyState';
 
 import { calculateAge } from '../../utils/patientHelpers';
 import { formatDate } from '../../utils/dateFormatter';
-import Pagination from '../ui/Pagination';
+import Pagination from '../ui/pagination';
 
 const AppointmentList = ({
   isLoading,
