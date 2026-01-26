@@ -48,6 +48,17 @@ export const CIVIL_STATUS = [
 
 export const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
+export const RELATIONSHIPS = [
+  { value: 'spouse', label: 'Spouse' },
+  { value: 'parent', label: 'Parent' },
+  { value: 'child', label: 'Child' },
+  { value: 'sibling', label: 'Sibling' },
+  { value: 'guardian', label: 'Guardian' },
+  { value: 'friend', label: 'Friend' },
+  { value: 'relative', label: 'Relative' },
+  { value: 'other', label: 'Other' },
+];
+
 // COLORS
 export const COLORS = {
   // Primary Brand Colors
@@ -232,4 +243,4 @@ export const GRADIENTS = {
 export const ITEMS_PER_PAGE = 10;
 
 // notification
-export const ITEMS_PER_NOTIF = 3;
+export const ITEMS_PER_NOTIF = 4;

@@ -29,6 +29,7 @@ import { FilterPanel } from '../../../components/ui/filter-panel';
 import AppointmentDetailModal from '../../../components/Modals/AppointmentDetailModal';
 import CreateAppointment from '../../../components/Forms/Appointments/CreateAppointment';
 import AppointmentList from '../../../components/shared/AppointmentList';
+import WalkInPatientRegistration from '../components/patientRegistration/WalkInPatientRegistration';
 
 const ReceptionistDashboard = () => {
   const { currentUser } = useAuth();
@@ -66,6 +67,11 @@ const ReceptionistDashboard = () => {
     useState(false);
   const [selectedAppt, setSelectedAppt] = useState(null);
   const modalRef = useRef(null);
+
+  // create patient
+  const [isCreatePatientModalOpen, setIsCreatePatientModalOpen] =
+    useState(false);
+  const [registeredPatients, setRegisteredPatients] = useState([]);
 
   // Filter state
   const [showFilters, setShowFilters] = useState(false);
@@ -204,12 +210,27 @@ const ReceptionistDashboard = () => {
         ),
       );
     };
+
+    const newAppointmentArrived = data => {
+      const todayStr = new Date().toISOString().split('T')[0];
+      if (data.appointment_date !== todayStr) return;
+
+      window.dispatchEvent(new Event('refresh-today-appointments'));
+
+      toast('New appointment arrived.', {
+        icon: <Info />,
+        duration: 3000,
+      });
+    };
+
     socket.on('patient-arrived', statusChangeHandler);
     socket.on('patient-status_changed', statusChangeHandler);
+    socket.on('new-appointment-booked', newAppointmentArrived);
 
     return () => {
       socket.off('patient-status_changed', statusChangeHandler);
       socket.off('patient-arrived', statusChangeHandler);
+      socket.off('new-appointment-booked', newAppointmentArrived);
     };
   }, [socket, isConnected]);
 
@@ -372,7 +393,6 @@ const ReceptionistDashboard = () => {
       ]
     : [];
 
-  // Loading stats
   const loadingStats = [
     {
       label: 'Total Patients',
@@ -446,38 +466,36 @@ const ReceptionistDashboard = () => {
       icon: Users,
       label: 'Patient Registry',
       color: 'purple',
-      functions: () => navigate('/receptionist/patients'),
+      functions: () => setIsCreatePatientModalOpen(true),
     },
-    {
-      icon: Clock,
-      label: 'Check-in Queue',
-      color: 'orange',
-      functions: () => navigate('/receptionist/checkin'),
-    },
-    {
-      icon: DollarSign,
-      label: 'Billing & Payments',
-      color: 'blue',
-      functions: () => navigate('/receptionist/billing'),
-    },
-    {
-      icon: UserPlus,
-      label: 'Register Patient',
-      color: 'red',
-      functions: () => navigate('/receptionist/patients/new'),
-    },
-    {
-      icon: AlertCircle,
-      label: 'Pending Tasks',
-      color: 'yellow',
-      functions: () => navigate('/receptionist/tasks'),
-    },
+    // {
+    //   icon: Clock,
+    //   label: 'Check-in Queue',
+    //   color: 'orange',
+    //   functions: () => navigate('/receptionist/checkin'),
+    // },
+    // {
+    //   icon: DollarSign,
+    //   label: 'Billing & Payments',
+    //   color: 'blue',
+    //   functions: () => navigate('/receptionist/billing'),
+    // },
+    // {
+    //   icon: AlertCircle,
+    //   label: 'Pending Tasks',
+    //   color: 'yellow',
+    //   functions: () => navigate('/receptionist/tasks'),
+    // },
   ];
 
   // MODALS
   const handleViewAppointment = appointmentId => {
     setIsViewAppointModalOpen(true);
     setSelectedAppt(appointmentId);
+  };
+
+  const handleRegisterPatient = () => {
+    toast.success('New patient registered.');
   };
 
   // ===== Pagination handlers =====
@@ -551,6 +569,12 @@ const ReceptionistDashboard = () => {
           modalRef={modalRef}
         />
       </Modal>
+
+      <WalkInPatientRegistration
+        isOpen={isCreatePatientModalOpen}
+        onClose={() => setIsCreatePatientModalOpen(false)}
+        onSuccess={handleRegisterPatient}
+      />
 
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white shadow-lg">

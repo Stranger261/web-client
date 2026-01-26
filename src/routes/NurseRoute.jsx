@@ -11,6 +11,7 @@ import PatientProvider from '../contexts/PatientContext';
 // components
 
 import NurseDashboard from '../pages/Nurse/features/NurseDashboard';
+import NurseBedManagement from '../pages/Nurse/features/NurseBedManagement';
 // import NurseAppointment from '../pages/Nurse/features/NurseAppointment';
 // import NursePatient from '../pages/Nurse/features/NursePatient';
 
@@ -36,6 +37,7 @@ const NurseRoute = (
     }
   >
     <Route path="dashboard" element={<NurseDashboard />} />
+    <Route path="beds" element={<NurseBedManagement />} />
     {/* <Route path="appointments" element={<NurseAppointment />} />
     <Route path="patient-records" element={<NursePatient />} /> */}
   </Route>

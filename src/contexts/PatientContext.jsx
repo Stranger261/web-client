@@ -21,7 +21,7 @@ const PatientProvider = ({ children }) => {
     try {
       const medHistory = await patientApi.getPatientMedicalHistory(
         patientUuid,
-        filters
+        filters,
       );
       setMedHistory(medHistory.data.medHistory);
 
@@ -36,7 +36,7 @@ const PatientProvider = ({ children }) => {
     try {
       const medRecords = await patientApi.getPatientMedicalRecords(
         patientUuid,
-        filters
+        filters,
       );
 
       return medRecords;
@@ -57,12 +57,53 @@ const PatientProvider = ({ children }) => {
     }
   }, []);
 
+  const getPatientDetails = useCallback(async patientUuid => {
+    try {
+      const patient = await patientApi.getPatientDetails(patientUuid);
+
+      return patient.data;
+    } catch (error) {
+      console.error('Failed to get patient', error.message);
+      throw error;
+    }
+  }, []);
+
+  const getAllPatients = useCallback(async filters => {
+    try {
+      const res = await patientApi.getAllPatients(filters);
+      return res.data;
+    } catch (error) {
+      console.error('Get all patients error:', error);
+      throw error;
+    }
+  }, []);
+
+  const addFaceToPatient = useCallback(
+    async (personId, faceImageBase64, staffId) => {
+      try {
+        const res = await patientApi.addFaceToPatient(
+          personId,
+          faceImageBase64,
+          staffId,
+        );
+        return res.data;
+      } catch (error) {
+        console.error('Add face to patient error:', error);
+        throw error;
+      }
+    },
+    [],
+  );
+
   const value = {
     medHistory,
     getDoctorsPatients,
     getPatientMedHistory,
     getPatientMedRecords,
     getPatient,
+    getAllPatients,
+    addFaceToPatient,
+    getPatientDetails,
   };
 
   return (

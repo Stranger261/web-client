@@ -29,7 +29,7 @@ class patientService {
     try {
       const medHistory = await this.patientApi.get(
         `/${patientUuid}/med-history`,
-        { params: filters }
+        { params: filters },
       );
 
       return medHistory.data;
@@ -43,10 +43,21 @@ class patientService {
     try {
       const medRecords = await this.patientApi.get(
         `/${patientUuid}/med-records`,
-        { params: filters }
+        { params: filters },
       );
 
       return medRecords.data;
+    } catch (error) {
+      console.log('Get patient medical history failed: ', error);
+      throw error;
+    }
+  }
+
+  async getPatientDetails(patientUuid) {
+    try {
+      const patient = await this.patientApi.get(`/${patientUuid}/details`);
+
+      return patient.data;
     } catch (error) {
       console.log('Get patient medical history failed: ', error);
       throw error;
@@ -60,6 +71,30 @@ class patientService {
       return patient.data;
     } catch (error) {
       console.log('Get patient failed: ', error);
+      throw error;
+    }
+  }
+
+  async getAllPatients(filters = {}) {
+    try {
+      const response = await this.patientApi.get('/all', { params: filters });
+      return response.data;
+    } catch (error) {
+      console.error('Get all patients error:', error);
+      throw error;
+    }
+  }
+
+  async addFaceToPatient(personId, faceImageBase64, staffId) {
+    try {
+      const response = await this.patientApi.post('/patients/add-face', {
+        personId,
+        faceImageBase64,
+        staffId,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Add face to patient error:', error);
       throw error;
     }
   }

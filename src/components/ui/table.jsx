@@ -45,8 +45,8 @@ const Table = ({
                   column.align === 'right'
                     ? 'text-right'
                     : column.align === 'center'
-                    ? 'text-center'
-                    : 'text-left'
+                      ? 'text-center'
+                      : 'text-left'
                 }`}
                 style={{
                   color: isDarkMode ? COLORS.text.light : COLORS.text.secondary,
@@ -111,8 +111,8 @@ const Table = ({
                       column.align === 'right'
                         ? 'text-right'
                         : column.align === 'center'
-                        ? 'text-center'
-                        : 'text-left'
+                          ? 'text-center'
+                          : 'text-left'
                     } ${column.className || ''}`}
                     style={{
                       color: isDarkMode

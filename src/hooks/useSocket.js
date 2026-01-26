@@ -2,9 +2,9 @@ import { io } from 'socket.io-client';
 
 import { useState, useEffect } from 'react';
 
-import { APPOINTMENT_SERVICE_BASE_URL } from '../configs/CONST';
+import { DEVELOPMENT_BASE_URL } from '../configs/CONST';
 
-const SOCKET_URL = APPOINTMENT_SERVICE_BASE_URL;
+const SOCKET_URL = DEVELOPMENT_BASE_URL;
 
 let socket = null;
 

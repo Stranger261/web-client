@@ -58,7 +58,7 @@ export const sidebarConfig = {
 
   nurse: [
     { name: 'Dashboard', path: '/nurse/dashboard', icon: LayoutDashboardIcon },
-    { name: 'Appointments', path: '/nurse/appointments', icon: CalendarIcon },
+    // { name: 'Appointments', path: '/nurse/appointments', icon: CalendarIcon },
     {
       name: 'Patient Records',
       path: '/nurse/patient-records',

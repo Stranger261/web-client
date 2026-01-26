@@ -84,6 +84,10 @@ const Sidebar = ({ isOpen, toggleSidebar, onLogout, currentUser }) => {
               </p>
               <p className="text-xs text-gray-300 capitalize">
                 {currentUser?.role}
+                {currentUser.role === 'doctor' &&
+                currentUser?.staff.specialization
+                  ? `: ${currentUser?.staff.specialization}`
+                  : ''}
               </p>
             </div>
           )}

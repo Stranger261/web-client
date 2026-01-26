@@ -46,13 +46,14 @@ export const ConfirmationStep = ({
               {details.patient.person.last_name}
             </span>
           </p>
-          {details.patient.person.user.email && (
-            <p className="flex items-center text-blue-800">
-              <Mail className="w-4 h-4 mr-2" />
-              <span>{details.patient.person.user.email}</span>
-            </p>
-          )}
-          {details.patient.person.user.phone && (
+          {details.patient.person.user &&
+            details.patient.person?.user?.email && (
+              <p className="flex items-center text-blue-800">
+                <Mail className="w-4 h-4 mr-2" />
+                <span>{details.patient.person.user?.email}</span>
+              </p>
+            )}
+          {details.patient.person.user && details.patient.person.user.phone && (
             <p className="flex items-center text-blue-800">
               <Phone className="w-4 h-4 mr-2" />
               <span>{details.patient.person.user.phone}</span>

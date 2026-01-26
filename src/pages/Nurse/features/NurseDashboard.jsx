@@ -446,6 +446,35 @@ const NurseDashboard = () => {
 
   return (
     <div className="space-y-6 p-4">
+      <VitalsRecordingModal
+        isOpen={isVitalsModalOpen}
+        onClose={() => setIsVitalsModalOpen(false)}
+        appointment={selectedAppt}
+        onSuccess={() => {
+          setIsVitalsModalOpen(false);
+          // Refresh appointments list
+          const apiFilter = {
+            ...filters,
+            limit,
+            page: currentPage,
+            nurse_uuid: currentUser?.staff?.staff_uuid,
+          };
+          getAppointmentsToday(apiFilter);
+        }}
+      />
+
+      <Modal
+        isOpen={isViewAppointModalOpen}
+        onClose={() => setIsViewAppointModalOpen(false)}
+        title="Appointment Details"
+      >
+        <AppointmentDetailModal
+          isOpen={isViewAppointModalOpen}
+          onClose={() => setIsViewAppointModalOpen(false)}
+          appointment={selectedAppt}
+          currentUser={currentUser}
+        />
+      </Modal>
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-teal-600 to-emerald-600 rounded-xl p-6 text-white shadow-lg">
         <div className="flex flex-col md:flex-row md:items-center justify-between">
@@ -487,23 +516,6 @@ const NurseDashboard = () => {
           </div>
         </div>
       </div>
-
-      <VitalsRecordingModal
-        isOpen={isVitalsModalOpen}
-        onClose={() => setIsVitalsModalOpen(false)}
-        appointment={selectedAppt}
-        onSuccess={() => {
-          setIsVitalsModalOpen(false);
-          // Refresh appointments list
-          const apiFilter = {
-            ...filters,
-            limit,
-            page: currentPage,
-            nurse_uuid: currentUser?.staff?.staff_uuid,
-          };
-          getAppointmentsToday(apiFilter);
-        }}
-      />
 
       {/* Current & Next Vitals Banner */}
       {(currentVitals || nextVitals) && (
@@ -1002,19 +1014,6 @@ const NurseDashboard = () => {
           )}
         </div>
       </div>
-
-      <Modal
-        isOpen={isViewAppointModalOpen}
-        onClose={() => setIsViewAppointModalOpen(false)}
-        title="Appointment Details"
-      >
-        <AppointmentDetailModal
-          isOpen={isViewAppointModalOpen}
-          onClose={() => setIsViewAppointModalOpen(false)}
-          appointment={selectedAppt}
-          currentUser={currentUser}
-        />
-      </Modal>
     </div>
   );
 };

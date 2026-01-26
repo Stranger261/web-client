@@ -29,7 +29,6 @@ class appointmentSerevice {
   async getAppointmentById(appointmentId) {
     try {
       const appointment = await this.appointmentApi.get(`/${appointmentId}`);
-      console.log(appointment);
 
       return appointment.data;
     } catch (error) {

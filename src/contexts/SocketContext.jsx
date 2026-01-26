@@ -1,3 +1,4 @@
+// contexts/SocketContext.jsx
 import { createContext, useContext, useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 
@@ -18,16 +19,21 @@ const SocketProvider = ({ children }) => {
     });
 
     socketInstance.on('connect', () => {
+      console.log('✅ Socket connected:', socketInstance.id);
       setIsConnected(true);
     });
 
     socketInstance.on('disconnect', () => {
+      console.log('❌ Socket disconnected');
       setIsConnected(false);
-      console.log('disconnected');
     });
 
     socketInstance.on('reconnect', attemptNumber => {
       console.log('🔄 Socket reconnected after', attemptNumber, 'attempts');
+    });
+
+    socketInstance.on('connect_error', error => {
+      console.error('🔴 Socket connection error:', error);
     });
 
     setSocket(socketInstance);
@@ -37,12 +43,54 @@ const SocketProvider = ({ children }) => {
     };
   }, []);
 
+  // Helper functions for room management
+  const joinRoom = room => {
+    if (socket && isConnected) {
+      socket.emit('join', room);
+      console.log(`📍 Joined room: ${room}`);
+    }
+  };
+
+  const leaveRoom = room => {
+    if (socket && isConnected) {
+      socket.emit('leave', room);
+      console.log(`🚪 Left room: ${room}`);
+    }
+  };
+
+  // Helper to listen to events
+  const on = (event, callback) => {
+    if (socket) {
+      socket.on(event, callback);
+    }
+  };
+
+  // Helper to stop listening
+  const off = (event, callback) => {
+    if (socket) {
+      socket.off(event, callback);
+    }
+  };
+
+  // Helper to emit events
+  const emit = (event, data) => {
+    if (socket && isConnected) {
+      socket.emit(event, data);
+    }
+  };
+
   const value = {
     socket,
     isConnected,
+    joinRoom,
+    leaveRoom,
+    on,
+    off,
+    emit,
   };
+
   return (
-    <SocketContext.Provider value={value}> {children}</SocketContext.Provider>
+    <SocketContext.Provider value={value}>{children}</SocketContext.Provider>
   );
 };
 
@@ -50,7 +98,7 @@ export const useSocket = () => {
   const context = useContext(SocketContext);
 
   if (!context) {
-    throw new Error('useSocketContext must be used within SocketProvider');
+    throw new Error('useSocket must be used within SocketProvider');
   }
 
   return context;

@@ -13,7 +13,7 @@ class prescriptionService {
     });
   }
 
-  async createPresicription(prescriptionData) {
+  async createPrescription(prescriptionData) {
     try {
       const res = await this.prescriptionApi.post('/', { prescriptionData });
 

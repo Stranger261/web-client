@@ -7,6 +7,7 @@ import {
 } from 'react';
 import authApi from '../services/authApi';
 import faceApi from '../services/faceApi';
+import personApi from '../services/personApi';
 
 const AuthContext = createContext();
 
@@ -24,7 +25,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.log(
         '❌ getCurrentUser FAILED:',
-        error.response?.data || error.message
+        error.response?.data || error.message,
       );
       setCurrentUser(null);
       setToken(null);
@@ -110,10 +111,21 @@ export const AuthProvider = ({ children }) => {
   const completePersonalInfo = useCallback(async personData => {
     try {
       const updatedUser = await authApi.completePersonalInfo(personData);
-      console.log(updatedUser);
-      setCurrentUser(updatedUser.data?.user);
+      if (currentUser?.role === 'patient') {
+        setCurrentUser(updatedUser.data?.user);
+      }
 
       return updatedUser;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  }, []);
+
+  const registerWalkIn = useCallback(async personData => {
+    try {
+      const newPerson = await personApi.createPerson(personData);
+
+      return newPerson;
     } catch (error) {
       throw error.response?.data || error;
     }
@@ -151,6 +163,7 @@ export const AuthProvider = ({ children }) => {
     resendOTP,
     verifyOTP,
     completePersonalInfo,
+    registerWalkIn,
     verifyFace,
     processOCR,
     logout,

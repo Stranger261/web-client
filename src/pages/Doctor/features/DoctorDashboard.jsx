@@ -30,6 +30,7 @@ import StatsCard from '../../../components/ui/stat-card';
 import Modal from '../../../components/ui/Modal';
 import AppointmentList from '../../../components/shared/AppointmentList';
 import DoctorConsultationModal from '../components/Appointment/consultation/DoctorConsultationModal';
+import { getLocalDateString } from '../../../utils/dateFormatter';
 
 const DoctorDashboard = () => {
   const { currentUser } = useAuth();
@@ -117,6 +118,13 @@ const DoctorDashboard = () => {
   useEffect(() => {
     if (!socket || !isConnected) return;
 
+    const doctorUuid = currentUser?.staff?.staff_uuid;
+
+    socket.emit('doctor-room', {
+      doctor_uuid: doctorUuid,
+      lastname: currentUser?.person?.last_name,
+    });
+
     const statusChangeHandler = data => {
       toast(`Patient: ${data.patientName} ${data.status}`, {
         icon: <Info />,
@@ -131,12 +139,26 @@ const DoctorDashboard = () => {
       );
     };
 
+    const newAppointmentArrived = data => {
+      const todayStr = getLocalDateString();
+      if (data.appointment_date !== todayStr) return;
+
+      window.dispatchEvent(new Event('refresh-today-appointments'));
+
+      toast('New appointment arrived.', {
+        icon: <Info />,
+        duration: 3000,
+      });
+    };
+
     socket.on('patient-status_changed', statusChangeHandler);
     socket.on('patient-arrived', statusChangeHandler);
+    socket.on('new-appointment-booked', newAppointmentArrived);
 
     return () => {
       socket.off('patient-status_changed', statusChangeHandler);
       socket.off('patient-arrived', statusChangeHandler);
+      socket.off('new-appointment-booked', newAppointmentArrived);
     };
   }, [socket, isConnected]);
 
@@ -423,9 +445,11 @@ const DoctorDashboard = () => {
     }
   };
 
-  const handleCallPatient = appointmentId => {
-    console.log('Initiating call for appointment:', appointmentId);
-    alert(`Initiating video call for appointment ${appointmentId}`);
+  const handleCallPatient = appointment => {
+    console.log(appointment);
+    navigate(`/doctor/video-call/${appointment.videoConsultation.room_id}`, {
+      replace: true,
+    });
   };
 
   const handleViewAppointment = appointmentId => {
@@ -445,11 +469,6 @@ const DoctorDashboard = () => {
     });
     setCurrentPage(1);
     setLimit(20);
-  };
-
-  const handleSaveRemarks = async data => {
-    // await api.updateAppointmentRemarks(data);
-    // Refresh appointments list
   };
 
   // ===== Pagination handlers =====
@@ -481,11 +500,26 @@ const DoctorDashboard = () => {
 
   return (
     <div className="space-y-6 p-4">
-      <DoctorConsultationModal
-        isOpen={isConsultationModalOpen}
-        onClose={() => setIsConsultationModalOpen(false)}
-        appointment={selectedAppt}
-      />
+      {selectedAppt && isConsultationModalOpen && (
+        <DoctorConsultationModal
+          isOpen={isConsultationModalOpen}
+          onClose={() => setIsConsultationModalOpen(false)}
+          appointment={selectedAppt}
+        />
+      )}
+
+      <Modal
+        isOpen={isViewAppointModalOpen}
+        onClose={() => setIsViewAppointModalOpen(false)}
+        title="Appointment Details"
+      >
+        <AppointmentDetailModal
+          isOpen={isViewAppointModalOpen}
+          onClose={() => setIsViewAppointModalOpen(false)}
+          appointment={selectedAppt}
+          currentUser={currentUser}
+        />
+      </Modal>
 
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white shadow-lg">
@@ -1027,19 +1061,6 @@ const DoctorDashboard = () => {
           )}
         </div>
       </div>
-
-      <Modal
-        isOpen={isViewAppointModalOpen}
-        onClose={() => setIsViewAppointModalOpen(false)}
-        title="Appointment Details"
-      >
-        <AppointmentDetailModal
-          isOpen={isViewAppointModalOpen}
-          onClose={() => setIsViewAppointModalOpen(false)}
-          appointment={selectedAppt}
-          currentUser={currentUser}
-        />
-      </Modal>
     </div>
   );
 };

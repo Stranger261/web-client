@@ -461,7 +461,8 @@ const PatientDashboard = () => {
       toast.success('Appointment created successfully!');
       return response;
     } catch (error) {
-      throw new Error(error.message || 'Failed to create appointment');
+      const errMsg = error?.response?.data?.message;
+      throw new Error(errMsg || 'Failed to create appointment');
     }
   };
 

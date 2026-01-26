@@ -318,7 +318,7 @@ const CreateAppointment = ({
   const doctorsInSelectedDept = useMemo(() => {
     if (!appointmentDetails.department || !allDoctors) return [];
     return allDoctors.filter(
-      doc => doc.department?._id === appointmentDetails.department._id
+      doc => doc.department?._id === appointmentDetails.department._id,
     );
   }, [appointmentDetails.department, allDoctors]);
 

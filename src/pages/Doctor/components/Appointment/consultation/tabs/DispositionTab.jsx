@@ -1,7 +1,17 @@
-import { Home, Building2, Calendar, AlertTriangle } from 'lucide-react';
+import { useState } from 'react';
+import { Home, Building2, Calendar, AlertTriangle, Bed } from 'lucide-react';
 import { COLORS } from '../../../../../../configs/CONST';
+import BedSelectionModal from '../../../../../../components/Modals/BedSelectionModal';
 
-const DispositionTab = ({ data, onChange, errors, isDarkMode }) => {
+const DispositionTab = ({
+  data,
+  onChange,
+  errors,
+  isDarkMode,
+  onBedSelect,
+}) => {
+  const [showBedSelection, setShowBedSelection] = useState(false);
+
   const inputClassName = `w-full px-3 py-2 rounded-lg border transition-colors focus:outline-none focus:ring-2`;
 
   const getInputStyle = (hasError = false) => ({
@@ -177,6 +187,90 @@ const DispositionTab = ({ data, onChange, errors, isDarkMode }) => {
           </h4>
 
           <div className="space-y-4">
+            {/* Bed Selection Button */}
+            <div>
+              <label className={labelClassName} style={getLabelStyle()}>
+                Assign Bed <span style={{ color: COLORS.danger }}>*</span>
+              </label>
+
+              {data.selected_bed_info ? (
+                <div
+                  className="p-3 rounded-lg border flex items-center justify-between"
+                  style={{
+                    backgroundColor: isDarkMode
+                      ? COLORS.surface.darkHover
+                      : COLORS.surface.light,
+                    borderColor: COLORS.success,
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <Bed
+                      className="w-5 h-5"
+                      style={{ color: COLORS.success }}
+                    />
+                    <div>
+                      <div
+                        className="font-medium"
+                        style={{
+                          color: isDarkMode
+                            ? COLORS.text.white
+                            : COLORS.text.primary,
+                        }}
+                      >
+                        Bed {data.selected_bed_info.bed_number}
+                      </div>
+                      <div
+                        className="text-sm"
+                        style={{ color: COLORS.text.secondary }}
+                      >
+                        Floor {data.selected_bed_info.floor_number} • Room{' '}
+                        {data.selected_bed_info.room_number} •{' '}
+                        {data.selected_bed_info.bed_type
+                          .replace('_', ' ')
+                          .toUpperCase()}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowBedSelection(true)}
+                    className="px-3 py-1 rounded text-sm"
+                    style={{
+                      backgroundColor: COLORS.button.secondary.bg,
+                      color: COLORS.text.white,
+                    }}
+                  >
+                    Change
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowBedSelection(true)}
+                  className="w-full px-4 py-3 rounded-lg border-2 border-dashed transition-all hover:border-solid"
+                  style={{
+                    backgroundColor: isDarkMode
+                      ? COLORS.surface.darkHover
+                      : COLORS.surface.light,
+                    borderColor: errors.selected_bed_id
+                      ? COLORS.danger
+                      : COLORS.border.light,
+                    color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
+                  }}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <Bed className="w-5 h-5" />
+                    <span>Select Bed</span>
+                  </div>
+                </button>
+              )}
+
+              {errors.selected_bed_id && (
+                <p className="text-sm mt-1" style={{ color: COLORS.danger }}>
+                  {errors.selected_bed_id}
+                </p>
+              )}
+            </div>
+
+            {/* Existing admission fields */}
             <div>
               <label className={labelClassName} style={getLabelStyle()}>
                 Admission Reason <span style={{ color: COLORS.danger }}>*</span>
@@ -267,6 +361,13 @@ const DispositionTab = ({ data, onChange, errors, isDarkMode }) => {
           </div>
         </div>
       )}
+
+      <BedSelectionModal
+        isOpen={showBedSelection}
+        onClose={() => setShowBedSelection(false)}
+        onSelectBed={onBedSelect}
+        admissionType="elective"
+      />
     </div>
   );
 };

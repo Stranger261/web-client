@@ -136,7 +136,7 @@ const AppointmentList = ({
           actions.push({
             icon: Video,
             label: 'Call Patient',
-            onClick: () => onCallPatient(appointment.appointment_id),
+            onClick: () => onCallPatient(appointment),
             className:
               'px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium text-sm flex items-center gap-2',
             isPrimary: true,
@@ -146,7 +146,10 @@ const AppointmentList = ({
         else if (onStartConsultation) {
           actions.push({
             icon: Stethoscope,
-            label: 'Start Consultation',
+            label:
+              appointment.status === 'in_progress'
+                ? 'Continue Consultation'
+                : 'Start Consultation',
             onClick: () => onStartConsultation(appointment),
             className:
               'px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium text-sm flex items-center gap-2',

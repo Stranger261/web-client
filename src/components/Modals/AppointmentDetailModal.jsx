@@ -240,7 +240,7 @@ const AppointmentDetailModal = ({
                       </p>
                       <span
                         className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${getPaymentStatusColor(
-                          appointment.payment_status
+                          appointment.payment_status,
                         )}`}
                       >
                         {appointment.payment_status.toUpperCase()}
@@ -400,7 +400,7 @@ const AppointmentDetailModal = ({
                           icon={Clock}
                           label="Time"
                           value={`${formatTime(
-                            appointment.start_time
+                            appointment.start_time,
                           )} - ${formatTime(appointment.end_time)}`}
                         />
                         <DetailRow
@@ -437,7 +437,7 @@ const AppointmentDetailModal = ({
                           icon={DollarSign}
                           label="Consultation Fee"
                           value={`₱${parseFloat(
-                            appointment.consultation_fee
+                            appointment.consultation_fee,
                           ).toFixed(2)}`}
                         />
                         {appointment.extension_fee &&
@@ -446,7 +446,7 @@ const AppointmentDetailModal = ({
                               icon={DollarSign}
                               label="Extension Fee"
                               value={`₱${parseFloat(
-                                appointment.extension_fee
+                                appointment.extension_fee,
                               ).toFixed(2)}`}
                             />
                           )}
@@ -464,7 +464,7 @@ const AppointmentDetailModal = ({
                             icon={CreditCard}
                             label="Total Amount"
                             value={`₱${parseFloat(
-                              appointment.total_amount
+                              appointment.total_amount,
                             ).toFixed(2)}`}
                             valueClassName="text-lg"
                           />

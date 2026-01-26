@@ -1,5 +1,17 @@
 import { useState } from 'react';
-import { Save, X, CheckCircle, AlertCircle } from 'lucide-react';
+import {
+  Save,
+  X,
+  CheckCircle,
+  AlertCircle,
+  User,
+  ClipboardList,
+  Search,
+  Pill,
+  FileText,
+  FlaskConical,
+  Home,
+} from 'lucide-react';
 
 import Modal from '../../../../../components/ui/Modal';
 // tabs
@@ -32,14 +44,24 @@ const DoctorConsultationModal = ({ isOpen, onClose, appointment }) => {
     handleSubmit,
   } = useDoctorConsultation(appointment);
 
+  const handleBedSelect = bed => {
+    handleDiagnosisChange('selected_bed_id', bed.bed_id);
+    handleDiagnosisChange('selected_bed_info', {
+      bed_number: bed.bed_number,
+      room_number: bed.room?.room_number,
+      floor_number: bed.room?.floor_number,
+      bed_type: bed.bed_type,
+    });
+  };
+
   const tabs = [
-    { id: 0, label: 'Patient Info', icon: '👤' },
-    { id: 1, label: 'Assessment', icon: '📋' },
-    { id: 2, label: 'Diagnosis', icon: '🔍' },
-    { id: 3, label: 'Treatment', icon: '💊' },
-    { id: 4, label: 'Prescriptions', icon: '📝' },
-    { id: 5, label: 'Orders', icon: '🧪' },
-    { id: 6, label: 'Disposition', icon: '🏠' },
+    { id: 0, label: 'Patient Info', icon: <User /> },
+    { id: 1, label: 'Assessment', icon: <ClipboardList /> },
+    { id: 2, label: 'Diagnosis', icon: <Search /> },
+    { id: 3, label: 'Treatment', icon: <Pill /> },
+    { id: 4, label: 'Prescriptions', icon: <FileText /> },
+    { id: 5, label: 'Orders', icon: <FlaskConical /> },
+    { id: 6, label: 'Disposition', icon: <Home /> },
   ];
 
   const handleSave = async () => {
@@ -164,6 +186,7 @@ const DoctorConsultationModal = ({ isOpen, onClose, appointment }) => {
               onChange={handleDiagnosisChange}
               errors={errors}
               isDarkMode={isDarkMode}
+              onBedSelect={handleBedSelect}
             />
           )}
         </div>

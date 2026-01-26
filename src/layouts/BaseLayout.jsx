@@ -1,4 +1,3 @@
-// File: /src/layouts/BaseLayout.jsx
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { Outlet, useNavigate } from 'react-router-dom';
@@ -30,6 +29,7 @@ import { useSocket } from '../contexts/SocketContext';
 import { Button } from '../components/ui/button';
 import { formatNotificationTime } from '../utils/FormatTime';
 import LiveClockHeader from '../components/shared/LiveClock';
+import { getLocalDateString } from '../utils/dateFormatter';
 
 const BaseLayout = () => {
   const navigate = useNavigate();
@@ -193,12 +193,36 @@ const BaseLayout = () => {
       toast.success('Logged out successfully.');
       navigate('/login');
     } catch (error) {
-      console.log(error);
+      console.error(error);
       toast.error('Failed to log out. Please try again.');
     } finally {
       setLoggingOut(false);
     }
   };
+
+  const newAppointmentHandler = useCallback(
+    data => {
+      const todayStr = new Date().toLocaleDateString('en-CA');
+
+      if (data.appointment_date === todayStr) {
+        window.dispatchEvent(new Event('refresh-today-appointments'));
+      }
+
+      setNotifications([]);
+      getUserNotifications();
+    },
+    [getUserNotifications, setNotifications],
+  );
+
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    socket.on('new-appointment-booked', newAppointmentHandler);
+
+    return () => {
+      socket.off('new-appointment-booked', newAppointmentHandler);
+    };
+  }, [socket, isConnected, newAppointmentHandler]);
 
   useEffect(() => {
     if (!socket || !isConnected) return;
@@ -206,24 +230,25 @@ const BaseLayout = () => {
     const doctor_uuid = currentUser?.person?.staff?.staff_uuid;
     const lastname = currentUser?.person?.last_name;
 
+    const newAppointmentHandler = data => {
+      const todayStr = getLocalDateString();
+
+      if (data.appointment_date === todayStr) {
+        window.dispatchEvent(new Event('refresh-today-appointments'));
+      }
+
+      // Clear notifications and reload from page 1 to get the new one
+      setNotifications([]);
+      getUserNotifications();
+    };
+
     if (doctor_uuid && lastname && currentUser.role === 'doctor') {
       socket.emit('doctor-room', {
         doctor_uuid,
         lastname,
       });
 
-      socket.on('new-appointment-booked', data => {
-        const todayStr = new Date().toISOString().split('T')[0];
-
-        if (data.appointment_date === todayStr) {
-          window.dispatchEvent(new Event('refresh-today-appointments'));
-        }
-
-        // Clear notifications and reload from page 1 to get the new one
-        setNotifications([]);
-        getUserNotifications();
-        toast('New appointment arrived.', { icon: <Info />, duration: 3000 });
-      });
+      socket.on('new-appointment-booked', newAppointmentHandler);
     }
 
     if (currentUser?.role === 'patient') {
@@ -239,7 +264,7 @@ const BaseLayout = () => {
 
     return () => {
       if (socket) {
-        socket.off('new-appointment-booked');
+        socket.off('new-appointment-booked', newAppointmentHandler);
       }
     };
   }, [

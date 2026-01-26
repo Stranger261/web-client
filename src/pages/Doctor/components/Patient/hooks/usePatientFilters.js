@@ -9,7 +9,7 @@ const usePatientFilters = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   const activeFiltersCount = Object.values(filters).filter(
-    v => v !== ''
+    v => v !== '',
   ).length;
 
   const handleFilterChange = e => {

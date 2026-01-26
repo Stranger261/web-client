@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'react-hot-toast';
+
 import consultationService from '../services/consultationApi';
 import diagnosisService from '../services/diagnosisApi';
 import precriptionService from '../services/prescriptionApi';
@@ -25,6 +27,8 @@ export const useDoctorConsultation = appointment => {
     followup_instructions: '',
     lab_tests_ordered: '',
     imaging_ordered: '',
+    selected_bed_id: null,
+    selected_bed_info: null,
   });
 
   const [prescriptionData, setPrescriptionData] = useState({
@@ -132,6 +136,16 @@ export const useDoctorConsultation = appointment => {
       newErrors.admission_reason = 'Admission reason is required';
     }
 
+    // Disposition-specific validations
+    if (diagnosisData.disposition === 'admit') {
+      if (!diagnosisData.admission_reason.trim()) {
+        newErrors.admission_reason = 'Admission reason is required';
+      }
+      if (!diagnosisData.selected_bed_id) {
+        newErrors.selected_bed_id = 'Please select a bed for admission';
+      }
+    }
+
     // Validate prescriptions
     prescriptionData.medications.forEach((med, index) => {
       if (!med.medication_name.trim()) {
@@ -150,8 +164,12 @@ export const useDoctorConsultation = appointment => {
   };
 
   const handleSubmit = async () => {
-    console.log('clicked');
     if (!validate()) {
+      toast.error('Please check and fill up the required fields.');
+      setErrors(prev => ({
+        ...prev,
+        submit: 'Please fix the errors before saving',
+      }));
       return false;
     }
 
@@ -167,6 +185,8 @@ export const useDoctorConsultation = appointment => {
       if (prescriptionData.medications.length > 0) {
         await precriptionService.createPrescription({
           appointmentId: appointment.appointment_id,
+          admissionId:
+            diagnosisResponse.data?.admission?.admission?.admission_id,
           patientId: appointment.patient_id,
           items: prescriptionData.medications,
           notes: 'Prescribed during consultation',
@@ -175,10 +195,11 @@ export const useDoctorConsultation = appointment => {
 
       setSaveSuccess(true);
 
+      toast.success('Diagnosis created and completed the appointment.');
       // Reset success message after 3 seconds
       setTimeout(() => {
         setSaveSuccess(false);
-      }, 3000);
+      }, 1000);
 
       return true;
     } catch (error) {

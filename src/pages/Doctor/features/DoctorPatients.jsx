@@ -1,20 +1,26 @@
 import { useState } from 'react';
+import toast from 'react-hot-toast';
+
+import usePatientData from '../../../components/Patients/hooks/usePatientData';
+import usePatientFilters from '../../../components/Patients/hooks/usePatientFilters';
+import PatientFilters from '../../../components/Patients/components/PatientFilters';
+
+import PatientStatsCards from '../../../components/Patients/cards/PatientStatsCards';
+import PatientMobileCards from '../../../components/Patients/cards/PatientMobileCards';
+import PatientDetailsModal from '../../../components/Patients/Modals/PatientDetailsModal';
+import DeleteConfirmModal from '../../../components/Patients/Modals/DeleteConfirmModal';
+import PatientTableView from '../../../components/Patients/components/PatientTableView';
+
 import { useAuth } from '../../../contexts/AuthContext';
-import { COLORS, ITEMS_PER_PAGE } from '../../../configs/CONST';
-
-import PatientStatsCards from '../components/Patient/PatientStatsCards';
-import PatientFilters from '../components/Patient/PatientFilters';
-import PatientTableView from '../components/Patient/PatientTableView';
-import PatientMobileCards from '../components/Patient/PatientMobileCards';
-import PatientDetailsModal from '../components/Patient/PatientDetailsModal';
-import DeleteConfirmModal from '../components/Patient/DeleteConfirmModal';
-
-import usePatientData from '../components/Patient/hooks/usePatientData';
-import usePatientFilters from '../components/Patient/hooks/usePatientFilters';
+import patientApi from '../../../services/patientApi';
+import { COLORS } from '../../../configs/CONST';
 
 const DoctorPatients = () => {
   const isDarkMode = document.documentElement.classList.contains('dark');
   const { currentUser } = useAuth();
+
+  // Get user role from currentUser
+  const userRole = currentUser?.role || 'doctor';
 
   // Modal states
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -22,7 +28,9 @@ const DoctorPatients = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [expandedRecordId, setExpandedRecordId] = useState(null);
 
-  // Use custom hooks
+  const [isFetching, setIsFetching] = useState(false);
+
+  // Use custom hooks with role-based configuration
   const {
     filters,
     showFilters,
@@ -30,22 +38,32 @@ const DoctorPatients = () => {
     handleFilterChange,
     handleClearFilters,
     setShowFilters,
-  } = usePatientFilters();
+  } = usePatientFilters(userRole);
 
   const {
     patients,
-    patientStats,
+    stats,
     pagination,
     isLoading,
+
     handlePageChange,
     handleLimitChange,
-  } = usePatientData(currentUser?.staff?.staff_uuid, filters);
+    refreshPatients,
+  } = usePatientData(filters);
 
   // Handlers
-  const handleViewPatient = patient => {
-    setSelectedPatient(patient);
-    setIsViewModalOpen(true);
-    setExpandedRecordId(null);
+  const handleViewPatient = async patient => {
+    try {
+      setIsViewModalOpen(true);
+      setIsFetching(true);
+      const res = await patientApi.getPatientDetails(patient.patient_uuid);
+      setSelectedPatient(res.data);
+      setExpandedRecordId(null);
+    } catch (error) {
+      toast.error('Failed to view patients. Try again later');
+    } finally {
+      setIsFetching(false);
+    }
   };
 
   const handleDeletePatient = patient => {
@@ -54,13 +72,52 @@ const DoctorPatients = () => {
   };
 
   const handleConfirmDelete = async () => {
-    // Implement delete logic here
-    setIsDeleteModalOpen(false);
-    setSelectedPatient(null);
+    try {
+      // Implement delete logic here
+      // await deletePatient(selectedPatient.patient_id);
+
+      setIsDeleteModalOpen(false);
+      setSelectedPatient(null);
+
+      // Refresh the patient list after deletion
+      refreshPatients();
+    } catch (error) {
+      console.error('Delete patient error:', error);
+    }
   };
 
   const toggleMedicalRecord = recordId => {
     setExpandedRecordId(prev => (prev === recordId ? null : recordId));
+  };
+
+  // Get page title based on role
+  const getPageTitle = () => {
+    switch (userRole) {
+      case 'doctor':
+        return 'My Patients';
+      case 'nurse':
+        return 'Patient Records';
+      case 'receptionist':
+      case 'admin':
+        return 'All Patients';
+      default:
+        return 'Patients';
+    }
+  };
+
+  const getPageDescription = () => {
+    switch (userRole) {
+      case 'doctor':
+        return 'View and manage your assigned patients';
+      case 'nurse':
+        return 'Access patient records and medical information';
+      case 'receptionist':
+        return 'Manage and view all registered patients';
+      case 'admin':
+        return 'Manage all patients in the system';
+      default:
+        return 'Patient management';
+    }
   };
 
   return (
@@ -73,19 +130,23 @@ const DoctorPatients = () => {
             color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
           }}
         >
-          My Patients
+          {getPageTitle()}
         </h1>
         <p
           style={{
             color: isDarkMode ? COLORS.text.light : COLORS.text.secondary,
           }}
         >
-          Manage and view all your registered patients
+          {getPageDescription()}
         </p>
       </div>
 
-      {/* Stats Cards */}
-      <PatientStatsCards stats={patientStats} isDarkMode={isDarkMode} />
+      {/* Stats Cards - Role-based display */}
+      <PatientStatsCards
+        stats={stats}
+        isDarkMode={isDarkMode}
+        userRole={userRole}
+      />
 
       {/* Filters */}
       <PatientFilters
@@ -95,6 +156,7 @@ const DoctorPatients = () => {
         onFilterChange={handleFilterChange}
         onClearFilters={handleClearFilters}
         onToggleFilters={() => setShowFilters(!showFilters)}
+        userRole={userRole}
       />
 
       {/* Desktop Table View */}
@@ -108,6 +170,7 @@ const DoctorPatients = () => {
           onPageChange={handlePageChange}
           onLimitChange={handleLimitChange}
           isDarkMode={isDarkMode}
+          userRole={userRole}
         />
       </div>
 
@@ -122,22 +185,26 @@ const DoctorPatients = () => {
           onPageChange={handlePageChange}
           onLimitChange={handleLimitChange}
           isDarkMode={isDarkMode}
+          userRole={userRole}
         />
       </div>
 
       {/* Modals */}
-
-      <PatientDetailsModal
-        isOpen={isViewModalOpen}
-        onClose={() => {
-          setIsViewModalOpen(false);
-          setExpandedRecordId(null);
-        }}
-        expandedRecordId={expandedRecordId}
-        onToggleRecord={toggleMedicalRecord}
-        patient={selectedPatient}
-        medicalRecords={selectedPatient?.medicalRecords || []}
-      />
+      {isViewModalOpen && (
+        <PatientDetailsModal
+          isOpen={isViewModalOpen}
+          onClose={() => {
+            setIsViewModalOpen(false);
+            setExpandedRecordId(null);
+          }}
+          expandedRecordId={expandedRecordId}
+          onToggleRecord={toggleMedicalRecord}
+          patient={selectedPatient}
+          userRole={userRole}
+          isDarkMode={isDarkMode}
+          isLoading={isFetching}
+        />
+      )}
 
       <DeleteConfirmModal
         isOpen={isDeleteModalOpen}

@@ -15,6 +15,7 @@ class diagnosisService {
 
   async createDiagnosis(diagnosisData) {
     try {
+      console.log('sending data: ', diagnosisData);
       const res = await this.diagnosisApi.post('/', { diagnosisData });
 
       return res.data;

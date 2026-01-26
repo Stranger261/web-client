@@ -12,7 +12,7 @@ export const AppointmentProvider = ({ children }) => {
     currentPage: 1,
     limit: 20,
     total: 0,
-    totalPages: 0,
+    totalPages: 1,
   });
   const [totalTodaysAppointment, setTotalTodaysAppointment] = useState(0);
 

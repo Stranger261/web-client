@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import { Search, User, Phone, IdCard } from 'lucide-react';
 import { calculateAge } from '../../../../utils/patientHelpers';
+import toast from 'react-hot-toast';
+import WalkInPatientRegistration from '../../../../pages/Receptionist/components/patientRegistration/WalkInPatientRegistration';
 
 export const PatientStep = ({
   onSelect,
@@ -12,6 +14,10 @@ export const PatientStep = ({
   isLoadingHistory,
 }) => {
   const [showNewPatientForm, setShowNewPatientForm] = useState(false);
+
+  const handleRegisterPatient = () => {
+    toast.success('New patient registered.');
+  };
 
   const handlePatientClick = patient => {
     onSelect(patient);
@@ -45,15 +51,15 @@ export const PatientStep = ({
               </div>
             )}
 
-            {patient.person.user.phone && (
+            {patient.person?.user?.phone && (
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4" />
-                <span>{patient.person.user.phone}</span>
+                <span>{patient.person?.user?.phone}</span>
               </div>
             )}
 
-            {patient.person.user.email && (
-              <div className="text-gray-500">{patient.person.user.email}</div>
+            {patient.person?.user?.email && (
+              <div className="text-gray-500">{patient.person?.user?.email}</div>
             )}
 
             {patient.person.date_of_birth && (
@@ -96,6 +102,12 @@ export const PatientStep = ({
 
   return (
     <div className="space-y-6">
+      <WalkInPatientRegistration
+        isOpen={showNewPatientForm}
+        onClose={() => setShowNewPatientForm(false)}
+        onSuccess={handleRegisterPatient}
+      />
+
       <div className="text-center">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">
           Select Patient
@@ -169,34 +181,6 @@ export const PatientStep = ({
           </div>
         )}
       </div>
-
-      {/* New Patient Form Modal/Section (placeholder) */}
-      {showNewPatientForm && (
-        <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
-          <div className="text-center">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Create New Patient
-            </h3>
-            <p className="text-gray-600 mb-4">
-              New patient registration form would go here
-            </p>
-            <div className="flex gap-2 justify-center">
-              <button
-                onClick={() => setShowNewPatientForm(false)}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                disabled
-              >
-                Save Patient (Coming Soon)
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Selected Patient Summary */}
       {selected && (
