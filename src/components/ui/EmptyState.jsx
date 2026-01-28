@@ -1,5 +1,3 @@
-// components/ui/EmptyState.jsx
-import React from 'react';
 import { Calendar, FileText, Search } from 'lucide-react';
 
 const EmptyState = ({

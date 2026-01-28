@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { Building2, BedDouble, ArrowRight, Search } from 'lucide-react';
-import Modal from '../../../../../../components/ui/Modal';
-import { COLORS } from '../../../../../../configs/CONST';
-import bedService from '../../../../../../services/bedApi';
-import bedAssignmentApi from '../../../../../../services/bedAssignmentApi';
+import Modal from '../../../ui/Modal';
+import { COLORS } from '../../../../configs/CONST';
+import bedService from '../../../../services/bedApi';
+import bedAssignmentApi from '../../../../services/bedAssignmentApi';
 
 const TransferBedModal = ({
   isOpen,
@@ -100,7 +100,6 @@ const TransferBedModal = ({
       toast.error('Please provide a reason for transfer');
       return;
     }
-
     setTransferring(true);
     try {
       await bedAssignmentApi.transferPatient({

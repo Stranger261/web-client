@@ -31,6 +31,7 @@ import StatsCard from '../../../components/ui/stat-card';
 import Modal from '../../../components/ui/Modal';
 import AppointmentList from '../../../components/shared/AppointmentList';
 import VitalsRecordingModal from '../components/forms/VitalsRecordingModal';
+import ProgressNoteModal from '../../../components/ProgressNotes/components/modals/ProgressNoteModal';
 
 const NurseDashboard = () => {
   const { currentUser } = useAuth();
@@ -56,6 +57,9 @@ const NurseDashboard = () => {
 
   // vitals modal
   const [isVitalsModalOpen, setIsVitalsModalOpen] = useState(false);
+
+  // progress note
+  const [showProgressNote, setShowProgressNote] = useState(false);
 
   // filter
   const [showFilters, setShowFilters] = useState(false);
@@ -318,6 +322,12 @@ const NurseDashboard = () => {
       functions: () => navigate('/nurse/vitals/new'),
     },
     {
+      icon: FileText,
+      label: 'Progress Notes',
+      color: 'blue',
+      functions: () => setShowProgressNote(true),
+    },
+    {
       icon: Users,
       label: 'Patient List',
       color: 'purple',
@@ -461,6 +471,11 @@ const NurseDashboard = () => {
           };
           getAppointmentsToday(apiFilter);
         }}
+      />
+
+      <ProgressNoteModal
+        isOpen={showProgressNote}
+        onClose={() => setShowProgressNote(false)}
       />
 
       <Modal

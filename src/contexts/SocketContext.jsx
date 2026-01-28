@@ -19,22 +19,16 @@ const SocketProvider = ({ children }) => {
     });
 
     socketInstance.on('connect', () => {
-      console.log('✅ Socket connected:', socketInstance.id);
       setIsConnected(true);
     });
 
     socketInstance.on('disconnect', () => {
-      console.log('❌ Socket disconnected');
       setIsConnected(false);
     });
 
-    socketInstance.on('reconnect', attemptNumber => {
-      console.log('🔄 Socket reconnected after', attemptNumber, 'attempts');
-    });
+    socketInstance.on('reconnect', attemptNumber => {});
 
-    socketInstance.on('connect_error', error => {
-      console.error('🔴 Socket connection error:', error);
-    });
+    socketInstance.on('connect_error', error => {});
 
     setSocket(socketInstance);
 
@@ -47,14 +41,12 @@ const SocketProvider = ({ children }) => {
   const joinRoom = room => {
     if (socket && isConnected) {
       socket.emit('join', room);
-      console.log(`📍 Joined room: ${room}`);
     }
   };
 
   const leaveRoom = room => {
     if (socket && isConnected) {
       socket.emit('leave', room);
-      console.log(`🚪 Left room: ${room}`);
     }
   };
 

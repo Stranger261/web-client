@@ -38,42 +38,34 @@ export const useIBMSSocket = (options = {}) => {
     if (!socket || !isConnected) return;
 
     const handleBedStatusChanged = data => {
-      console.log('🔴 Bed status changed:', data);
       if (onBedStatusChanged) onBedStatusChanged(data);
     };
 
     const handleBedAssigned = data => {
-      console.log('🔴 Bed assigned:', data);
       if (onBedAssigned) onBedAssigned(data);
     };
 
     const handleBedReleased = data => {
-      console.log('🔴 Bed released:', data);
       if (onBedReleased) onBedReleased(data);
     };
 
     const handleBedTransferred = data => {
-      console.log('🔴 Bed transferred:', data);
       if (onBedTransferred) onBedTransferred(data);
     };
 
     const handleAdmissionCreated = data => {
-      console.log('🔴 Admission created:', data);
       if (onAdmissionCreated) onAdmissionCreated(data);
     };
 
     const handleAdmissionDischarged = data => {
-      console.log('🔴 Admission discharged:', data);
       if (onAdmissionDischarged) onAdmissionDischarged(data);
     };
 
     const handleFloorStatsUpdated = data => {
-      console.log('🔴 Floor stats updated:', data);
       if (onFloorStatsUpdated) onFloorStatsUpdated(data);
     };
 
     const handleRoomOccupancyUpdated = data => {
-      console.log('🔴 Room occupancy updated:', data);
       if (onRoomOccupancyUpdated) onRoomOccupancyUpdated(data);
     };
 

@@ -37,7 +37,7 @@ class bedAssignmentService {
   async transferPatient(data) {
     try {
       const res = await this.bedAssignmentApi.post('/transfer', { data });
-
+      console.log(res.data);
       return res.data;
     } catch (error) {
       console.error('Failed to transer patient.');

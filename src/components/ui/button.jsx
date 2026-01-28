@@ -9,6 +9,7 @@ export const Button = ({
   disabled = false,
   icon: Icon,
   iconOnly = false,
+  iconPosition = 'left', // New prop: 'left' or 'right'
   className = '',
   onClick,
   ...props
@@ -41,12 +42,12 @@ export const Button = ({
         normal: {
           backgroundColor: iconOnly
             ? 'rgba(239, 68, 68, 0.1)'
-            : buttonColors.bg, // light red bg
-          color: buttonColors.bg, // red icon
+            : buttonColors.bg,
+          color: buttonColors.bg,
         },
         hover: {
-          backgroundColor: buttonColors.bg, // solid red
-          color: '#ffffff', // white icon
+          backgroundColor: buttonColors.bg,
+          color: '#ffffff',
         },
       };
     }
@@ -59,7 +60,7 @@ export const Button = ({
           color: buttonColors.icon || buttonColors.bg,
         },
         hover: {
-          backgroundColor: `${buttonColors.bg}15`, // 15 = 8% opacity in hex
+          backgroundColor: `${buttonColors.bg}15`,
           color: buttonColors.bg,
         },
       };
@@ -117,6 +118,7 @@ export const Button = ({
   };
 
   const styles = getButtonStyles(variant);
+  const iconClass = `${iconSizes[size]} ${!iconOnly && children && (iconPosition === 'right' ? 'ml-2' : 'mr-2')}`;
 
   return (
     <button
@@ -132,17 +134,17 @@ export const Button = ({
       }}
       onClick={onClick}
     >
-      {loading && (
+      {loading ? (
         <Loader2
           className={`${iconSizes[size]} ${!iconOnly && 'mr-2'} animate-spin`}
         />
+      ) : (
+        <>
+          {Icon && iconPosition === 'left' && <Icon className={iconClass} />}
+          {!iconOnly && children}
+          {Icon && iconPosition === 'right' && <Icon className={iconClass} />}
+        </>
       )}
-      {Icon && !loading && (
-        <Icon
-          className={`${iconSizes[size]} ${!iconOnly && children && 'mr-2'}`}
-        />
-      )}
-      {!iconOnly && children}
     </button>
   );
 };

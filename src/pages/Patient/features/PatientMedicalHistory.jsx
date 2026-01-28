@@ -12,7 +12,7 @@ import { usePatient } from '../../../contexts/PatientContext';
 import { useAuth } from '../../../contexts/AuthContext';
 
 const PatientMedicalHistory = () => {
-  const { medHistory, getPatientMedHistory } = usePatient();
+  const { medHistory, getPatientMedHistory, getPatientDetails } = usePatient();
   const { currentUser } = useAuth();
   const isDarkMode = document.documentElement.classList.contains('dark');
 
@@ -56,7 +56,8 @@ const PatientMedicalHistory = () => {
         limit: pagination.limit,
       };
 
-      const medHistory = await getPatientMedHistory(patientUuid, filters);
+      const medHistory = await getPatientDetails(patientUuid);
+      console.log(medHistory);
 
       setPagination(medHistory.data.pagination);
     } catch (error) {
@@ -66,7 +67,7 @@ const PatientMedicalHistory = () => {
     }
   }, [
     currentUser.person,
-    getPatientMedHistory,
+    getPatientDetails,
     pagination.page,
     pagination.limit,
   ]);
@@ -91,7 +92,7 @@ const PatientMedicalHistory = () => {
       setPagination(prev => ({ ...prev, limit: newLimit, page: 1 }));
       window.scrollTo({ top: 0, behavior: 'smooth' });
     },
-    [setPagination]
+    [setPagination],
   );
 
   return (

@@ -1,4 +1,3 @@
-// pages/IBMS/components/MaintenancePanel.jsx
 import { useState, useEffect } from 'react';
 import {
   Wrench,
@@ -10,12 +9,13 @@ import {
   BedDouble,
   MapPin,
 } from 'lucide-react';
-import { COLORS } from '../../../../../configs/CONST';
-import { useIBMSSocket } from '../../../../../hooks/useIBMSSocket';
-import BedMaintenanceModal from './Modals/BedMaintenanceModal';
-import bedApi from '../../../../../services/bedApi';
-import bedAssignmentApi from '../../../../../services/bedAssignmentApi';
 import toast from 'react-hot-toast';
+
+import { COLORS } from '../../../configs/CONST';
+import { useIBMSSocket } from '../../../hooks/useIBMSSocket';
+import BedMaintenanceModal from './Modals/BedMaintenanceModal';
+import bedApi from '../../../services/bedApi';
+import bedAssignmentApi from '../../../services/bedAssignmentApi';
 
 const MaintenancePanel = ({ isDarkMode, userRole }) => {
   const [activeTab, setActiveTab] = useState('cleaning'); // 'cleaning', 'maintenance'
@@ -31,12 +31,14 @@ const MaintenancePanel = ({ isDarkMode, userRole }) => {
     {
       id: 'cleaning',
       label: 'Needs Cleaning',
+      shortLabel: 'Cleaning',
       icon: Sparkles,
       color: COLORS.warning,
     },
     {
       id: 'maintenance',
       label: 'Under Maintenance',
+      shortLabel: 'Maintenance',
       icon: Wrench,
       color: COLORS.danger,
     },
@@ -44,15 +46,12 @@ const MaintenancePanel = ({ isDarkMode, userRole }) => {
 
   const { isConnected } = useIBMSSocket({
     onBedStatusChanged: data => {
-      console.log('🔴 Bed status changed:', data);
       fetchBedsRequiringAttention();
     },
     onBedCleaned: data => {
-      console.log('🔴 Bed cleaned:', data);
       fetchBedsRequiringAttention();
     },
     onBedReleased: data => {
-      console.log('🔴 Bed released:', data);
       fetchBedsRequiringAttention();
     },
   });
@@ -155,27 +154,30 @@ const MaintenancePanel = ({ isDarkMode, userRole }) => {
       : getFilteredBeds(maintenanceBeds);
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
+    <div className="space-y-3 sm:space-y-4">
+      {/* Header - Responsive */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+        <div className="min-w-0">
           <h2
-            className="text-2xl font-bold"
+            className="text-xl sm:text-2xl font-bold truncate"
             style={{
               color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
             }}
           >
             Maintenance & Cleaning
           </h2>
-          <p className="text-sm mt-1" style={{ color: COLORS.text.secondary }}>
+          <p
+            className="text-xs sm:text-sm mt-0.5 sm:mt-1"
+            style={{ color: COLORS.text.secondary }}
+          >
             Manage beds requiring attention
           </p>
         </div>
 
-        {/* Summary Cards */}
-        <div className="flex gap-3">
+        {/* Summary Cards - Responsive */}
+        <div className="flex gap-2 sm:gap-3">
           <div
-            className="px-4 py-2 rounded-lg border"
+            className="flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg border"
             style={{
               backgroundColor: isDarkMode
                 ? COLORS.surface.dark
@@ -183,14 +185,20 @@ const MaintenancePanel = ({ isDarkMode, userRole }) => {
               borderColor: COLORS.warning,
             }}
           >
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5" style={{ color: COLORS.warning }} />
-              <div>
-                <p className="text-xs" style={{ color: COLORS.text.secondary }}>
-                  Needs Cleaning
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Sparkles
+                className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0"
+                style={{ color: COLORS.warning }}
+              />
+              <div className="min-w-0">
+                <p
+                  className="text-xs truncate"
+                  style={{ color: COLORS.text.secondary }}
+                >
+                  <span className="hidden sm:inline">Needs </span>Cleaning
                 </p>
                 <p
-                  className="text-xl font-bold"
+                  className="text-lg sm:text-xl font-bold"
                   style={{
                     color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
                   }}
@@ -202,7 +210,7 @@ const MaintenancePanel = ({ isDarkMode, userRole }) => {
           </div>
 
           <div
-            className="px-4 py-2 rounded-lg border"
+            className="flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg border"
             style={{
               backgroundColor: isDarkMode
                 ? COLORS.surface.dark
@@ -210,14 +218,20 @@ const MaintenancePanel = ({ isDarkMode, userRole }) => {
               borderColor: COLORS.danger,
             }}
           >
-            <div className="flex items-center gap-2">
-              <Wrench className="w-5 h-5" style={{ color: COLORS.danger }} />
-              <div>
-                <p className="text-xs" style={{ color: COLORS.text.secondary }}>
-                  Under Maintenance
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Wrench
+                className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0"
+                style={{ color: COLORS.danger }}
+              />
+              <div className="min-w-0">
+                <p
+                  className="text-xs truncate"
+                  style={{ color: COLORS.text.secondary }}
+                >
+                  <span className="hidden sm:inline">Under </span>Maintenance
                 </p>
                 <p
-                  className="text-xl font-bold"
+                  className="text-lg sm:text-xl font-bold"
                   style={{
                     color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
                   }}
@@ -230,8 +244,8 @@ const MaintenancePanel = ({ isDarkMode, userRole }) => {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2">
+      {/* Tabs - Responsive */}
+      <div className="flex gap-1.5 sm:gap-2 overflow-x-auto hide-scrollbar pb-1">
         {tabs.map(tab => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -244,7 +258,7 @@ const MaintenancePanel = ({ isDarkMode, userRole }) => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className="px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2"
+              className="px-3 sm:px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap flex-shrink-0 text-xs sm:text-sm"
               style={{
                 backgroundColor: isActive
                   ? tab.color + '20'
@@ -255,10 +269,11 @@ const MaintenancePanel = ({ isDarkMode, userRole }) => {
                 borderLeft: isActive ? `3px solid ${tab.color}` : 'none',
               }}
             >
-              <Icon className="w-4 h-4" />
-              {tab.label}
+              <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">{tab.label}</span>
+              <span className="sm:hidden">{tab.shortLabel}</span>
               <span
-                className="px-2 py-0.5 rounded-full text-xs font-bold"
+                className="px-1.5 sm:px-2 py-0.5 rounded-full text-xs font-bold"
                 style={{
                   backgroundColor: isActive ? tab.color : COLORS.text.secondary,
                   color: COLORS.text.white,
@@ -271,9 +286,9 @@ const MaintenancePanel = ({ isDarkMode, userRole }) => {
         })}
       </div>
 
-      {/* Filter */}
+      {/* Filter - Responsive */}
       <div
-        className="p-3 rounded-lg border flex items-center gap-3"
+        className="p-2.5 sm:p-3 rounded-lg border flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3"
         style={{
           backgroundColor: isDarkMode
             ? COLORS.surface.dark
@@ -281,19 +296,24 @@ const MaintenancePanel = ({ isDarkMode, userRole }) => {
           borderColor: isDarkMode ? COLORS.border.dark : COLORS.border.light,
         }}
       >
-        <Filter className="w-4 h-4" style={{ color: COLORS.text.secondary }} />
-        <span
-          className="text-sm font-medium"
-          style={{
-            color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
-          }}
-        >
-          Filter by Floor:
-        </span>
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+          <Filter
+            className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0"
+            style={{ color: COLORS.text.secondary }}
+          />
+          <span
+            className="text-xs sm:text-sm font-medium"
+            style={{
+              color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
+            }}
+          >
+            Filter by Floor:
+          </span>
+        </div>
         <select
           value={filterFloor}
           onChange={e => setFilterFloor(e.target.value)}
-          className="px-3 py-1 rounded-lg border text-sm"
+          className="w-full sm:w-auto px-2.5 sm:px-3 py-1.5 sm:py-1 rounded-lg border text-xs sm:text-sm"
           style={{
             backgroundColor: isDarkMode
               ? COLORS.input.backgroundDark
@@ -313,10 +333,10 @@ const MaintenancePanel = ({ isDarkMode, userRole }) => {
         </select>
       </div>
 
-      {/* Beds List */}
+      {/* Beds List - Responsive Grid */}
       {currentBeds.length === 0 ? (
         <div
-          className="text-center py-12 rounded-lg border"
+          className="text-center py-8 sm:py-12 rounded-lg border"
           style={{
             backgroundColor: isDarkMode
               ? COLORS.surface.dark
@@ -325,25 +345,28 @@ const MaintenancePanel = ({ isDarkMode, userRole }) => {
           }}
         >
           <CheckCircle
-            className="w-12 h-12 mx-auto mb-3"
+            className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 sm:mb-3"
             style={{ color: COLORS.success }}
           />
           <p
-            className="text-lg font-medium"
+            className="text-base sm:text-lg font-medium px-4"
             style={{
               color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
             }}
           >
             All Clear!
           </p>
-          <p className="text-sm mt-1" style={{ color: COLORS.text.secondary }}>
+          <p
+            className="text-xs sm:text-sm mt-1 px-4"
+            style={{ color: COLORS.text.secondary }}
+          >
             {activeTab === 'cleaning'
               ? 'No beds need cleaning at the moment'
               : 'No beds under maintenance'}
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
           {currentBeds.map(bed => {
             const urgencyColor = getUrgencyColor(
               activeTab === 'cleaning'
@@ -364,7 +387,7 @@ const MaintenancePanel = ({ isDarkMode, userRole }) => {
               >
                 {/* Header */}
                 <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                     <div
                       className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0"
                       style={{ backgroundColor: urgencyColor + '20' }}
@@ -376,7 +399,7 @@ const MaintenancePanel = ({ isDarkMode, userRole }) => {
                     </div>
                     <div className="min-w-0 flex-1">
                       <h3
-                        className="font-bold text-base sm:text-lg"
+                        className="font-bold text-base sm:text-lg truncate"
                         style={{
                           color: isDarkMode
                             ? COLORS.text.white
@@ -397,7 +420,7 @@ const MaintenancePanel = ({ isDarkMode, userRole }) => {
 
                   {/* Status Badge */}
                   <div
-                    className="px-2 py-1 rounded-full text-xs font-medium capitalize flex items-center gap-1 flex-shrink-0"
+                    className="px-2 py-1 rounded-full text-xs font-medium capitalize flex items-center gap-1 flex-shrink-0 ml-2"
                     style={{
                       backgroundColor: urgencyColor + '20',
                       color: urgencyColor,
@@ -471,10 +494,10 @@ const MaintenancePanel = ({ isDarkMode, userRole }) => {
                   </div>
                 </div>
 
-                {/* Reason/Issue Display - NEW SECTION */}
+                {/* Reason/Issue Display */}
                 {activeTab === 'maintenance' && bed.maintenance_reason && (
                   <div
-                    className="p-3 rounded-lg mb-3 border-l-4"
+                    className="p-2.5 sm:p-3 rounded-lg mb-3 border-l-4"
                     style={{
                       backgroundColor: isDarkMode
                         ? COLORS.surface.darkHover
@@ -484,7 +507,7 @@ const MaintenancePanel = ({ isDarkMode, userRole }) => {
                   >
                     <div className="flex items-start gap-2">
                       <AlertTriangle
-                        className="w-4 h-4 flex-shrink-0 mt-0.5"
+                        className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0 mt-0.5"
                         style={{ color: COLORS.warning }}
                       />
                       <div className="flex-1 min-w-0">
@@ -509,10 +532,10 @@ const MaintenancePanel = ({ isDarkMode, userRole }) => {
                   </div>
                 )}
 
-                {/* Cleaning Notes - For Cleaning Tab (Optional) */}
+                {/* Cleaning Notes */}
                 {activeTab === 'cleaning' && bed.cleaning_notes && (
                   <div
-                    className="p-3 rounded-lg mb-3 border-l-4"
+                    className="p-2.5 sm:p-3 rounded-lg mb-3 border-l-4"
                     style={{
                       backgroundColor: isDarkMode
                         ? COLORS.surface.darkHover
@@ -522,7 +545,7 @@ const MaintenancePanel = ({ isDarkMode, userRole }) => {
                   >
                     <div className="flex items-start gap-2">
                       <Sparkles
-                        className="w-4 h-4 flex-shrink-0 mt-0.5"
+                        className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0 mt-0.5"
                         style={{ color: COLORS.info }}
                       />
                       <div className="flex-1 min-w-0">
@@ -590,7 +613,7 @@ const MaintenancePanel = ({ isDarkMode, userRole }) => {
                           color: COLORS.text.white,
                         }}
                       >
-                        <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+                        <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         <span>Mark Cleaned</span>
                       </button>
                     )}
@@ -623,7 +646,7 @@ const MaintenancePanel = ({ isDarkMode, userRole }) => {
                       color: COLORS.badge.danger.text,
                     }}
                   >
-                    <AlertTriangle className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                    <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
                     <span>Urgent attention needed!</span>
                   </div>
                 )}
@@ -647,6 +670,17 @@ const MaintenancePanel = ({ isDarkMode, userRole }) => {
           onUpdate={fetchBedsRequiringAttention}
         />
       )}
+
+      {/* Hide scrollbar CSS */}
+      <style>{`
+          .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+          }
+          .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+      `}</style>
     </div>
   );
 };

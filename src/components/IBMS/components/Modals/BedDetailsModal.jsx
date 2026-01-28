@@ -1,18 +1,11 @@
 // pages/IBMS/components/BedDetailsModal.jsx
 import { useState } from 'react';
-import {
-  X,
-  User,
-  Calendar,
-  AlertCircle,
-  Wrench,
-  Sparkles,
-  CheckCircle,
-} from 'lucide-react';
-import Modal from '../../../../../../components/ui/Modal';
-import { COLORS } from '../../../../../../configs/CONST';
-import bedService from '../../../../../../services/bedApi';
+import { X, User, Wrench, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
+import Modal from '../../../ui/Modal';
+
+import { COLORS } from '../../../../configs/CONST';
+import bedService from '../../../../services/bedApi';
 
 const BedDetailsModal = ({
   isOpen,
@@ -50,7 +43,6 @@ const BedDetailsModal = ({
   };
 
   const handleMarkMaintenance = async () => {
-    console.log('eto yun');
     if (!reason.trim()) {
       toast.error('Please provide a reason for maintenance');
       return;
@@ -60,7 +52,7 @@ const BedDetailsModal = ({
     try {
       await bedService.markBedForMaintenance(bed.bed_id, reason);
       toast.success(
-        `The ${bed.bed_id} of room: ${bed.room_number} is marked for bed maintenance`,
+        `The ${bed.bed_type}-${bed.number}  is marked for bed maintenance`,
       );
       onUpdate();
       onClose();

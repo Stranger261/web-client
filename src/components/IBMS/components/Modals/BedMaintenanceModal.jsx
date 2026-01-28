@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import {
-  X,
   Wrench,
   CheckCircle,
   AlertTriangle,
   Calendar,
   User,
 } from 'lucide-react';
-import Modal from '../../../../../../components/ui/Modal';
-import { COLORS } from '../../../../../../configs/CONST';
-import bedApi from '../../../../../../services/bedApi';
 import toast from 'react-hot-toast';
+
+import Modal from '../../../ui/Modal';
+import { COLORS } from '../../../../configs/CONST';
+import bedApi from '../../../../services/bedApi';
 
 const BedMaintenanceModal = ({
   isOpen,

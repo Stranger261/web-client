@@ -9,10 +9,10 @@ import {
   Sparkles,
   Clock,
 } from 'lucide-react';
-import { COLORS } from '../../../../../configs/CONST';
-import bedService from '../../../../../services/bedApi';
+import { COLORS } from '../../../configs/CONST';
+import bedService from '../../../services/bedApi';
 import BedDetailsModal from './Modals/BedDetailsModal';
-import { useIBMSSocket } from '../../../../../hooks/useIBMSSocket';
+import { useIBMSSocket } from '../../../hooks/useIBMSSocket';
 
 const FloorView = ({ isDarkMode, userRole }) => {
   const [view, setView] = useState('floors'); // 'floors', 'rooms', 'beds'

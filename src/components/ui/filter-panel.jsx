@@ -13,7 +13,7 @@ export const FilterPanel = ({
   title = 'Filter Items',
 }) => {
   const activeFiltersCount = Object.values(filters).filter(
-    v => v !== ''
+    v => v !== '',
   ).length;
 
   const handleFilterChange = e => {
