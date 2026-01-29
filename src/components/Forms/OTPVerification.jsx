@@ -113,7 +113,7 @@ const OTPVerification = ({
       toast.error(
         error?.response?.data?.message ||
           error?.message ||
-          'Invalid OTP. Please try again.'
+          'Invalid OTP. Please try again.',
       );
       setOtp(['', '', '', '', '', '']);
       inputRefs.current[0].focus();
@@ -147,7 +147,7 @@ const OTPVerification = ({
       toast.error(
         error?.response?.data?.message ||
           error?.message ||
-          'Failed to resend OTP. Please try again.'
+          'Failed to resend OTP. Please try again.',
       );
     } finally {
       setIsResending(false);

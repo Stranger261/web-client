@@ -11,6 +11,8 @@ import {
   Scale,
   FileText,
   Eye,
+  CheckCircle,
+  LogOut,
 } from 'lucide-react';
 import { Button } from '../../../ui/button';
 
@@ -43,11 +45,11 @@ const AdmissionCard = ({
     return `Dr. ${person?.first_name || ''} ${person?.last_name || ''}`.trim();
   };
 
-  const calculateLengthOfStay = admissionDate => {
+  const calculateLengthOfStay = (admissionDate, dischargeDate) => {
     if (!admissionDate) return 0;
-    const now = new Date();
-    const admitted = new Date(admissionDate);
-    const diffTime = Math.abs(now - admitted);
+    const endDate = dischargeDate ? new Date(dischargeDate) : new Date();
+    const startDate = new Date(admissionDate);
+    const diffTime = Math.abs(endDate - startDate);
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
@@ -92,38 +94,107 @@ const AdmissionCard = ({
     });
   };
 
+  const formatDateTime = dateString => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
       {admissions.map(admission => {
         const currentBed = getCurrentBed(admission);
         const patientName = getPatientName(admission);
         const doctorName = getDoctorName(admission);
-        const los = calculateLengthOfStay(admission.admission_date);
+        const isActive = admission.admission_status === 'active';
+        const isDischarged = admission.admission_status === 'discharged';
+        const los = calculateLengthOfStay(
+          admission.admission_date,
+          admission.discharge_date,
+        );
 
         return (
           <div
             key={admission.admission_id}
-            className="p-3 sm:p-4 rounded-lg border-2 transition-all hover:shadow-lg"
+            className={`p-3 sm:p-4 rounded-lg border-2 transition-all ${
+              isDischarged ? 'opacity-75' : 'hover:shadow-lg'
+            }`}
             style={{
               backgroundColor: isDarkMode
                 ? COLORS.surface.dark
                 : COLORS.surface.light,
-              borderColor: isDarkMode
-                ? COLORS.border.dark
-                : COLORS.border.light,
+              borderColor: isDischarged
+                ? COLORS.success
+                : isDarkMode
+                  ? COLORS.border.dark
+                  : COLORS.border.light,
             }}
           >
+            {/* Discharge Banner - Only show for discharged patients */}
+            {isDischarged && (
+              <div
+                className="mb-3 p-2.5 sm:p-3 rounded-lg border-l-4 flex items-center gap-2"
+                style={{
+                  backgroundColor: COLORS.success + '15',
+                  borderLeftColor: COLORS.success,
+                }}
+              >
+                <CheckCircle
+                  className="w-5 h-5 flex-shrink-0"
+                  style={{ color: COLORS.success }}
+                />
+                <div className="flex-1 min-w-0">
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: COLORS.success }}
+                  >
+                    ✓ Patient Discharged
+                  </p>
+                  <p
+                    className="text-xs"
+                    style={{ color: COLORS.text.secondary }}
+                  >
+                    Discharged on {formatDateTime(admission.discharge_date)}
+                  </p>
+                  {admission.discharge_type && (
+                    <p
+                      className="text-xs capitalize mt-0.5"
+                      style={{ color: COLORS.text.secondary }}
+                    >
+                      Type: {admission.discharge_type}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Admission Header - Responsive */}
             <div className="flex items-start justify-between mb-3 gap-2">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                 <div
                   className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{ backgroundColor: COLORS.primary + '20' }}
+                  style={{
+                    backgroundColor: isDischarged
+                      ? COLORS.success + '20'
+                      : COLORS.primary + '20',
+                  }}
                 >
-                  <User
-                    className="w-5 h-5 sm:w-6 sm:h-6"
-                    style={{ color: COLORS.primary }}
-                  />
+                  {isDischarged ? (
+                    <LogOut
+                      className="w-5 h-5 sm:w-6 sm:h-6"
+                      style={{ color: COLORS.success }}
+                    />
+                  ) : (
+                    <User
+                      className="w-5 h-5 sm:w-6 sm:h-6"
+                      style={{ color: COLORS.primary }}
+                    />
+                  )}
                 </div>
                 <div className="min-w-0 flex-1">
                   <h3
@@ -159,6 +230,20 @@ const AdmissionCard = ({
               </div>
 
               <div className="flex flex-col gap-1 items-end flex-shrink-0">
+                {/* Status Badge - Prominent */}
+                <div
+                  className="px-2.5 py-1 rounded-full text-xs font-bold capitalize whitespace-nowrap"
+                  style={{
+                    backgroundColor: isDischarged
+                      ? COLORS.success + '20'
+                      : COLORS.info + '20',
+                    color: isDischarged ? COLORS.success : COLORS.info,
+                    border: `1px solid ${isDischarged ? COLORS.success : COLORS.info}`,
+                  }}
+                >
+                  {isDischarged ? '✓ Discharged' : 'Active'}
+                </div>
+
                 <div
                   className="px-2 py-1 rounded-full text-xs font-medium capitalize whitespace-nowrap"
                   style={{
@@ -235,8 +320,42 @@ const AdmissionCard = ({
               </div>
             </div>
 
-            {/* Bed Info */}
-            {currentBed ? (
+            {/* Bed Info or Discharge Info */}
+            {isDischarged ? (
+              <div
+                className="p-2.5 sm:p-3 rounded-lg mb-3"
+                style={{
+                  backgroundColor: COLORS.success + '10',
+                  border: `1px solid ${COLORS.success}30`,
+                }}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <LogOut
+                    className="w-4 h-4"
+                    style={{ color: COLORS.success }}
+                  />
+                  <span
+                    className="text-sm font-medium"
+                    style={{ color: COLORS.success }}
+                  >
+                    Discharged Successfully
+                  </span>
+                </div>
+                <div
+                  className="text-xs"
+                  style={{ color: COLORS.text.secondary }}
+                >
+                  <p>
+                    Total Stay: {los} day{los !== 1 ? 's' : ''}
+                  </p>
+                  {admission.discharge_summary && (
+                    <p className="mt-1 line-clamp-2">
+                      {admission.discharge_summary}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ) : currentBed ? (
               <div
                 className="p-2.5 sm:p-3 rounded-lg mb-3"
                 style={{
@@ -286,13 +405,13 @@ const AdmissionCard = ({
               <div
                 className="p-2.5 sm:p-3 rounded-lg mb-3"
                 style={{
-                  backgroundColor: COLORS.danger + '10',
-                  border: `1px solid ${COLORS.danger}20`,
+                  backgroundColor: COLORS.warning + '10',
+                  border: `1px solid ${COLORS.warning}20`,
                 }}
               >
                 <p
                   className="text-xs sm:text-sm font-medium"
-                  style={{ color: COLORS.danger }}
+                  style={{ color: COLORS.warning }}
                 >
                   ⚠️ No bed assigned
                 </p>
@@ -327,7 +446,9 @@ const AdmissionCard = ({
                   style={{ color: COLORS.text.secondary }}
                 />
                 <div className="min-w-0">
-                  <p style={{ color: COLORS.text.secondary }}>LOS</p>
+                  <p style={{ color: COLORS.text.secondary }}>
+                    {isDischarged ? 'Total Stay' : 'LOS'}
+                  </p>
                   <p
                     className="font-medium"
                     style={{
@@ -377,47 +498,54 @@ const AdmissionCard = ({
 
             {/* Actions - Responsive Layout */}
             <div className="flex flex-col sm:flex-row gap-2">
-              {/* Primary Action - Always full width on mobile, flexible on desktop */}
+              {/* Primary Action - Always visible */}
               <Button
-                variant="primary"
+                variant={isDischarged ? 'outline' : 'primary'}
                 size="md"
                 onClick={() => onViewDetails(admission)}
                 className="w-full sm:flex-1"
-                icon={ArrowRight}
+                icon={Eye}
                 iconPosition="right"
               >
-                <span className="hidden sm:inline">View Details</span>
-                <span className="sm:hidden">View Details</span>
+                <span className="hidden sm:inline">
+                  {isDischarged ? 'View Record' : 'View Details'}
+                </span>
+                <span className="sm:hidden">
+                  {isDischarged ? 'Record' : 'Details'}
+                </span>
               </Button>
 
-              {/* Secondary Actions - Stacked on mobile, row on desktop */}
-              <div className="flex gap-2">
-                {['nurse', 'admin'].includes(userRole) && currentBed && (
-                  <Button
-                    variant={isDarkMode ? 'ghost' : 'outline'}
-                    size="md"
-                    onClick={() => onTransferBed(admission)}
-                    className="flex-1 sm:flex-none"
-                    icon={MapPin}
-                  >
-                    <span className="hidden sm:inline">Transfer</span>
-                    <span className="sm:hidden">Transfer</span>
-                  </Button>
-                )}
+              {/* Secondary Actions - Only for active admissions */}
+              {isActive && (
+                <div className="flex gap-2">
+                  {['nurse', 'admin'].includes(userRole) && currentBed && (
+                    <Button
+                      variant={isDarkMode ? 'ghost' : 'outline'}
+                      size="md"
+                      onClick={() => onTransferBed(admission)}
+                      className="flex-1 sm:flex-none"
+                      icon={MapPin}
+                    >
+                      <span className="hidden sm:inline">Transfer</span>
+                      <span className="sm:hidden">Transfer</span>
+                    </Button>
+                  )}
 
-                {admission.admission_status === 'active' && (
-                  <Button
-                    variant={isDarkMode ? 'ghost' : 'outline'}
-                    size="md"
-                    icon={FileText}
-                    onClick={() => onAddNote(admission)}
-                    className="flex-1 sm:flex-none"
-                  >
-                    <span className="hidden sm:inline">Add Note</span>
-                    <span className="sm:hidden">Note</span>
-                  </Button>
-                )}
-              </div>
+                  {['nurse', 'admin', 'doctor'].includes(userRole) &&
+                    currentBed && (
+                      <Button
+                        variant={isDarkMode ? 'ghost' : 'outline'}
+                        size="md"
+                        icon={FileText}
+                        onClick={() => onAddNote(admission)}
+                        className="flex-1 sm:flex-none"
+                      >
+                        <span className="hidden sm:inline">Add Note</span>
+                        <span className="sm:hidden">Note</span>
+                      </Button>
+                    )}
+                </div>
+              )}
             </div>
           </div>
         );

@@ -13,6 +13,7 @@ import PatientProvider from '../contexts/PatientContext';
 import ReceptionistDashboard from '../pages/Receptionist/features/ReceptionistDashboard';
 import ReceptionistAppointment from '../pages/Receptionist/features/ReceptionistAppointment';
 import ReceptionistPatient from '../pages/Receptionist/features/ReceptionistPatient';
+import ReceptionistBedManagement from '../pages/Receptionist/features/ReceptionistBedManagement';
 
 const ReceptionistRoute = (
   <Route
@@ -38,6 +39,7 @@ const ReceptionistRoute = (
     <Route path="dashboard" element={<ReceptionistDashboard />} />
     <Route path="appointments" element={<ReceptionistAppointment />} />
     <Route path="patient-records" element={<ReceptionistPatient />} />
+    <Route path="beds" element={<ReceptionistBedManagement />} />
   </Route>
 );
 

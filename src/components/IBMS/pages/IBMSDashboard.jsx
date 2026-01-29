@@ -29,7 +29,7 @@ const IBMSDashboard = () => {
       label: 'Active Admissions',
       shortLabel: 'Admissions',
       icon: BedDouble,
-      roles: ['receptionist', 'nurse', 'admin'],
+      roles: ['nurse', 'admin'],
     },
     {
       id: 'maintenance',

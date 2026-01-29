@@ -33,6 +33,11 @@ export const sidebarConfig = {
       icon: CalendarIcon,
     },
     {
+      name: 'Bed Management',
+      path: '/receptionist/beds',
+      icon: BedIcon,
+    },
+    {
       name: 'Billing / Payments',
       path: '/receptionist/billing',
       icon: CreditCardIcon,

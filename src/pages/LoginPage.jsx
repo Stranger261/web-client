@@ -1,20 +1,23 @@
+// pages/LoginPage.jsx
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../contexts/AuthContext';
 import { Input } from '../components/ui/input';
 import { ArrowLeft, Lock } from 'lucide-react';
 import { DynamicLink } from '../components/ui/link';
 import { Button } from '../components/ui/button';
+import LoadingOverlay from '../components/shared/LoadingOverlay';
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, authState } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
+    rememberMe: false,
   });
   const [errors, setErrors] = useState({});
 
@@ -43,22 +46,39 @@ const LoginPage = () => {
 
     setIsSubmitting(true);
     try {
-      await new Promise(res => setTimeout(res, 1000));
       const response = await login(formData);
 
-      toast.success(response?.message || 'Login successfully.');
+      // Check if OTP is required for 2FA
+      if (response?.data?.requiresOtp) {
+        toast.success(response.data.message || '2FA code sent to your email.');
+        navigate('/verify-otp', {
+          state: {
+            email: formData.email,
+            deviceFingerprint: response.data.deviceFingerprint,
+            rememberMe: formData.rememberMe,
+            mfaMethod: response.data.mfaMethod,
+          },
+          replace: true,
+        });
+        return;
+      }
+
+      toast.success(response?.message || 'Login successful.');
+
+      // Navigate based on registration status
       if (response.data.user.registration_status === 'completed') {
         const targetPath = `/${response.data.user.role}/${
           response.data.user.role === 'patient' ? 'my-' : ''
         }dashboard`;
-        navigate(targetPath);
+        navigate(targetPath, { replace: true });
       } else {
-        navigate('/patient/complete-registration');
+        navigate('/patient/complete-registration', { replace: true });
       }
     } catch (error) {
-      await new Promise(res => setTimeout(res, 1000));
       const errorMessage =
-        error?.response?.message || error?.message || 'Please try again later.';
+        error?.response?.data?.message ||
+        error?.message ||
+        'Login failed. Please try again.';
       toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -72,6 +92,10 @@ const LoginPage = () => {
     }
   };
 
+  if (authState === 'INITIALIZING') {
+    return <LoadingOverlay />;
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -79,14 +103,14 @@ const LoginPage = () => {
           <img
             className="mx-auto h-12 w-auto"
             src="/images/logo.png"
-            alt="St. Jude's Medical Logo"
+            alt="Hospital Logo"
           />
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Complete Your Registration
+          Sign in to your account
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Sign in to continue your registration process
+          Access your healthcare portal
         </p>
       </div>
 
@@ -122,14 +146,15 @@ const LoginPage = () => {
                 id="remember-me"
                 name="remember-me"
                 type="checkbox"
+                checked={formData.rememberMe}
+                onChange={e => changeHandler('rememberMe', e.target.checked)}
                 className="h-4 w-4 text-[#172554] focus:ring-[#172554] border-gray-300 rounded"
               />
-
               <label
                 htmlFor="remember-me"
                 className="ml-2 block text-sm text-gray-900"
               >
-                Remember me
+                Remember me for 30 days
               </label>
             </div>
           </div>
@@ -157,7 +182,7 @@ const LoginPage = () => {
 
         <div className="text-center space-y-4">
           <p className="text-sm text-gray-600">
-            Dont have an account?{' '}
+            Don't have an account?{' '}
             <DynamicLink
               to="/register"
               variant="text"

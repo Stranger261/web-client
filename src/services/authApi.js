@@ -11,17 +11,127 @@ class authService {
         'x-internal-api-key': INTERNAL_API_KEY,
       },
     });
+
+    this.authApi.interceptors.response.use(
+      response => response,
+      error => {
+        if (error.response?.data?.code === 'INACTIVITY_TIMEOUT') {
+          window.location.href = '/login';
+        }
+        return Promise.reject(error);
+      },
+    );
   }
 
-  async login(email, password) {
+  async login(email, password, rememberMe) {
     try {
       const res = await this.authApi.post('/auth/login', {
         email,
         password,
+        rememberMe,
       });
       return res.data;
     } catch (error) {
-      console.log(error);
+      console.error(error);
+      throw error;
+    }
+  }
+
+  async autoLogin() {
+    try {
+      const res = await this.authApi.post('/auth/auto-login');
+
+      return res.data;
+    } catch (error) {
+      console.error('login failed: ', error);
+      throw error;
+    }
+  }
+
+  async verifyAndLogin({
+    email,
+    otpCode,
+    trustDevice,
+    rememberMe,
+    deviceFingerprint,
+  }) {
+    try {
+      const res = await this.authApi.post('/auth/verify-otp', {
+        email,
+        otpCode,
+        trustDevice,
+        rememberMe,
+        deviceFingerprint,
+      });
+      return res.data;
+    } catch (error) {
+      console.error('OTP verification failed:', error);
+      throw error;
+    }
+  }
+
+  async resendOtpLogin(email, ipAddress) {
+    try {
+      const res = await this.authApi.post('/auth/resendOTP', {
+        email,
+        ipAddress,
+      });
+
+      return res.data;
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  }
+  // 2FA Management
+  async enable2FA(method = 'email') {
+    try {
+      const res = await this.authApi.post('/auth/2fa/enable', { method });
+      return res.data;
+    } catch (error) {
+      console.error('Enable 2FA failed:', error);
+      throw error;
+    }
+  }
+
+  async disable2FA() {
+    try {
+      const res = await this.authApi.post('/auth/2fa/disable');
+      return res.data;
+    } catch (error) {
+      console.error('Disable 2FA failed:', error);
+      throw error;
+    }
+  }
+
+  async get2FAStatus() {
+    try {
+      const res = await this.authApi.get('/auth/2fa/status');
+      return res.data;
+    } catch (error) {
+      console.error('Get 2FA status failed:', error);
+      throw error;
+    }
+  }
+
+  async getTrustedDevices() {
+    try {
+      const res = await this.authApi.get('/auth/2fa/trusted-devices');
+      return res.data;
+    } catch (error) {
+      console.error('Get trusted devices failed:', error);
+      throw error;
+    }
+  }
+
+  async revokeTrustedDevice(deviceId) {
+    try {
+      const res = await this.authApi.delete(
+        `/auth/2fa/trusted-devices/${deviceId}`,
+      );
+      return res.data;
+    } catch (error) {
+      console.error('Revoke trusted device failed:', error);
       throw error;
     }
   }
@@ -30,7 +140,7 @@ class authService {
     try {
       const res = await this.authApi.post(
         '/registration/initial-registration',
-        { email, phone, password }
+        { email, phone, password },
       );
       return res.data;
     } catch (error) {
@@ -40,8 +150,13 @@ class authService {
   }
 
   async logout() {
-    const response = await this.authApi.post('/auth/logout');
-    return response;
+    try {
+      const res = await this.authApi.post('/auth/logout');
+      return res.data;
+    } catch (error) {
+      console.error('Logout failed:', error);
+      throw error;
+    }
   }
 
   async getCurrentUser() {
@@ -50,7 +165,7 @@ class authService {
 
       return currentUser.data;
     } catch (error) {
-      console.log(error);
+      console.error(error);
       throw error;
     }
   }
@@ -99,7 +214,7 @@ class authService {
       const res = await this.authApi.post(
         '/registration/complete-profile',
         formDataToSend,
-        { headers: { 'Content-Type': 'multipart/form-data' } }
+        { headers: { 'Content-Type': 'multipart/form-data' } },
       );
       console.log(res);
 
@@ -114,7 +229,7 @@ class authService {
     try {
       const res = await this.authApi.post(
         '/registration/complete-face-verification',
-        faceData
+        faceData,
       );
       console.log(res);
 
