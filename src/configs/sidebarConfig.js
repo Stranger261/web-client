@@ -51,12 +51,9 @@ export const sidebarConfig = {
     // { name: 'Patient Queue', path: '/doctor/queue', icon: UsersIcon }, // NEW
     { name: 'Appointments', path: '/doctor/appointments', icon: CalendarIcon },
     { name: 'My Patients', path: '/doctor/my-patients', icon: UsersIcon },
-    // {
-    //   name: 'Medical Records',
-    //   path: '/doctor/medical-records',
-    //   icon: FileTextIcon,
-    // },
+
     { name: 'Video conference', path: '/doctor/video-call', icon: Video },
+    { name: 'Admitted Patients', path: '/doctor/admission', icon: BedIcon },
     // { name: 'Reports', path: '/doctor/reports', icon: BarChartIcon },
     // { name: 'Settings', path: '/doctor/settings', icon: SettingsIcon },
   ],
@@ -69,12 +66,7 @@ export const sidebarConfig = {
       path: '/nurse/patient-records',
       icon: UsersIcon,
     },
-    { name: 'Bed Management', path: '/nurse/beds', icon: BedIcon }, // NEW
-    {
-      name: 'Medical Records',
-      path: '/nurse/medical-records',
-      icon: FileTextIcon,
-    },
+    { name: 'Bed Management', path: '/nurse/beds', icon: BedIcon },
     { name: 'Assistance', path: '/nurse/assistance', icon: StethoscopeIcon },
     { name: 'Reports', path: '/nurse/reports', icon: BarChartIcon },
     // { name: 'Settings', path: '/nurse/settings', icon: SettingsIcon },
@@ -124,6 +116,6 @@ export const sidebarConfig = {
     //   path: '/patient/billing-history',
     //   icon: CreditCardIcon,
     // }, // NEW
-    // { name: 'Settings', path: '/patient/my-settings', icon: SettingsIcon },
+    { name: 'Settings', path: '/patient/my-settings', icon: SettingsIcon },
   ],
 };

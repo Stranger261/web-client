@@ -52,6 +52,7 @@ const MobileHeader = ({
             iconOnly
             onClick={toggleNotifications}
             className="relative"
+            data-notification-button // Add this attribute
           />
           {unreadCount > 0 && (
             <span

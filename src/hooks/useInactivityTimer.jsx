@@ -36,9 +36,7 @@ export const useInactivityTimer = (logout, isAuthenticated) => {
     cleanup(); // Clean up timers immediately
 
     try {
-      console.log('🔄 Inactivity logout starting...');
       await logout();
-      console.log('✅ Inactivity logout complete');
 
       toast.success('You have been logged out due to inactivity.');
       navigate('/login', { replace: true });
@@ -146,7 +144,6 @@ export const useInactivityTimer = (logout, isAuthenticated) => {
     resetTimer();
 
     return () => {
-      console.log('⏰ Cleaning up inactivity timer on unmount/change');
       events.forEach(event => {
         document.removeEventListener(event, resetTimer, options);
       });

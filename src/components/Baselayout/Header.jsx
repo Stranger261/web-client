@@ -24,6 +24,8 @@ const Header = ({
   hasMore,
   formatNotificationTime,
   loadMore,
+  setIsNotifOpen,
+  notificationRef, // Add this prop
 }) => {
   const notificationScrollRef = useRef(null);
 
@@ -59,6 +61,7 @@ const Header = ({
             iconOnly
             onClick={toggleNotifications}
             className="relative"
+            data-notification-button // Add this attribute
           />
           {unreadCount > 0 && (
             <span
@@ -72,13 +75,15 @@ const Header = ({
           {/* Desktop Notification Dropdown */}
           {isNotifOpen && (
             <div
-              className="absolute right-0 mt-2 w-96 rounded-lg shadow-lg overflow-hidden"
+              ref={notificationRef} // Attach the ref here
+              className="absolute right-0 mt-2 w-96 rounded-lg shadow-lg overflow-hidden z-50"
               style={{
                 backgroundColor: darkMode
                   ? COLORS.surface.dark
                   : COLORS.surface.light,
                 border: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}`,
               }}
+              data-notification-panel // Add this attribute
             >
               {/* Header */}
               <div

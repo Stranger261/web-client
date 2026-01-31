@@ -161,3 +161,24 @@ html {
 .animate-pulse-subtle {
   animation: pulse-subtle 3s ease-in-out infinite;
 }
+
+/* export related */
+.export-menu-item {
+  transition: all 0.2s ease;
+}
+
+.export-menu-item:hover {
+  transform: translateX(2px);
+}
+
+.pdf-bg {
+  background-color: #fee2e2;
+}
+
+.csv-bg {
+  background-color: #dcfce7;
+}
+
+.json-bg {
+  background-color: #dbeafe;
+}

@@ -42,7 +42,7 @@ const DoctorAppointment = () => {
   const [updatedAppointments, setUpdatedAppointments] = useState([]);
 
   const activeFiltersCount = Object.values(filters).filter(
-    v => v !== ''
+    v => v !== '',
   ).length;
 
   const appointmentFilterConfig = [
@@ -212,6 +212,7 @@ const DoctorAppointment = () => {
         {showFilters && (
           <FilterPanel
             filters={filters}
+            pageOnChangeFilter={setCurrentPage}
             onFilterChange={setFilters}
             showFilters={showFilters}
             onToggleFilters={() => setShowFilters(!showFilters)}

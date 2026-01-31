@@ -1,8 +1,7 @@
-import React from 'react';
-import IBMSDashboard from '../../../components/IBMS/pages/IBMSDashboard';
+import DoctorAdmissionsList from '../../../components/IBMS/components/DoctorAdmissionsList';
 
 const DoctorBedManagement = () => {
-  return <IBMSDashboard />;
+  return <DoctorAdmissionsList />;
 };
 
 export default DoctorBedManagement;

@@ -14,6 +14,7 @@ import DoctorPatients from '../pages/Doctor/features/DoctorPatients';
 import PatientProvider from '../contexts/PatientContext';
 import DoctorVideoCall from '../pages/Doctor/features/DoctorVideoCall';
 import VideoCallProvider from '../contexts/VideoCallContext';
+import DoctorBedManagement from '../pages/Doctor/features/DoctorBedManagement';
 
 const DoctorRoute = (
   <Route
@@ -47,6 +48,7 @@ const DoctorRoute = (
         </VideoCallProvider>
       }
     />
+    <Route path="admission" element={<DoctorBedManagement />} />
   </Route>
 );
 

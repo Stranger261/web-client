@@ -391,12 +391,6 @@ const PatientDashboard = () => {
       method: () => navigate('/patient/video-call', { replace: true }),
     },
     {
-      icon: Pill,
-      label: 'Refill Prescription',
-      color: 'green',
-      method: () => navigate('/patient/prescriptions'),
-    },
-    {
       icon: FileText,
       label: 'View Records',
       color: 'orange',
@@ -407,12 +401,6 @@ const PatientDashboard = () => {
       label: 'Lab Results',
       color: 'red',
       method: () => navigate('/patient/lab-results'),
-    },
-    {
-      icon: Download,
-      label: 'Health Summary',
-      color: 'blue',
-      method: () => navigate('/patient/health-summary'),
     },
   ];
 

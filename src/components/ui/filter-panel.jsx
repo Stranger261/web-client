@@ -11,6 +11,7 @@ export const FilterPanel = ({
   onToggleFilters,
   searchPlaceholder = 'Search...',
   title = 'Filter Items',
+  pageOnChangeFilter,
 }) => {
   const activeFiltersCount = Object.values(filters).filter(
     v => v !== '',
@@ -18,6 +19,8 @@ export const FilterPanel = ({
 
   const handleFilterChange = e => {
     const { name, value } = e.target;
+    !!pageOnChangeFilter && pageOnChangeFilter(1);
+    console.log(name, value);
     onFilterChange({ ...filters, [name]: value });
   };
 

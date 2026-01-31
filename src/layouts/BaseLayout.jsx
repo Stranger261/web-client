@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 import { Outlet, useNavigate } from 'react-router-dom';
 import {
@@ -49,10 +49,35 @@ const BaseLayout = () => {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Add ref for handling click outside notification panel
+  const notificationRef = useRef(null);
+
   // Load notifications only when opening for the first time
   useEffect(() => {
     getUserNotifications();
   }, []);
+
+  // Handle click outside notification panel for BOTH mobile and desktop
+  useEffect(() => {
+    const handleClickOutside = event => {
+      // Check if we should close notifications
+      if (
+        isNotifOpen &&
+        notificationRef.current &&
+        !notificationRef.current.contains(event.target) &&
+        !event.target.closest('[data-notification-button]') && // Don't close if clicking the notification button itself
+        !event.target.closest('[data-notification-panel]') // Don't close if clicking inside notification panel
+      ) {
+        setIsNotifOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isNotifOpen]);
 
   const hasMore = notifPagination.currentPage < notifPagination.totalPages;
 
@@ -317,7 +342,7 @@ const BaseLayout = () => {
           isDesktopSidebarOpen ? 'lg:ml-64' : 'lg:ml-20'
         }`}
       >
-        {/* Desktop Header */}
+        {/* Desktop Header (contains desktop notification panel) */}
         <Header
           currentUser={currentUser}
           darkMode={darkMode}
@@ -337,6 +362,8 @@ const BaseLayout = () => {
           hasMore={hasMore}
           formatNotificationTime={formatNotificationTime}
           loadMore={loadMore}
+          setIsNotifOpen={setIsNotifOpen}
+          notificationRef={notificationRef} // Pass the ref to Header
         />
 
         {/* Mobile Header */}
@@ -348,7 +375,7 @@ const BaseLayout = () => {
           setIsMobileSidebarOpen={setIsMobileSidebarOpen}
         />
 
-        {/* Mobile Notification Overlay */}
+        {/* Mobile Notification Overlay ONLY */}
         {isNotifOpen && (
           <div className="fixed inset-0 z-50 lg:hidden">
             <div
@@ -356,12 +383,14 @@ const BaseLayout = () => {
               onClick={() => setIsNotifOpen(false)}
             />
             <div
+              ref={notificationRef}
               className="absolute inset-0 flex flex-col"
               style={{
                 backgroundColor: darkMode
                   ? COLORS.surface.dark
                   : COLORS.surface.light,
               }}
+              data-notification-panel
             >
               {/* Mobile Notification Header */}
               <div

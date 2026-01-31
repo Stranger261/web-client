@@ -1,5 +1,5 @@
 // pages/IBMS/IBMSDashboard.jsx
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Building2, BedDouble, Activity, AlertCircle } from 'lucide-react';
 import { COLORS } from '../../../configs/CONST';
 import FloorView from '../components/FloorView';
@@ -29,7 +29,7 @@ const IBMSDashboard = () => {
       label: 'Active Admissions',
       shortLabel: 'Admissions',
       icon: BedDouble,
-      roles: ['nurse', 'admin'],
+      roles: ['nurse', 'doctor', 'admin'],
     },
     {
       id: 'maintenance',
@@ -46,6 +46,13 @@ const IBMSDashboard = () => {
       roles: ['admin'],
     },
   ].filter(tab => tab.roles.includes(userRole));
+
+  useEffect(() => {
+    if (currentUser?.role === 'doctor');
+    {
+      setActiveView('admissions');
+    }
+  }, [currentUser?.role]);
 
   return (
     <div

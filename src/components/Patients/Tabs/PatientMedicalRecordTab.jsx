@@ -1,4 +1,3 @@
-// File: /src/components/Patients/Tabs/PatientMedicalRecordTab.jsx
 import { useCallback, useEffect, useState } from 'react';
 import {
   FileText,
