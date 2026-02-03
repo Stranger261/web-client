@@ -611,7 +611,7 @@ const AppointmentDetailModal = ({
                   {currentUser?.role === 'receptionist' &&
                     appointment.status !== 'cancelled' && (
                       <>
-                        <button
+                        {/* <button
                           className="flex-1 px-4 py-2.5 font-medium rounded-lg transition-colors"
                           style={{
                             backgroundColor: COLORS.info,
@@ -626,7 +626,7 @@ const AppointmentDetailModal = ({
                           }}
                         >
                           Edit Appointment
-                        </button>
+                        </button> */}
                         {appointment.status === 'scheduled' && isToday && (
                           <button
                             className="px-4 py-2.5 font-medium rounded-lg transition-colors"
