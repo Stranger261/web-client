@@ -42,24 +42,25 @@ const LoginPage = () => {
     if (!validateForm()) {
       return;
     }
+    console.log('before submitting');
 
     setIsSubmitting(true);
     try {
       const response = await login(formData);
       console.log(response);
       // Check if OTP is required for 2FA
-      if (response?.data?.requiresOtp) {
-        toast.success(response.data.message || '2FA code sent to your email.');
-        navigate('/verify-otp', {
-          state: {
-            email: formData.email,
-            deviceFingerprint: response.data.deviceFingerprint,
-            mfaMethod: response.data.mfaMethod,
-          },
-          replace: true,
-        });
-        return;
-      }
+      // if (response?.data?.requiresOtp) {
+      //   toast.success(response.data.message || '2FA code sent to your email.');
+      //   navigate('/verify-otp', {
+      //     state: {
+      //       email: formData.email,
+      //       deviceFingerprint: response.data.deviceFingerprint,
+      //       mfaMethod: response.data.mfaMethod,
+      //     },
+      //     replace: true,
+      //   });
+      //   return;
+      // }
 
       toast.success(response?.message || 'Login successful.');
 
