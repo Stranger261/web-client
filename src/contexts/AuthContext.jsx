@@ -257,7 +257,7 @@ export const AuthProvider = ({ children }) => {
         await fetchCurrentUser();
       } catch (jwtError) {
         try {
-          // await autoLogin();
+          await autoLogin();
           await fetchCurrentUser();
         } catch (autoLoginError) {
           console.error('Auto-login also failed:', autoLoginError.message);
