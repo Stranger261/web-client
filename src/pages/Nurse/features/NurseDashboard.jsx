@@ -316,34 +316,10 @@ const NurseDashboard = () => {
 
   const quickActions = [
     {
-      icon: HeartPulse,
-      label: 'Record Vitals',
-      color: 'green',
-      functions: () => navigate('/nurse/vitals/new'),
-    },
-    {
-      icon: FileText,
-      label: 'Progress Notes',
-      color: 'blue',
-      functions: () => setShowProgressNote(true),
-    },
-    {
       icon: Users,
       label: 'Patient List',
       color: 'purple',
-      functions: () => navigate('/nurse/patients'),
-    },
-    {
-      icon: FileText,
-      label: 'Lab Requests',
-      color: 'orange',
-      functions: () => navigate('/nurse/lab-requests'),
-    },
-    {
-      icon: Thermometer,
-      label: 'Temperature Log',
-      color: 'blue',
-      functions: () => navigate('/nurse/temperature-log'),
+      functions: () => navigate('/nurse/patient-records'),
     },
   ];
 
@@ -934,99 +910,6 @@ const NurseDashboard = () => {
               ))}
             </div>
           </div>
-
-          {/* Performance Summary */}
-          {dashboardStats && (
-            <div
-              className={`${
-                darkMode
-                  ? 'bg-gray-800 border-gray-700'
-                  : 'bg-white border-gray-200'
-              } rounded-xl border shadow-sm p-6`}
-            >
-              <h3
-                className={`text-lg font-semibold ${
-                  darkMode ? 'text-white' : 'text-gray-900'
-                } mb-4`}
-              >
-                Performance Summary
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <span
-                      className={`text-sm ${
-                        darkMode ? 'text-gray-400' : 'text-gray-600'
-                      }`}
-                    >
-                      Daily Completion Rate
-                    </span>
-                    <div className="flex items-center gap-1">
-                      {getTrendIcon(
-                        dashboardStats.performance?.dailyTrendPercentage || 0,
-                      )}
-                      <span
-                        className={getTrendColor(
-                          dashboardStats.performance?.dailyTrendPercentage || 0,
-                        )}
-                      >
-                        {dashboardStats.performance?.dailyTrendPercentage > 0
-                          ? '+'
-                          : ''}
-                        {dashboardStats.performance?.dailyTrendPercentage || 0}%
-                      </span>
-                    </div>
-                  </div>
-                  <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-teal-500 rounded-full"
-                      style={{
-                        width: `${
-                          dashboardStats.performance?.completionRate || 0
-                        }%`,
-                      }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    <span>0%</span>
-                    <span>
-                      {formatPercentage(
-                        dashboardStats.performance?.completionRate || 0,
-                      )}
-                    </span>
-                    <span>100%</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <div>
-                    <p
-                      className={`text-sm ${
-                        darkMode ? 'text-gray-400' : 'text-gray-600'
-                      }`}
-                    >
-                      Avg. Recording Time
-                    </p>
-                    <p className="text-lg font-bold text-gray-900 dark:text-white">
-                      {dashboardStats.performance?.avgVitalsDuration || 0} min
-                    </p>
-                  </div>
-                  <div>
-                    <p
-                      className={`text-sm ${
-                        darkMode ? 'text-gray-400' : 'text-gray-600'
-                      }`}
-                    >
-                      Patients This Week
-                    </p>
-                    <p className="text-lg font-bold text-gray-900 dark:text-white">
-                      {dashboardStats.patientPanel?.seenThisWeek || 0}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

@@ -13,6 +13,9 @@ import {
   BedIcon,
   ClipboardListIcon,
   Video,
+  Ambulance,
+  VideoIcon,
+  AlertCircle,
 } from 'lucide-react';
 
 export const sidebarConfig = {
@@ -37,12 +40,7 @@ export const sidebarConfig = {
       path: '/receptionist/beds',
       icon: BedIcon,
     },
-    {
-      name: 'Billing / Payments',
-      path: '/receptionist/billing',
-      icon: CreditCardIcon,
-    },
-    { name: 'Reports', path: '/receptionist/reports', icon: FileTextIcon },
+    // { name: 'Reports', path: '/receptionist/reports', icon: FileTextIcon },
     // { name: 'Settings', path: '/receptionist/settings', icon: SettingsIcon },
   ],
 
@@ -67,28 +65,43 @@ export const sidebarConfig = {
       icon: UsersIcon,
     },
     { name: 'Bed Management', path: '/nurse/beds', icon: BedIcon },
-    { name: 'Assistance', path: '/nurse/assistance', icon: StethoscopeIcon },
-    { name: 'Reports', path: '/nurse/reports', icon: BarChartIcon },
+    { name: 'ER', path: '/nurse/er', icon: Ambulance },
+    // { name: 'Assistance', path: '/nurse/assistance', icon: StethoscopeIcon },
+    // { name: 'Reports', path: '/nurse/reports', icon: BarChartIcon },
     // { name: 'Settings', path: '/nurse/settings', icon: SettingsIcon },
   ],
 
   admin: [
-    { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboardIcon },
-    { name: 'User Management', path: '/admin/users', icon: UsersIcon },
-    { name: 'Appointments', path: '/admin/appointments', icon: CalendarIcon },
-    { name: 'Bed Management', path: '/admin/beds', icon: BedIcon }, // NEW
     {
-      name: 'Medical Records',
-      path: '/admin/medical-records',
-      icon: FileTextIcon,
+      name: 'Dashboard',
+      path: '/admin/dashboard',
+      icon: LayoutDashboardIcon,
     },
     {
-      name: 'Billing / Payments',
-      path: '/admin/billing',
-      icon: CreditCardIcon,
+      name: 'Appointments',
+      path: '/admin/appointments',
+      icon: CalendarIcon,
     },
-    { name: 'Reports', path: '/admin/reports', icon: BarChartIcon },
-    // { name: 'Settings', path: '/admin/settings', icon: SettingsIcon },
+    {
+      name: 'Patients',
+      path: '/admin/patients',
+      icon: UsersIcon,
+    },
+    {
+      name: 'Bed Management',
+      path: '/admin/bed-management',
+      icon: BedIcon,
+    },
+    // {
+    //   name: 'Telehealth',
+    //   path: '/admin/telehealth',
+    //   icon: VideoIcon, // make sure this icon exists/imported
+    // },
+    // {
+    //   name: 'ER & Triage',
+    //   path: '/admin/er&triage',
+    //   icon: AlertCircle, // or StethoscopeIcon if you prefer
+    // },
   ],
 
   patient: [

@@ -42,6 +42,9 @@ const DoctorConsultationModal = ({ isOpen, onClose, appointment }) => {
     addMedication,
     removeMedication,
     handleSubmit,
+    handleImagingOrderUpdate,
+    handleLabOrderUpdate,
+    handleOrderDetailsChange,
   } = useDoctorConsultation(appointment);
 
   const handleBedSelect = bed => {
@@ -177,7 +180,12 @@ const DoctorConsultationModal = ({ isOpen, onClose, appointment }) => {
             <OrdersTab
               data={diagnosisData}
               onChange={handleDiagnosisChange}
+              handleImagingOrderUpdate={handleImagingOrderUpdate}
+              handleLabOrderUpdate={handleLabOrderUpdate}
+              handleOrderDetailsChange={handleOrderDetailsChange}
+              isSavingOrder={isSavingOrder}
               isDarkMode={isDarkMode}
+              appointment={appointment}
             />
           )}
           {activeTab === 6 && (

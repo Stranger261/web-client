@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast';
 import consultationService from '../services/consultationApi';
 import diagnosisService from '../services/diagnosisApi';
 import precriptionService from '../services/prescriptionApi';
+import laboratoryService from '../services/laboratoryApi';
 
 export const useDoctorConsultation = appointment => {
   const [consultationData, setConsultationData] = useState(null);
@@ -27,6 +28,8 @@ export const useDoctorConsultation = appointment => {
     followup_instructions: '',
     lab_tests_ordered: '',
     imaging_ordered: '',
+    clinical_notes: '',
+    order_priority: 'routine',
     selected_bed_id: null,
     selected_bed_info: null,
   });
@@ -38,6 +41,7 @@ export const useDoctorConsultation = appointment => {
   const [errors, setErrors] = useState({});
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isSavingOrder, setIsSavingOrder] = useState(false); // Track order saving
 
   // Load consultation data on mount
   useEffect(() => {
@@ -79,6 +83,126 @@ export const useDoctorConsultation = appointment => {
     // Clear error for this field
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: null }));
+    }
+  };
+
+  // NEW FUNCTION: Handle imaging order updates
+  const handleImagingOrderUpdate = async (serviceIds, serviceType = 'ris') => {
+    try {
+      setIsSavingOrder(true);
+
+      // Update local state
+      setDiagnosisData(prev => ({
+        ...prev,
+        imaging_ordered: serviceIds.join(','),
+      }));
+
+      // Call backend API to save orders
+      if (appointment?.appointment_id && appointment?.patient_id) {
+        await laboratoryService.createOrder({
+          appointmentId: appointment.appointment_id,
+          patientId: appointment.patient_id,
+          serviceType: serviceType, // 'ris' or 'lis'
+          serviceIds: serviceIds,
+          priority: diagnosisData.order_priority,
+          clinicalNotes: diagnosisData.clinical_notes,
+        });
+      }
+
+      console.log(`Updated ${serviceType} orders:`, serviceIds);
+    } catch (error) {
+      console.error(`Failed to update ${serviceType} orders:`, error);
+      toast.error(`Failed to save ${serviceType} order changes`);
+      // Revert local state on error
+      setDiagnosisData(prev => ({
+        ...prev,
+        imaging_ordered: prev.imaging_ordered, // Keep previous value
+      }));
+    } finally {
+      setIsSavingOrder(false);
+    }
+  };
+
+  // NEW FUNCTION: Handle lab order updates
+  const handleLabOrderUpdate = async (serviceIds, serviceType = 'lis') => {
+    try {
+      setIsSavingOrder(true);
+
+      // Update local state
+      setDiagnosisData(prev => ({
+        ...prev,
+        lab_tests_ordered: serviceIds.join(','),
+      }));
+
+      // Call backend API to save orders
+      if (appointment?.appointment_id && appointment?.patient_id) {
+        await laboratoryService.createOrder({
+          appointmentId: appointment.appointment_id,
+          patientId: appointment.patient_id,
+          serviceType: serviceType, // 'ris' or 'lis'
+          serviceIds: serviceIds,
+          priority: diagnosisData.order_priority,
+          clinicalNotes: diagnosisData.clinical_notes,
+        });
+      }
+
+      console.log(`Updated ${serviceType} orders:`, serviceIds);
+    } catch (error) {
+      console.error(`Failed to update ${serviceType} orders:`, error);
+      toast.error(`Failed to save ${serviceType} order changes`);
+      // Revert local state on error
+      setDiagnosisData(prev => ({
+        ...prev,
+        lab_tests_ordered: prev.lab_tests_ordered, // Keep previous value
+      }));
+    } finally {
+      setIsSavingOrder(false);
+    }
+  };
+
+  // NEW FUNCTION: Handle priority and notes changes that affect orders
+  const handleOrderDetailsChange = async (field, value) => {
+    const prevValue = diagnosisData[field];
+
+    // Update local state
+    handleDiagnosisChange(field, value);
+
+    // If orders exist, update them in backend
+    const hasImagingOrders =
+      diagnosisData.imaging_ordered && diagnosisData.imaging_ordered.trim();
+    const hasLabOrders =
+      diagnosisData.lab_tests_ordered && diagnosisData.lab_tests_ordered.trim();
+
+    if (
+      (hasImagingOrders || hasLabOrders) &&
+      (field === 'order_priority' || field === 'clinical_notes')
+    ) {
+      try {
+        setIsSavingOrder(true);
+
+        const updateData = {
+          appointmentId: appointment.appointment_id,
+          patientId: appointment.patient_id,
+        };
+
+        if (field === 'order_priority') {
+          updateData.priority = value;
+        } else if (field === 'clinical_notes') {
+          updateData.clinicalNotes = value;
+        }
+
+        // Update existing orders with new priority/notes
+        await laboratoryService.updateOrders(updateData);
+
+        console.log(`Updated order ${field}:`, value);
+      } catch (error) {
+        console.error(`Failed to update order ${field}:`, error);
+        // Revert on error
+        handleDiagnosisChange(field, prevValue);
+        toast.error(`Failed to update ${field}`);
+      } finally {
+        setIsSavingOrder(false);
+      }
     }
   };
 
@@ -177,7 +301,7 @@ export const useDoctorConsultation = appointment => {
     setErrors({});
 
     try {
-      // 1. Create diagnosis
+      // 1. Create diagnosis (includes all order data now)
       const diagnosisResponse =
         await diagnosisService.createDiagnosis(diagnosisData);
 
@@ -220,8 +344,12 @@ export const useDoctorConsultation = appointment => {
     prescriptionData,
     errors,
     isSaving,
+    isSavingOrder, // Expose order saving state
     saveSuccess,
     handleDiagnosisChange,
+    handleImagingOrderUpdate, // Add this
+    handleLabOrderUpdate, // Add this
+    handleOrderDetailsChange, // Add this
     handlePrescriptionChange,
     addMedication,
     removeMedication,

@@ -18,7 +18,7 @@ class ScheduleService {
       const departments = await this.scheduleApi.get('/departments');
       return departments.data;
     } catch (error) {
-      console.log('Appointment Service error', error);
+      console.error('Appointment Service error', error);
       throw error;
     }
   }
@@ -28,7 +28,7 @@ class ScheduleService {
       const allDoctors = await this.scheduleApi.get('/doctors');
       return allDoctors.data;
     } catch (error) {
-      console.log('All doctors error: ', error);
+      console.error('All doctors error: ', error);
       throw error;
     }
   }
@@ -38,12 +38,12 @@ class ScheduleService {
       const params = patientUuid ? { patientUuid } : {};
       const doctorsByDept = await this.scheduleApi.get(
         `/departments/${departmentId}/doctors`,
-        { params }
+        { params },
       );
 
       return doctorsByDept.data;
     } catch (error) {
-      console.log('get doctor dept error: ', error);
+      console.error('get doctor dept error: ', error);
       throw error;
     }
   }
@@ -52,13 +52,13 @@ class ScheduleService {
     try {
       const doctorsAvailability = await this.scheduleApi.get(
         `/doctors/${doctorUuid}/availability`,
-        { params: { startDate, endDate } }
+        { params: { startDate, endDate } },
       );
       console.log(doctorsAvailability.data);
 
       return doctorsAvailability.data;
     } catch (error) {
-      console.log('doctors availability error: ', error);
+      console.error('doctors availability error: ', error);
       throw error;
     }
   }
@@ -69,12 +69,23 @@ class ScheduleService {
         `/departments/${departmentId}/availability`,
         {
           params: { startDate, endDate },
-        }
+        },
       );
 
       return combinedSchedule.data;
     } catch (error) {
-      console.log('Combined sched error: ', error);
+      console.error('Combined sched error: ', error);
+      throw error;
+    }
+  }
+
+  async createDoctorSchedule(scheduleData) {
+    try {
+      const res = await this.scheduleApi.post('/', { scheduleData });
+
+      return res.data;
+    } catch (error) {
+      console.error('Create doctor sched error: ', error);
       throw error;
     }
   }

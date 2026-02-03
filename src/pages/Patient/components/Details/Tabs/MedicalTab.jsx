@@ -4,27 +4,38 @@ import { EditableField } from '../EditableField';
 import { InsuranceInfo } from '../Sections/InsuranceInfo';
 import { AllergiesSection } from '../Sections/AllergySection';
 
-export const MedicalTab = ({ patientData, onFieldUpdate }) => {
+export const MedicalTab = ({
+  patientData,
+  onFieldUpdate,
+  isDarkMode = false,
+}) => {
   return (
     <div>
       <div
-        className="flex items-center gap-3 mb-6 pb-4 border-b"
-        style={{ borderColor: COLORS.border.light }}
+        className={`flex items-center gap-3 mb-6 pb-4 border-b transition-colors duration-200 ${
+          isDarkMode ? 'border-gray-700' : 'border-gray-200'
+        }`}
       >
         <div
-          className="p-3 rounded-xl"
-          style={{ backgroundColor: COLORS.primary + '20' }}
+          className={`p-3 rounded-xl ${
+            isDarkMode ? 'bg-blue-900/30' : 'bg-blue-50'
+          }`}
         >
           <Heart size={24} style={{ color: COLORS.primary }} />
         </div>
         <div>
           <h3
-            className="text-xl font-bold"
-            style={{ color: COLORS.text.primary }}
+            className={`text-xl font-bold ${
+              isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}
           >
             Medical & Insurance
           </h3>
-          <p className="text-sm" style={{ color: COLORS.text.secondary }}>
+          <p
+            className={`text-sm ${
+              isDarkMode ? 'text-gray-300' : 'text-gray-600'
+            }`}
+          >
             Health information and insurance details
           </p>
         </div>
@@ -37,6 +48,7 @@ export const MedicalTab = ({ patientData, onFieldUpdate }) => {
           onSave={onFieldUpdate('bloodType')}
           locked
           icon={Droplet}
+          isDarkMode={isDarkMode}
         />
         <EditableField
           label="Height (cm)"
@@ -44,6 +56,7 @@ export const MedicalTab = ({ patientData, onFieldUpdate }) => {
           onSave={onFieldUpdate('height')}
           type="number"
           icon={Activity}
+          isDarkMode={isDarkMode}
         />
         <EditableField
           label="Weight (kg)"
@@ -51,6 +64,7 @@ export const MedicalTab = ({ patientData, onFieldUpdate }) => {
           onSave={onFieldUpdate('weight')}
           type="number"
           icon={Activity}
+          isDarkMode={isDarkMode}
         />
         <div className="md:col-span-2">
           <EditableField
@@ -59,6 +73,7 @@ export const MedicalTab = ({ patientData, onFieldUpdate }) => {
             onSave={onFieldUpdate('allergies')}
             icon={AlertCircle}
             multiline
+            isDarkMode={isDarkMode}
           />
         </div>
         <div className="md:col-span-2">
@@ -68,6 +83,7 @@ export const MedicalTab = ({ patientData, onFieldUpdate }) => {
             onSave={onFieldUpdate('chronicConditions')}
             icon={Heart}
             multiline
+            isDarkMode={isDarkMode}
           />
         </div>
         <div className="md:col-span-2">
@@ -77,13 +93,18 @@ export const MedicalTab = ({ patientData, onFieldUpdate }) => {
             onSave={onFieldUpdate('currentMedications')}
             icon={Activity}
             multiline
+            isDarkMode={isDarkMode}
           />
         </div>
       </div>
 
-      <AllergiesSection />
+      <AllergiesSection isDarkMode={isDarkMode} />
 
-      <InsuranceInfo patientData={patientData} onFieldUpdate={onFieldUpdate} />
+      <InsuranceInfo
+        patientData={patientData}
+        onFieldUpdate={onFieldUpdate}
+        isDarkMode={isDarkMode}
+      />
     </div>
   );
 };

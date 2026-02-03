@@ -21,7 +21,7 @@ const Sidebar = ({ isOpen, toggleSidebar, onLogout, currentUser }) => {
     <aside
       className={`relative flex flex-col h-full bg-[#0b1b3b] text-white shadow-lg transition-all duration-300 ease-in-out
       ${isOpen ? 'w-64' : 'w-20'}
-      sm:${isOpen ? 'w-56' : 'w-16'}
+      sm:${isOpen ? 'w-56' : 'w-18'}
       xs:${isOpen ? 'w-48' : 'w-14'}
       `}
     >

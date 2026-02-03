@@ -43,7 +43,7 @@ const Calendar = ({ selectedDate, handleDateClick, takenSlotsByDate = {} }) => {
       const slotDateTime = parse(
         `${dateStr} ${timeStr}`,
         'yyyy-MM-dd HH:mm:ss',
-        new Date()
+        new Date(),
       );
 
       // Compare with current time
@@ -184,34 +184,35 @@ const Calendar = ({ selectedDate, handleDateClick, takenSlotsByDate = {} }) => {
             className={`relative text-center text-sm py-4 px-2 border-2 rounded-lg transition-all flex flex-col items-center justify-center cursor-pointer ${
               isDisabled
                 ? 'text-gray-300 bg-gray-50 cursor-not-allowed border-gray-200'
-                : !hasAvailableSlots
-                ? 'bg-red-50 text-red-500 cursor-not-allowed border-red-300'
-                : isSelected
-                ? 'bg-blue-600 text-white font-bold shadow-md border-blue-700'
-                : 'bg-white hover:bg-blue-50 border-gray-300 hover:border-blue-500 hover:shadow-sm'
+                : slotCount === 0
+                  ? 'bg-red-50 text-red-500 cursor-not-allowed border-red-300'
+                  : isSelected
+                    ? 'bg-blue-600 text-white font-bold shadow-md border-blue-700'
+                    : 'bg-white hover:bg-blue-50 border-gray-300 hover:border-blue-500 hover:shadow-sm'
             }`}
           >
             <div className="font-semibold text-lg">{format(day, 'd')}</div>
 
-            {!isDisabled && hasAvailableSlots && !isSelected && (
-              <div className="text-[10px] text-green-600 font-semibold mt-1">
-                {slotCount} slot{slotCount !== 1 ? 's' : ''}
+            {/* Show available slot count instead of "Full" */}
+            {!isDisabled && !isSelected && (
+              <div
+                className={`text-[10px] font-semibold mt-1 ${
+                  slotCount > 0 ? 'text-green-600' : 'text-red-600'
+                }`}
+              >
+                {slotCount > 0
+                  ? `${slotCount} slot${slotCount !== 1 ? 's' : ''}`
+                  : 'Full'}
               </div>
             )}
-
-            {!isDisabled && !hasAvailableSlots && !isOutsideMonth && (
-              <div className="text-[10px] text-red-600 font-semibold mt-1">
-                Full
-              </div>
-            )}
-          </div>
+          </div>,
         );
         day = addDays(day, 1);
       }
       rows.push(
         <div className="grid grid-cols-7 gap-2 mb-2" key={day.toString()}>
           {days}
-        </div>
+        </div>,
       );
     }
     return <div>{rows}</div>;

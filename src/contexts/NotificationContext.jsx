@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import notificationApi from '../services/notificationApi';
+import { useSocket } from './SocketContext';
 
 const NotificationContext = createContext();
 
@@ -12,14 +13,37 @@ const NotificationProvider = ({ children }) => {
     totalPages: 1,
   });
   const [unreadCount, setUnreadCount] = useState(0);
+  const { socket, isConnected } = useSocket();
 
-  useEffect(() => {}, []);
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    const handleAppointmentReminder = data => {
+      console.log('📨 Appointment reminder received:', data);
+
+      // If it's a 5-minute reminder for online consultation
+      if (data.type === '5_min_before' && data.hasJoinButton) {
+        // Show a toast or notification
+        console.log('Online consultation room available:', data.roomId);
+
+        // You could automatically add this to notifications or show a special UI
+      }
+
+      // Refresh notifications to show the new reminder
+      getUserNotifications();
+    };
+
+    socket.on('appointment_reminder', handleAppointmentReminder);
+
+    return () => {
+      socket.off('appointment_reminder', handleAppointmentReminder);
+    };
+  }, [socket, isConnected]);
 
   const getUserNotifications = async filters => {
     try {
-      const userNotification = await notificationApi.getUserNotification(
-        filters
-      );
+      const userNotification =
+        await notificationApi.getUserNotification(filters);
       await getUserNotificationCount();
       setNotifications(userNotification.data?.notification);
       setNotifPagination(userNotification.data?.pagination);
@@ -43,9 +67,8 @@ const NotificationProvider = ({ children }) => {
 
   const readNotification = async notifId => {
     try {
-      const latestNotification = await notificationApi.readNotification(
-        notifId
-      );
+      const latestNotification =
+        await notificationApi.readNotification(notifId);
 
       await getUserNotificationCount();
 

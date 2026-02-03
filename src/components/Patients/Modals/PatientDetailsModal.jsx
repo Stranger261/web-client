@@ -49,7 +49,7 @@ const PatientDetailsModal = ({ isOpen, onClose, patient, isLoading }) => {
 
   const formatPatientName = () => {
     if (!patient) return 'N/A';
-    return `${patient.first_name} ${patient.middle_name || ''} ${patient.last_name}`.trim();
+    return `${patient?.first_name} ${patient?.middle_name || ''} ${patient?.last_name}`.trim();
   };
 
   return (
@@ -170,10 +170,10 @@ const PatientDetailsModal = ({ isOpen, onClose, patient, isLoading }) => {
                       patientId={patient?.patient_id}
                       isDarkMode={isDarkMode}
                       patientInfo={{
-                        name: `${patient.first_name} ${patient.last_name}`,
-                        mrn: patient.mrn,
-                        dob: patient.date_of_birth,
-                        gender: patient.gender,
+                        name: `${patient?.first_name} ${patient?.last_name}`,
+                        mrn: patient?.mrn,
+                        dob: patient?.date_of_birth,
+                        gender: patient?.gender,
                       }}
                     />
                   )}

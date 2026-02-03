@@ -10,6 +10,15 @@ class patientService {
       },
       withCredentials: true,
     });
+
+    // Nurse-specific API instance
+    this.nurseApi = axios.create({
+      baseURL: `${DEVELOPMENT_BASE_URL}/patients/nurse`,
+      headers: {
+        'x-internal-api-key': INTERNAL_API_KEY,
+      },
+      withCredentials: true,
+    });
   }
 
   async getDoctorsPatients(doctorUuid, filters = {}) {
@@ -95,6 +104,75 @@ class patientService {
       return response.data;
     } catch (error) {
       console.error('Add face to patient error:', error);
+      throw error;
+    }
+  }
+
+  // ===========================
+  // NURSE-SPECIFIC METHODS
+  // ===========================
+
+  /**
+   * Get nurse's assigned patients (from care team)
+   * @param {Object} filters - Filter options (status, search, gender, page, limit)
+   * @returns {Promise} Response with patients, stats, pagination
+   */
+  async getNursePatients(filters = {}) {
+    try {
+      const response = await this.nurseApi.get('/patients', {
+        params: filters,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Get nurse patients error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get specific patient details (with care team validation)
+   * @param {String} patientUuid - Patient UUID
+   * @returns {Promise} Patient details
+   */
+  async getNursePatientDetails(patientUuid) {
+    try {
+      const response = await this.nurseApi.get(`/patients/${patientUuid}`);
+      return response.data;
+    } catch (error) {
+      console.error('Get nurse patient details error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get patient medical records (with care team validation)
+   * @param {String} patientUuid - Patient UUID
+   * @param {Object} filters - Filter options
+   * @returns {Promise} Medical records timeline
+   */
+  async getNursePatientMedicalRecords(patientUuid, filters = {}) {
+    try {
+      const response = await this.nurseApi.get(
+        `/patients/${patientUuid}/medical-records`,
+        { params: filters },
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Get nurse patient medical records error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get nurse's care team assignments
+   * @returns {Promise} Care team assignments
+   */
+  async getNurseCareTeamAssignments() {
+    try {
+      const response = await this.nurseApi.get('/care-team');
+      return response.data;
+    } catch (error) {
+      console.error('Get nurse care team assignments error:', error);
       throw error;
     }
   }

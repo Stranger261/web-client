@@ -9,9 +9,10 @@ import { toast } from 'react-hot-toast';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { DynamicLink } from '../components/ui/link';
-import { LogIn } from 'lucide-react';
+import { LogIn, ExternalLink, Check } from 'lucide-react';
 import { PhoneInput } from '../components/ui/PhoneInput';
 import { useAuth } from '../contexts/AuthContext';
+import { TermsModal } from '../components/Modals/TermsModal';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -35,6 +36,8 @@ const RegisterPage = () => {
     isValid: false,
     allValid: false,
   });
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   const passwordValidators = usePasswordValidators();
   const emailValidators = useEmailValidators();
@@ -49,9 +52,10 @@ const RegisterPage = () => {
     if (!emailValidation.allValid) return false;
     if (!passwordValidation.allValid) return false;
     if (password !== confirmPassword) return false;
+    if (!acceptedTerms) return false; // Added terms acceptance check
 
     return true;
-  }, [formData, passwordValidation, emailValidation]);
+  }, [formData, passwordValidation, emailValidation, acceptedTerms]);
 
   const handleInputChange = useCallback(
     (field, value) => {
@@ -82,7 +86,7 @@ const RegisterPage = () => {
         setErrors(prev => ({ ...prev, confirmPassword: '' }));
       }
     },
-    [errors, passwordValidators, emailValidators]
+    [errors, passwordValidators, emailValidators],
   );
 
   const validateForm = useCallback(() => {
@@ -114,9 +118,13 @@ const RegisterPage = () => {
       newErrors.confirmPassword = 'Passwords do not match';
     }
 
+    if (!acceptedTerms) {
+      newErrors.terms = 'You must accept the Terms and Conditions';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [formData, passwordValidation, emailValidation]);
+  }, [formData, passwordValidation, emailValidation, acceptedTerms]);
 
   const onSubmitForm = useCallback(
     async e => {
@@ -134,7 +142,7 @@ const RegisterPage = () => {
         if (response.success) {
           toast.success(
             response.message ||
-              'Registered successfully. Please finish your account verifications.'
+              'Registered successfully. Please finish your account verifications.',
           );
         }
         navigate('/patient/complete-registration');
@@ -152,7 +160,7 @@ const RegisterPage = () => {
         setIsSubmitting(false);
       }
     },
-    [formData, validateForm, register]
+    [formData, validateForm, register],
   );
 
   return (
@@ -228,6 +236,44 @@ const RegisterPage = () => {
             matchLabel="Password"
           />
 
+          {/* Terms and Conditions Checkbox */}
+          <div className="pt-2">
+            <div className="flex items-start space-x-3">
+              <div className="flex items-center h-5 mt-0.5">
+                <input
+                  id="terms"
+                  name="terms"
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={e => setAcceptedTerms(e.target.checked)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+              </div>
+              <div className="text-sm">
+                <label htmlFor="terms" className="font-medium text-gray-700">
+                  I accept the Terms and Conditions & Privacy Policy
+                </label>
+                <p className="text-gray-600 mt-1">
+                  By checking this box, you acknowledge that you have read,
+                  understood, and agree to our hospital management system
+                  policies, including that authorized doctors may access your
+                  medical records for treatment purposes.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowTermsModal(true)}
+                  className="inline-flex items-center mt-2 text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  <span>View full Terms and Conditions</span>
+                  <ExternalLink className="ml-1 h-4 w-4" />
+                </button>
+                {errors.terms && (
+                  <p className="mt-2 text-sm text-red-600">{errors.terms}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
           {errors.submit && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3">
               <p className="text-red-800 text-sm">{errors.submit}</p>
@@ -261,6 +307,14 @@ const RegisterPage = () => {
           </p>
         </div>
       </div>
+
+      {showTermsModal && (
+        <TermsModal
+          showTermsModal={showTermsModal}
+          setShowTermsModal={setShowTermsModal}
+          setAcceptedTerms={setAcceptedTerms}
+        />
+      )}
     </div>
   );
 };

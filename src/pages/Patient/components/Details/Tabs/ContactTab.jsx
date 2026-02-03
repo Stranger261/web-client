@@ -5,41 +5,38 @@ import { AddressSection } from '../Sections/AddressSection';
 import { RELATIONSHIP_OPTIONS } from '../constants/patientConstants';
 import { normalizedWord } from '../../../../../utils/normalizedWord';
 
-export const ContactTab = ({ patientData, onFieldUpdate, onFieldsUpdate }) => {
-  const isDarkMode = document.documentElement.classList.contains('dark');
-
+export const ContactTab = ({
+  patientData,
+  onFieldUpdate,
+  onFieldsUpdate,
+  isDarkMode = false,
+}) => {
   return (
     <div>
       <div
-        className="flex items-center gap-3 mb-6 pb-4 border-b"
-        style={{
-          borderColor: isDarkMode ? COLORS.border.dark : COLORS.border.light,
-        }}
+        className={`flex items-center gap-3 mb-6 pb-4 border-b transition-colors duration-200 ${
+          isDarkMode ? 'border-gray-700' : 'border-gray-200'
+        }`}
       >
         <div
-          className="p-3 rounded-xl"
-          style={{
-            backgroundColor: isDarkMode
-              ? COLORS.primary + '20'
-              : COLORS.primary + '15',
-          }}
+          className={`p-3 rounded-xl ${
+            isDarkMode ? 'bg-blue-900/30' : 'bg-blue-50'
+          }`}
         >
           <Phone size={24} style={{ color: COLORS.primary }} />
         </div>
         <div>
           <h3
-            className="text-xl font-bold"
-            style={{
-              color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
-            }}
+            className={`text-xl font-bold ${
+              isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}
           >
             Contact & Emergency
           </h3>
           <p
-            className="text-sm"
-            style={{
-              color: isDarkMode ? COLORS.text.light : COLORS.text.secondary,
-            }}
+            className={`text-sm ${
+              isDarkMode ? 'text-gray-300' : 'text-gray-600'
+            }`}
           >
             Contact details and emergency contacts
           </p>
@@ -55,6 +52,7 @@ export const ContactTab = ({ patientData, onFieldUpdate, onFieldsUpdate }) => {
           onSave={onFieldUpdate('email')}
           fieldType="email"
           icon={Mail}
+          isDarkMode={isDarkMode}
         />
 
         {/* MOBILE NUMBER with phone validation */}
@@ -65,6 +63,7 @@ export const ContactTab = ({ patientData, onFieldUpdate, onFieldsUpdate }) => {
           fieldType="phone"
           countryCode="+63"
           icon={Phone}
+          isDarkMode={isDarkMode}
         />
       </div>
 
@@ -72,20 +71,19 @@ export const ContactTab = ({ patientData, onFieldUpdate, onFieldsUpdate }) => {
       <AddressSection
         patientData={patientData.address}
         onFieldsUpdate={onFieldsUpdate}
+        isDarkMode={isDarkMode}
       />
 
       {/* Emergency Contact */}
       <div
-        className="pt-6 border-t"
-        style={{
-          borderColor: isDarkMode ? COLORS.border.dark : COLORS.border.light,
-        }}
+        className={`pt-6 border-t transition-colors duration-200 ${
+          isDarkMode ? 'border-gray-700' : 'border-gray-200'
+        }`}
       >
         <h4
-          className="text-sm font-semibold uppercase tracking-wide mb-4 flex items-center gap-2"
-          style={{
-            color: isDarkMode ? COLORS.text.light : COLORS.text.secondary,
-          }}
+          className={`text-sm font-semibold uppercase tracking-wide mb-4 flex items-center gap-2 ${
+            isDarkMode ? 'text-gray-300' : 'text-gray-600'
+          }`}
         >
           <AlertCircle size={16} style={{ color: COLORS.danger }} />
           Emergency Contact
@@ -97,6 +95,7 @@ export const ContactTab = ({ patientData, onFieldUpdate, onFieldsUpdate }) => {
             value={patientData.emergency_contact_name}
             onSave={onFieldUpdate('emergency_contact_name')}
             icon={User}
+            isDarkMode={isDarkMode}
           />
 
           <EditableField
@@ -106,6 +105,7 @@ export const ContactTab = ({ patientData, onFieldUpdate, onFieldsUpdate }) => {
             type="select"
             options={RELATIONSHIP_OPTIONS}
             icon={Users}
+            isDarkMode={isDarkMode}
           />
 
           {/* EMERGENCY CONTACT PHONE with validation */}
@@ -116,6 +116,7 @@ export const ContactTab = ({ patientData, onFieldUpdate, onFieldsUpdate }) => {
             fieldType="phone"
             countryCode="+63"
             icon={Phone}
+            isDarkMode={isDarkMode}
           />
         </div>
       </div>

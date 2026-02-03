@@ -309,8 +309,9 @@ const DetailsTab = ({
       )}
 
       {/* Discharge Button */}
-      {['nurse', 'admin'].includes(userRole) &&
-        admission.admission_status === 'active' && (
+      {/* {['nurse', 'admin'].includes(userRole) &&
+        (admission.admission_status === 'active' ||
+          admission.admission_status === 'pending_discharge') && (
           <button
             onClick={() => setShowDischargeForm(true)}
             className="w-full px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
@@ -322,7 +323,7 @@ const DetailsTab = ({
             <LogOut className="w-5 h-5" />
             Discharge Patient
           </button>
-        )}
+        )} */}
     </div>
   );
 };

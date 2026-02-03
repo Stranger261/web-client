@@ -12,8 +12,9 @@ import {
 } from 'lucide-react';
 import * as faceapi from 'face-api.js';
 import { useAuth } from '../../contexts/AuthContext';
+import toast from 'react-hot-toast';
 
-function FaceCapture() {
+function FaceCapture({ onSuccess }) {
   const { verifyFace } = useAuth();
   const [modelsLoaded, setModelsLoaded] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
@@ -95,7 +96,7 @@ function FaceCapture() {
 
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error(
-          'Camera API not available. This requires HTTPS or localhost connection.'
+          'Camera API not available. This requires HTTPS or localhost connection.',
         );
       }
 
@@ -267,14 +268,14 @@ function FaceCapture() {
       const [p1, p2, p3, p4, p5, p6] = eye;
 
       const vertical1 = Math.sqrt(
-        Math.pow(p2.x - p6.x, 2) + Math.pow(p2.y - p6.y, 2)
+        Math.pow(p2.x - p6.x, 2) + Math.pow(p2.y - p6.y, 2),
       );
       const vertical2 = Math.sqrt(
-        Math.pow(p3.x - p5.x, 2) + Math.pow(p3.y - p5.y, 2)
+        Math.pow(p3.x - p5.x, 2) + Math.pow(p3.y - p5.y, 2),
       );
 
       const horizontal = Math.sqrt(
-        Math.pow(p1.x - p4.x, 2) + Math.pow(p1.y - p4.y, 2)
+        Math.pow(p1.x - p4.x, 2) + Math.pow(p1.y - p4.y, 2),
       );
 
       if (horizontal === 0) return 0.3;
@@ -304,7 +305,7 @@ function FaceCapture() {
         const detections = await faceapi
           .detectSingleFace(
             videoRef.current,
-            new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 })
+            new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }),
           )
           .withFaceLandmarks()
           .withFaceDescriptor();
@@ -350,7 +351,7 @@ function FaceCapture() {
           0,
           0,
           size,
-          size
+          size,
         );
 
         const imageData = tempCtx.getImageData(0, 0, size, size);
@@ -376,7 +377,7 @@ function FaceCapture() {
 
           const distanceFromCenter = Math.sqrt(
             Math.pow(faceCenterX - centerX, 2) +
-              Math.pow(faceCenterY - centerY, 2)
+              Math.pow(faceCenterY - centerY, 2),
           );
 
           const faceSize = (box.width + box.height) / 2;
@@ -544,7 +545,6 @@ function FaceCapture() {
       }
     }, 100);
   };
-
   const captureAndVerify = async () => {
     try {
       setIsVerifying(true);
@@ -566,36 +566,67 @@ function FaceCapture() {
 
       const response = await verifyFace({ livePhotoBase64 });
 
+      // ✅ Set verification result
       setVerificationResult({
-        isMatch: response.isMatch,
+        isMatch: response.verified || response.isMatch,
         confidence: response.confidence,
-        distance: 1 - response.confidence / 100,
+        distance: 1 - (response.confidence || 0) / 100,
         threshold: 0.15,
         liveFaceImage: canvas.toDataURL(),
-        verificationData: response.data || {},
+        verificationData: response.data || response.match_details || {},
       });
 
-      setIsVerifying(false);
-      stopCamera();
-    } catch (error) {
-      let errorMessage =
-        error.message || 'Verification failed. Please try again.';
+      setStatus({
+        message: 'Verification successful! Redirecting to login...',
+        type: 'success',
+      });
 
-      if (
-        error.message.includes('403') ||
-        error.message.includes('Forbidden')
-      ) {
-        errorMessage =
-          'API quota exceeded. Please try again later or contact support.';
-      } else if (
-        error.message.includes('Network') ||
-        error.message.includes('Failed to fetch')
-      ) {
+      // ✅ Stop camera
+      stopCamera();
+      setIsVerifying(false);
+
+      // ✅ Call onSuccess immediately if verified
+      if (response.verified || response.isMatch) {
+        // Call onSuccess which will handle logout
+        onSuccess?.(response);
+      }
+    } catch (error) {
+      console.error('Face verification error:', error);
+
+      let errorMessage = 'Verification failed. Please try again.';
+
+      if (error.response) {
+        const serverMessage = error.response?.data?.message;
+        errorMessage = serverMessage || errorMessage;
+
+        if (error.response.status === 403) {
+          errorMessage =
+            'API quota exceeded. Please try again later or contact support.';
+        } else if (error.response.status === 400) {
+          errorMessage =
+            serverMessage || 'Face does not match. Please try again.';
+        } else if (error.response.status === 404) {
+          errorMessage = 'User not found or verification not available.';
+        } else if (error.response.status === 503) {
+          errorMessage =
+            'Service temporarily unavailable. Please try again later.';
+        }
+      } else if (error.request) {
         errorMessage =
           'Network error. Please check your connection and try again.';
-      } else if (error.message.includes('detect')) {
-        errorMessage =
-          'Face detection failed. Please ensure your face is clearly visible.';
+      } else if (error.message) {
+        if (error.message.includes('detect')) {
+          errorMessage =
+            'Face detection failed. Please ensure your face is clearly visible.';
+        } else if (
+          error.message.includes('Network') ||
+          error.message.includes('Failed to fetch')
+        ) {
+          errorMessage =
+            'Network error. Please check your connection and try again.';
+        } else {
+          errorMessage = error.message;
+        }
       }
 
       setVerificationResult({
@@ -610,8 +641,10 @@ function FaceCapture() {
         message: errorMessage,
         type: 'error',
       });
-      setIsVerifying(false);
+
       stopCamera();
+      setIsVerifying(false);
+      toast.error(errorMessage);
     }
   };
 
@@ -800,8 +833,8 @@ function FaceCapture() {
                               verificationResult.confidence > 85
                                 ? 'bg-emerald-500'
                                 : verificationResult.confidence > 60
-                                ? 'bg-yellow-500'
-                                : 'bg-red-500'
+                                  ? 'bg-yellow-500'
+                                  : 'bg-red-500'
                             }`}
                             style={{
                               width: `${verificationResult.confidence}%`,

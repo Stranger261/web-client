@@ -161,13 +161,15 @@ const ProgressNotesTab = ({ admissionId, admission }) => {
           >
             Add the first progress note to start tracking patient progress
           </p>
-          <Button
-            variant="primary"
-            icon={Plus}
-            onClick={() => setShowCreateModal(true)}
-          >
-            Add Progress Note
-          </Button>
+          {admission.admission_status !== 'discharged' && (
+            <Button
+              variant="primary"
+              icon={Plus}
+              onClick={() => setShowCreateModal(true)}
+            >
+              Add Progress Note
+            </Button>
+          )}
         </div>
 
         {/* Create Modal */}

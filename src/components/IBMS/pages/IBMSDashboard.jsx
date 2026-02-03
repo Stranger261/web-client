@@ -5,7 +5,7 @@ import { COLORS } from '../../../configs/CONST';
 import FloorView from '../components/FloorView';
 import AdmissionsList from '../components/AdmissionList';
 import MaintenancePanel from '../components/MaintenancePanel';
-// import Statistics from './components/Statistics';
+import Statistics from '../components/Statistics';
 // import BedManagementPanel from './components/BedManagementPanel';
 
 import { useAuth } from '../../../contexts/AuthContext';
@@ -38,13 +38,13 @@ const IBMSDashboard = () => {
       icon: AlertCircle,
       roles: ['nurse', 'admin'],
     },
-    {
-      id: 'stats',
-      label: 'Statistics',
-      shortLabel: 'Stats',
-      icon: Activity,
-      roles: ['admin'],
-    },
+    // {
+    //   id: 'stats',
+    //   label: 'Statistics',
+    //   shortLabel: 'Stats',
+    //   icon: Activity,
+    //   roles: ['admin'],
+    // },
   ].filter(tab => tab.roles.includes(userRole));
 
   useEffect(() => {
@@ -160,8 +160,8 @@ const IBMSDashboard = () => {
         {activeView === 'maintenance' && (
           <MaintenancePanel isDarkMode={isDarkMode} userRole={userRole} />
         )}
-        {/*
-        {activeView === 'stats' && <Statistics isDarkMode={isDarkMode} />} */}
+
+        {/* {activeView === 'stats' && <Statistics isDarkMode={isDarkMode} />} */}
       </div>
 
       {/* Hide scrollbar CSS */}

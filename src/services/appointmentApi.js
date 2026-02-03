@@ -179,6 +179,56 @@ class appointmentSerevice {
       throw error;
     }
   }
+
+  async getAllSlotsForDate(date, params = {}) {
+    try {
+      const res = await this.appointmentApi.get(`/slots/${date}`, { params });
+      return res.data;
+    } catch (error) {
+      console.log('get slots error:', error);
+      throw error;
+    }
+  }
+
+  async getSlotsSummary(startDate, endDate, filters = {}) {
+    try {
+      const res = await this.appointmentApi.get('/slots-summary', {
+        params: {
+          start_date: startDate,
+          end_date: endDate,
+          ...filters,
+        },
+      });
+      return res.data;
+    } catch (error) {
+      console.log('slots summary error:', error);
+      throw error;
+    }
+  }
+
+  async getAppointmentsByDate(date, filters = {}) {
+    try {
+      const res = await this.appointmentApi.get(`/date/${date}`, {
+        params: filters,
+      });
+      return res.data;
+    } catch (error) {
+      console.log('appointments by date error:', error);
+      throw error;
+    }
+  }
+
+  async getDailyStatistics(date) {
+    try {
+      const res = await this.appointmentApi.get('/statistics/daily', {
+        params: { date },
+      });
+      return res.data;
+    } catch (error) {
+      console.log('daily statistics error:', error);
+      throw error;
+    }
+  }
 }
 
 export default new appointmentSerevice();

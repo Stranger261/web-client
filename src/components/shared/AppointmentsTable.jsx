@@ -191,7 +191,7 @@ const AppointmentsTable = ({
             <span className="whitespace-nowrap">
               {appointment.start_time
                 ? `${formatTime(appointment.start_time)}-${formatTime(
-                    appointment.end_time
+                    appointment.end_time,
                   )}`
                 : 'TBD'}
             </span>
@@ -459,7 +459,7 @@ const AppointmentsTable = ({
                 iconOnly
                 onClick={() => onStartConsultation(appt)}
                 title="Start Video Consultation"
-              />
+              />,
             );
           } else if (
             appt.consultation_method === 'phone' &&
@@ -474,55 +474,7 @@ const AppointmentsTable = ({
                 iconOnly
                 onClick={() => onStartConsultation(appt)}
                 title="Start Phone Consultation"
-              />
-            );
-          }
-
-          // Notes indicator/button
-          if (appt.has_notes) {
-            actions.push(
-              <span
-                key="notes"
-                className="inline-flex items-center justify-center w-8 h-8 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-lg"
-                title="Has Clinical Notes"
-              >
-                <FileText size={16} />
-              </span>
-            );
-          } else if (onAddNotes) {
-            actions.push(
-              <button
-                key="add-notes"
-                onClick={() => onAddNotes(appt)}
-                className="inline-flex items-center justify-center w-8 h-8 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
-                title="Add Clinical Notes"
-              >
-                <FileText size={16} />
-              </button>
-            );
-          }
-
-          // Prescription indicator/button
-          if (appt.has_prescription) {
-            actions.push(
-              <span
-                key="prescription"
-                className="inline-flex items-center justify-center w-8 h-8 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-lg"
-                title="Has Prescription"
-              >
-                <Pill size={16} />
-              </span>
-            );
-          } else if (onPrescribe) {
-            actions.push(
-              <button
-                key="add-prescription"
-                onClick={() => onPrescribe(appt)}
-                className="inline-flex items-center justify-center w-8 h-8 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600"
-                title="Create Prescription"
-              >
-                <Pill size={16} />
-              </button>
+              />,
             );
           }
         }
@@ -536,7 +488,7 @@ const AppointmentsTable = ({
             icon={Eye}
             iconOnly
             onClick={() => onViewDetails(appt)}
-          />
+          />,
         );
 
         // Edit/Check-in button - only receptionist
@@ -551,7 +503,7 @@ const AppointmentsTable = ({
                   icon={CheckCircle}
                   iconOnly
                   onClick={() => onCheckIn(appt)}
-                />
+                />,
               );
             }
           } else {
@@ -563,7 +515,7 @@ const AppointmentsTable = ({
                 icon={Edit}
                 iconOnly
                 onClick={() => onEditAppointment(appt)}
-              />
+              />,
             );
           }
         }
@@ -584,7 +536,7 @@ const AppointmentsTable = ({
                 iconOnly
                 disabled={appt.isDeleted}
                 onClick={() => onCancelAppointment(appt)}
-              />
+              />,
             );
           }
         }

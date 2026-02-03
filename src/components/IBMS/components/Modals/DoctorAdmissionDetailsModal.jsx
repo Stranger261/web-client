@@ -1,23 +1,29 @@
 // components/modals/DoctorAdmissionDetailsModal.jsx
 import { useState, useEffect } from 'react';
 import {
-  X,
   User,
-  Calendar,
-  BedDouble,
-  Clock,
-  Stethoscope,
-  Heart,
-  Scale,
   FileText,
-  Pill,
-  AlertCircle,
+  BedDouble,
+  History,
+  CalendarCheck,
+  ChartColumn,
+  Stethoscope,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
+
 import { COLORS } from '../../../../configs/CONST';
 import doctorAdmissionApi from '../../../../services/doctorAdmissionApi';
-import { Button } from '../../../ui/button';
+
+import Modal from '../../../ui/Modal';
 import { LoadingSpinner } from '../../../ui/loading-spinner';
-import ProgressNoteList from '../../../ProgressNotes/ProgressNotesList';
+
+// Reuse tabs from nurse modal
+import DetailsTab from '../tabs/DetailsTab';
+import AppointmentInfoTab from '../tabs/AppointmentInfoTab';
+import BedHistoryTab from '../tabs/BedHistoryTab';
+import VitalsChartTab from '../tabs/VitalChartsTab';
+import ProgressNotesTab from '../tabs/ProgressNotesTab';
+import DischargeRequestModal from './DischargeRequestModal';
 
 const DoctorAdmissionDetailsModal = ({
   isOpen,
@@ -26,9 +32,45 @@ const DoctorAdmissionDetailsModal = ({
   isDarkMode,
   onUpdate,
 }) => {
+  const [activeTab, setActiveTab] = useState('details');
   const [loading, setLoading] = useState(false);
   const [details, setDetails] = useState(null);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [bedHistory, setBedHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [showDischargeModal, setShowDischargeModal] = useState(false);
+
+  const tabs = [
+    {
+      id: 'details',
+      label: 'Patient Details',
+      shortLabel: 'Details',
+      icon: User,
+    },
+    {
+      id: 'appointment',
+      label: 'Appointment Info',
+      shortLabel: 'Appointment',
+      icon: CalendarCheck,
+    },
+    {
+      id: 'history',
+      label: 'Bed History',
+      shortLabel: 'History',
+      icon: History,
+    },
+    {
+      id: 'progressNotes',
+      label: 'Progress Notes',
+      shortLabel: 'Notes',
+      icon: FileText,
+    },
+    {
+      id: 'vitalsTrend',
+      label: 'Vitals Trend',
+      shortLabel: 'Vitals',
+      icon: ChartColumn,
+    },
+  ];
 
   useEffect(() => {
     if (isOpen && admission) {
@@ -43,576 +85,308 @@ const DoctorAdmissionDetailsModal = ({
         admission.admission_id,
       );
       setDetails(response.data);
+      console.log('Doctor admission details:', response.data);
     } catch (error) {
       console.error('Error fetching admission details:', error);
+      toast.error('Failed to load admission details');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleTabChange = async tabId => {
+    setActiveTab(tabId);
+
+    if (tabId === 'history' && bedHistory.length === 0) {
+      await fetchBedHistory();
+    }
+  };
+
+  const fetchBedHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const response = await doctorAdmissionApi.getBedHistory(
+        admission.admission_id,
+      );
+      setBedHistory(response.data || []);
+    } catch (error) {
+      console.error('Error fetching bed history:', error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const handleDischargeRequest = async dischargeData => {
+    try {
+      await doctorAdmissionApi.requestPatientDischarge(
+        admission.admission_id,
+        dischargeData,
+      );
+      toast.success('Discharge request submitted successfully');
+      setShowDischargeModal(false);
+      onUpdate();
+      onClose();
+    } catch (error) {
+      console.error('Error requesting discharge:', error);
+      toast.error(
+        error.response?.data?.message || 'Failed to request discharge',
+      );
+    }
+  };
+
   if (!isOpen || !admission) return null;
 
-  const patient = details?.patient || admission.patient;
-  const person = patient?.person;
-  const currentBed = admission.bedAssignments?.find(
-    assignment => assignment.is_current,
-  )?.bed;
+  // Use details if available, otherwise fallback to admission prop
+  const currentData = details || admission;
+  const patient = currentData.patient;
+  const patientPerson = patient?.person;
+  const currentBed = currentData.bedAssignments?.find(ba => ba.is_current)?.bed;
+  const attendingDoctor = currentData.attendingDoctor;
+  const originatingAppointment = currentData.originatingAppointment;
 
-  const tabs = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'medical', label: 'Medical Info' },
-    { id: 'notes', label: 'Progress Notes' },
-    { id: 'prescriptions', label: 'Prescriptions' },
-  ];
+  const getPatientName = () => {
+    if (!patientPerson) return 'Unknown Patient';
+    return `${patientPerson.first_name} ${patientPerson.middle_name || ''} ${patientPerson.last_name}`.trim();
+  };
+
+  const getDoctorName = doctor => {
+    if (!doctor?.person) return 'Unknown Doctor';
+    return `${doctor.person.first_name} ${doctor.person.last_name}`;
+  };
+
+  const calculateLOS = () => {
+    if (currentData.length_of_stay) return currentData.length_of_stay;
+    const now = new Date();
+    const admitted = new Date(currentData.admission_date);
+    const diffTime = Math.abs(now - admitted);
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  const calculateAge = dateOfBirth => {
+    if (!dateOfBirth) return 'N/A';
+    const today = new Date();
+    const birthDate = new Date(dateOfBirth);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birthDate.getDate())
+    ) {
+      age--;
+    }
+    return age;
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div
-        className="relative w-full max-w-6xl max-h-[90vh] rounded-lg shadow-xl overflow-hidden"
-        style={{
-          backgroundColor: isDarkMode
-            ? COLORS.surface.dark
-            : COLORS.surface.light,
-        }}
+    <>
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        title="Patient Admission Details"
+        size="xl"
       >
-        {/* Header */}
-        <div
-          className="flex items-center justify-between p-4 sm:p-6 border-b"
-          style={{
-            borderColor: isDarkMode ? COLORS.border.dark : COLORS.border.light,
-          }}
-        >
-          <div className="flex items-center gap-3">
-            <User className="w-6 h-6" style={{ color: COLORS.primary }} />
-            <div>
-              <h2
-                className="text-xl font-bold"
-                style={{
-                  color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
-                }}
+        <div className="space-y-3 sm:space-y-4">
+          {/* Patient Header - Responsive */}
+          <div
+            className="p-3 sm:p-4 rounded-lg border"
+            style={{
+              backgroundColor: isDarkMode
+                ? COLORS.surface.dark
+                : COLORS.surface.light,
+              borderColor: COLORS.primary,
+            }}
+          >
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+              <div
+                className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{ backgroundColor: COLORS.primary + '20' }}
               >
-                {person?.first_name} {person?.last_name}
-              </h2>
-              <p className="text-sm" style={{ color: COLORS.text.secondary }}>
-                {patient?.mrn} • {admission.admission_number}
-              </p>
-            </div>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={X}
-            onClick={onClose}
-            className="w-8 h-8 p-0"
-          />
-        </div>
-
-        {/* Tabs */}
-        <div
-          className="border-b"
-          style={{
-            borderColor: isDarkMode ? COLORS.border.dark : COLORS.border.light,
-          }}
-        >
-          <div className="flex overflow-x-auto">
-            {tabs.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 ${
-                  activeTab === tab.id
-                    ? 'border-teal-500 text-teal-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
+                <User
+                  className="w-6 h-6 sm:w-8 sm:h-8"
+                  style={{ color: COLORS.primary }}
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2
+                  className="text-lg sm:text-xl font-bold truncate"
+                  style={{
+                    color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
+                  }}
+                >
+                  {getPatientName()}
+                </h2>
+                <div
+                  className="flex flex-wrap gap-x-2 sm:gap-x-4 gap-y-1 mt-1 text-xs sm:text-sm"
+                  style={{ color: COLORS.text.secondary }}
+                >
+                  <span className="whitespace-nowrap">MRN: {patient?.mrn}</span>
+                  <span className="hidden sm:inline">•</span>
+                  <span className="whitespace-nowrap">
+                    Admission: {currentData.admission_number}
+                  </span>
+                  <span className="hidden sm:inline">•</span>
+                  <span className="whitespace-nowrap">
+                    {patientPerson?.gender?.charAt(0).toUpperCase() +
+                      patientPerson?.gender?.slice(1)}
+                    , {calculateAge(patientPerson?.date_of_birth)} years
+                  </span>
+                </div>
+              </div>
+              <div
+                className="px-2.5 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium capitalize whitespace-nowrap flex-shrink-0"
                 style={{
+                  backgroundColor:
+                    currentData.admission_status === 'active'
+                      ? COLORS.badge.success.bg
+                      : COLORS.badge.warning.bg,
                   color:
-                    activeTab === tab.id
-                      ? COLORS.primary
-                      : COLORS.text.secondary,
-                  borderBottomColor:
-                    activeTab === tab.id ? COLORS.primary : 'transparent',
+                    currentData.admission_status === 'active'
+                      ? COLORS.badge.success.text
+                      : COLORS.badge.warning.text,
                 }}
               >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="overflow-y-auto max-h-[calc(90vh-120px)] p-4 sm:p-6">
-          {loading ? (
-            <div className="flex justify-center py-12">
-              <LoadingSpinner size="lg" />
+                {currentData.admission_status}
+              </div>
             </div>
-          ) : (
-            <>
-              {/* Overview Tab */}
-              {activeTab === 'overview' && (
-                <div className="space-y-6">
-                  {/* Patient Info Card */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <h3
-                        className="text-lg font-semibold"
-                        style={{
-                          color: isDarkMode
-                            ? COLORS.text.white
-                            : COLORS.text.primary,
-                        }}
-                      >
-                        Patient Information
-                      </h3>
+          </div>
 
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                          <Calendar
-                            className="w-4 h-4"
-                            style={{ color: COLORS.text.secondary }}
-                          />
-                          <div>
-                            <p
-                              className="text-sm"
-                              style={{ color: COLORS.text.secondary }}
-                            >
-                              Date of Birth
-                            </p>
-                            <p
-                              style={{
-                                color: isDarkMode
-                                  ? COLORS.text.white
-                                  : COLORS.text.primary,
-                              }}
-                            >
-                              {person?.date_of_birth
-                                ? new Date(
-                                    person.date_of_birth,
-                                  ).toLocaleDateString()
-                                : 'N/A'}
-                            </p>
-                          </div>
-                        </div>
+          {/* Tabs - Scrollable on mobile */}
+          <div className="relative -mx-3 sm:mx-0">
+            <div
+              className="flex gap-1 sm:gap-2 border-b overflow-x-auto hide-scrollbar px-3 sm:px-0"
+              style={{
+                borderColor: isDarkMode
+                  ? COLORS.border.dark
+                  : COLORS.border.light,
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+                WebkitOverflowScrolling: 'touch',
+              }}
+            >
+              {tabs.map(tab => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
 
-                        <div className="flex items-center gap-3">
-                          <Heart
-                            className="w-4 h-4"
-                            style={{ color: COLORS.text.secondary }}
-                          />
-                          <div>
-                            <p
-                              className="text-sm"
-                              style={{ color: COLORS.text.secondary }}
-                            >
-                              Blood Type
-                            </p>
-                            <p
-                              style={{
-                                color: isDarkMode
-                                  ? COLORS.text.white
-                                  : COLORS.text.primary,
-                              }}
-                            >
-                              {person?.blood_type || 'N/A'}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <Scale
-                            className="w-4 h-4"
-                            style={{ color: COLORS.text.secondary }}
-                          />
-                          <div>
-                            <p
-                              className="text-sm"
-                              style={{ color: COLORS.text.secondary }}
-                            >
-                              Height & Weight
-                            </p>
-                            <p
-                              style={{
-                                color: isDarkMode
-                                  ? COLORS.text.white
-                                  : COLORS.text.primary,
-                              }}
-                            >
-                              {patient?.height || 'N/A'} cm /{' '}
-                              {patient?.weight || 'N/A'} kg
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Admission Info Card */}
-                    <div className="space-y-4">
-                      <h3
-                        className="text-lg font-semibold"
-                        style={{
-                          color: isDarkMode
-                            ? COLORS.text.white
-                            : COLORS.text.primary,
-                        }}
-                      >
-                        Admission Details
-                      </h3>
-
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                          <BedDouble
-                            className="w-4 h-4"
-                            style={{ color: COLORS.text.secondary }}
-                          />
-                          <div>
-                            <p
-                              className="text-sm"
-                              style={{ color: COLORS.text.secondary }}
-                            >
-                              Current Bed
-                            </p>
-                            <p
-                              style={{
-                                color: isDarkMode
-                                  ? COLORS.text.white
-                                  : COLORS.text.primary,
-                              }}
-                            >
-                              {currentBed
-                                ? `Bed ${currentBed.bed_number}`
-                                : 'Not assigned'}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <Clock
-                            className="w-4 h-4"
-                            style={{ color: COLORS.text.secondary }}
-                          />
-                          <div>
-                            <p
-                              className="text-sm"
-                              style={{ color: COLORS.text.secondary }}
-                            >
-                              Length of Stay
-                            </p>
-                            <p
-                              style={{
-                                color: isDarkMode
-                                  ? COLORS.text.white
-                                  : COLORS.text.primary,
-                              }}
-                            >
-                              {admission.length_of_stay || 0} days
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                          <Stethoscope
-                            className="w-4 h-4"
-                            style={{ color: COLORS.text.secondary }}
-                          />
-                          <div>
-                            <p
-                              className="text-sm"
-                              style={{ color: COLORS.text.secondary }}
-                            >
-                              Admission Type
-                            </p>
-                            <p
-                              style={{
-                                color: isDarkMode
-                                  ? COLORS.text.white
-                                  : COLORS.text.primary,
-                              }}
-                            >
-                              {admission.admission_type || 'N/A'}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Diagnosis Card */}
-                  <div className="space-y-4">
-                    <h3
-                      className="text-lg font-semibold"
-                      style={{
-                        color: isDarkMode
-                          ? COLORS.text.white
-                          : COLORS.text.primary,
-                      }}
-                    >
-                      Diagnosis & Treatment
-                    </h3>
-                    <div
-                      className="p-4 rounded-lg"
-                      style={{
-                        backgroundColor: isDarkMode
-                          ? COLORS.surface.darkHover
-                          : COLORS.surface.lightHover,
-                      }}
-                    >
-                      <p
-                        className="text-sm mb-2"
-                        style={{ color: COLORS.text.secondary }}
-                      >
-                        Primary Diagnosis
-                      </p>
-                      <p
-                        style={{
-                          color: isDarkMode
-                            ? COLORS.text.white
-                            : COLORS.text.primary,
-                        }}
-                      >
-                        {admission.diagnosis_at_admission ||
-                          'No diagnosis recorded'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Medical Info Tab */}
-              {activeTab === 'medical' && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Chronic Conditions */}
-                    <div className="space-y-4">
-                      <h3
-                        className="text-lg font-semibold"
-                        style={{
-                          color: isDarkMode
-                            ? COLORS.text.white
-                            : COLORS.text.primary,
-                        }}
-                      >
-                        Chronic Conditions
-                      </h3>
-                      <div className="space-y-2">
-                        {patient?.chronic_conditions ? (
-                          patient.chronic_conditions
-                            .split(',')
-                            .map((condition, index) => (
-                              <div
-                                key={index}
-                                className="flex items-center gap-2"
-                              >
-                                <AlertCircle
-                                  className="w-4 h-4"
-                                  style={{ color: COLORS.warning }}
-                                />
-                                <span
-                                  style={{
-                                    color: isDarkMode
-                                      ? COLORS.text.white
-                                      : COLORS.text.primary,
-                                  }}
-                                >
-                                  {condition.trim()}
-                                </span>
-                              </div>
-                            ))
-                        ) : (
-                          <p style={{ color: COLORS.text.secondary }}>
-                            No chronic conditions recorded
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Allergies */}
-                    <div className="space-y-4">
-                      <h3
-                        className="text-lg font-semibold"
-                        style={{
-                          color: isDarkMode
-                            ? COLORS.text.white
-                            : COLORS.text.primary,
-                        }}
-                      >
-                        Allergies
-                      </h3>
-                      <div className="space-y-2">
-                        {patient?.allergies ? (
-                          patient.allergies.split(',').map((allergy, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center gap-2"
-                            >
-                              <AlertCircle
-                                className="w-4 h-4"
-                                style={{ color: COLORS.danger }}
-                              />
-                              <span
-                                style={{
-                                  color: isDarkMode
-                                    ? COLORS.text.white
-                                    : COLORS.text.primary,
-                                }}
-                              >
-                                {allergy.trim()}
-                              </span>
-                            </div>
-                          ))
-                        ) : (
-                          <p style={{ color: COLORS.text.secondary }}>
-                            No allergies recorded
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Emergency Contact */}
-                  {patient?.emergency_contact && (
-                    <div className="space-y-4">
-                      <h3
-                        className="text-lg font-semibold"
-                        style={{
-                          color: isDarkMode
-                            ? COLORS.text.white
-                            : COLORS.text.primary,
-                        }}
-                      >
-                        Emergency Contact
-                      </h3>
-                      <div
-                        className="p-4 rounded-lg"
-                        style={{
-                          backgroundColor: isDarkMode
-                            ? COLORS.surface.darkHover
-                            : COLORS.surface.lightHover,
-                        }}
-                      >
-                        <p
-                          style={{
-                            color: isDarkMode
-                              ? COLORS.text.white
-                              : COLORS.text.primary,
-                          }}
-                        >
-                          {patient.emergency_contact}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Progress Notes Tab */}
-              {activeTab === 'notes' && (
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h3
-                      className="text-lg font-semibold"
-                      style={{
-                        color: isDarkMode
-                          ? COLORS.text.white
-                          : COLORS.text.primary,
-                      }}
-                    >
-                      Progress Notes
-                    </h3>
-                    <Button variant="primary" size="sm" icon={FileText}>
-                      Add Note
-                    </Button>
-                  </div>
-                  <ProgressNoteList
-                    admissionId={admission.admission_id}
-                    isDarkMode={isDarkMode}
-                  />
-                </div>
-              )}
-
-              {/* Prescriptions Tab */}
-              {activeTab === 'prescriptions' && (
-                <div className="space-y-4">
-                  <h3
-                    className="text-lg font-semibold"
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => handleTabChange(tab.id)}
+                    className="px-3 sm:px-4 py-2 font-medium transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap flex-shrink-0 text-xs sm:text-sm"
                     style={{
-                      color: isDarkMode
-                        ? COLORS.text.white
-                        : COLORS.text.primary,
+                      color: isActive ? COLORS.primary : COLORS.text.secondary,
+                      borderBottom: isActive
+                        ? `2px solid ${COLORS.primary}`
+                        : 'none',
                     }}
                   >
-                    Active Prescriptions
-                  </h3>
-                  {details?.prescriptions?.length > 0 ? (
-                    <div className="space-y-3">
-                      {details.prescriptions.map(prescription => (
-                        <div
-                          key={prescription.prescription_id}
-                          className="p-4 rounded-lg border"
-                          style={{
-                            backgroundColor: isDarkMode
-                              ? COLORS.surface.darkHover
-                              : COLORS.surface.lightHover,
-                            borderColor: isDarkMode
-                              ? COLORS.border.dark
-                              : COLORS.border.light,
-                          }}
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <Pill
-                                className="w-4 h-4"
-                                style={{ color: COLORS.primary }}
-                              />
-                              <span
-                                className="font-medium"
-                                style={{
-                                  color: isDarkMode
-                                    ? COLORS.text.white
-                                    : COLORS.text.primary,
-                                }}
-                              >
-                                {prescription.items?.[0]?.medication_name ||
-                                  'Unknown Medication'}
-                              </span>
-                            </div>
-                            <span
-                              className="text-xs px-2 py-1 rounded-full"
-                              style={{
-                                backgroundColor:
-                                  prescription.prescription_status === 'active'
-                                    ? COLORS.success + '20'
-                                    : COLORS.warning + '20',
-                                color:
-                                  prescription.prescription_status === 'active'
-                                    ? COLORS.success
-                                    : COLORS.warning,
-                              }}
-                            >
-                              {prescription.prescription_status}
-                            </span>
-                          </div>
-                          {prescription.items?.map((item, index) => (
-                            <div key={index} className="text-sm mt-2">
-                              <p style={{ color: COLORS.text.secondary }}>
-                                Dosage: {item.dosage} • Frequency:{' '}
-                                {item.frequency}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p style={{ color: COLORS.text.secondary }}>
-                      No active prescriptions
-                    </p>
-                  )}
-                </div>
-              )}
-            </>
-          )}
+                    <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span className="hidden md:inline">{tab.label}</span>
+                    <span className="md:hidden">{tab.shortLabel}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {/* Fade effect on the right edge for scroll indication on mobile */}
+            <div
+              className="absolute right-0 top-0 bottom-0 w-6 pointer-events-none md:hidden"
+              style={{
+                background: `linear-gradient(to left, ${isDarkMode ? COLORS.surface.dark : '#ffffff'}, transparent)`,
+              }}
+            />
+          </div>
+
+          {/* Tab Content */}
+          <div className="overflow-x-hidden">
+            {loading && activeTab === 'details' ? (
+              <div className="flex justify-center py-12">
+                <LoadingSpinner size="lg" />
+              </div>
+            ) : (
+              <>
+                {/* Details Tab */}
+                {activeTab === 'details' && (
+                  <DetailsTab
+                    attendingDoctor={attendingDoctor}
+                    getDoctorName={getDoctorName}
+                    patient={patient}
+                    patientPerson={patientPerson}
+                    admission={currentData}
+                    isDarkMode={isDarkMode}
+                    currentBed={currentBed}
+                    calculateLOS={calculateLOS}
+                    userRole="doctor" // Set as doctor role
+                    setShowDischargeForm={setShowDischargeModal}
+                  />
+                )}
+
+                {/* Appointment Info Tab */}
+                {activeTab === 'appointment' && (
+                  <>
+                    {originatingAppointment ? (
+                      <AppointmentInfoTab
+                        originatingAppointment={originatingAppointment}
+                        isDarkMode={isDarkMode}
+                        getDoctorName={getDoctorName}
+                      />
+                    ) : (
+                      <div
+                        className="text-center py-8"
+                        style={{ color: COLORS.text.secondary }}
+                      >
+                        No appointment information available
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Bed History Tab */}
+                {activeTab === 'history' && (
+                  <BedHistoryTab
+                    isDarkMode={isDarkMode}
+                    loadingHistory={loadingHistory}
+                    bedHistory={bedHistory}
+                  />
+                )}
+
+                {/* Vitals Trend Tab */}
+                {activeTab === 'vitalsTrend' && (
+                  <VitalsChartTab admissionId={currentData.admission_id} />
+                )}
+
+                {/* Progress Notes Tab */}
+                {activeTab === 'progressNotes' && (
+                  <ProgressNotesTab
+                    admissionId={currentData.admission_id}
+                    admission={currentData}
+                  />
+                )}
+              </>
+            )}
+          </div>
         </div>
-      </div>
-    </div>
+
+        {/* Hide scrollbar CSS */}
+        <style>{`
+          .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+          }
+          .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+        `}</style>
+      </Modal>
+
+      {/* Discharge Request Modal */}
+      {showDischargeModal && (
+        <DischargeRequestModal
+          isOpen={showDischargeModal}
+          onClose={() => setShowDischargeModal(false)}
+          admission={currentData}
+          onSubmit={handleDischargeRequest}
+        />
+      )}
+    </>
   );
 };
 

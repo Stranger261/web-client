@@ -16,6 +16,8 @@ import { COLORS } from '../../configs/CONST';
 import Badge from '../ui/badge';
 import { formatDate } from '../../utils/dateFormatter';
 import { formatTime } from '../../utils/FormatTime';
+import appointmentApi from '../../services/appointmentApi';
+import toast from 'react-hot-toast';
 
 const AppointmentDetailModal = ({
   isOpen,
@@ -27,6 +29,8 @@ const AppointmentDetailModal = ({
 
   if (!appointment) return null;
 
+  const isToday =
+    new Date().toLocaleDateString('en-CA') === appointment.appointment_date;
   // Get status color
   const getStatusVariant = status => {
     const statusMap = {
@@ -39,6 +43,24 @@ const AppointmentDetailModal = ({
       'no-show': 'danger',
     };
     return statusMap[status] || 'default';
+  };
+
+  const markAppointmentAsArrived = appointment => {
+    console.log(appointment);
+    try {
+      const newAppointment = appointmentApi.updateAppointmentStatus(
+        appointment.appointment_id,
+        'arrived',
+      );
+      console.log(newAppointment);
+
+      toast.success('Appointment status changed.');
+      onClose();
+    } catch (error) {
+      const errorMsg =
+        error?.response?.data?.message || 'Update status failed.';
+      toast.error(errorMsg);
+    }
   };
 
   // Get payment status color
@@ -605,7 +627,7 @@ const AppointmentDetailModal = ({
                         >
                           Edit Appointment
                         </button>
-                        {appointment.status === 'scheduled' && (
+                        {appointment.status === 'scheduled' && isToday && (
                           <button
                             className="px-4 py-2.5 font-medium rounded-lg transition-colors"
                             style={{
@@ -620,8 +642,11 @@ const AppointmentDetailModal = ({
                               e.currentTarget.style.backgroundColor =
                                 COLORS.success;
                             }}
+                            onClick={() =>
+                              markAppointmentAsArrived(appointment)
+                            }
                           >
-                            Check In
+                            Mark as arrived
                           </button>
                         )}
                       </>

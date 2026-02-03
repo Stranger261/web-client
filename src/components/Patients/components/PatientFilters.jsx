@@ -1,7 +1,8 @@
-import { Search, Filter, X } from 'lucide-react';
+import { Search, Filter, X, Download } from 'lucide-react';
 import { Button } from '../../ui/button';
 import { Select } from '../../ui/select';
 import { useState, useEffect, useRef } from 'react';
+import ExportButton from '../../ui/ExportButton';
 
 const PatientFilters = ({
   filters,
@@ -10,6 +11,9 @@ const PatientFilters = ({
   onFilterChange,
   onClearFilters,
   onToggleFilters,
+  patients,
+  userRole,
+  isDarkMode,
 }) => {
   // Local state for search query to debounce
   const [localSearchQuery, setLocalSearchQuery] = useState(
@@ -72,7 +76,7 @@ const PatientFilters = ({
   };
 
   return (
-    <header className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-lg mb-4 overflow-hidden">
+    <header className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-lg mb-4 ">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 sm:px-6 py-4 gap-4">
         <div className="min-w-0 flex-shrink">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
@@ -83,20 +87,28 @@ const PatientFilters = ({
           </p>
         </div>
 
-        <Button
-          variant="outline"
-          icon={Filter}
-          onClick={onToggleFilters}
-          className="w-full sm:w-auto"
-        >
-          <span className="hidden sm:inline">Filters</span>
-          <span className="sm:hidden">Filter</span>
-          {activeFiltersCount > 0 && (
-            <span className="ml-1 px-2.5 py-0.5 bg-blue-600 text-white text-xs font-bold rounded-full">
-              {activeFiltersCount}
-            </span>
-          )}
-        </Button>
+        <div className="flex justify-between gap-5">
+          {/* Export Button - Only visible for admin and receptionist */}
+          <ExportButton
+            patients={patients}
+            isDarkMode={isDarkMode}
+            userRole={userRole}
+          />
+          <Button
+            variant="outline"
+            icon={Filter}
+            onClick={onToggleFilters}
+            className="w-full sm:w-auto"
+          >
+            <span className="hidden sm:inline">Filters</span>
+            <span className="sm:hidden">Filter</span>
+            {activeFiltersCount > 0 && (
+              <span className="ml-1 px-2.5 py-0.5 bg-blue-600 text-white text-xs font-bold rounded-full">
+                {activeFiltersCount}
+              </span>
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Filters Panel */}

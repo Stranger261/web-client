@@ -28,7 +28,7 @@ import { AddressSection } from '../components/AddressSection';
 import { calculateAge } from '../utils/patientHelpers';
 
 const OverViewTab = ({ isDarkMode, patient, stats }) => {
-  const age = calculateAge(patient.date_of_birth);
+  const age = calculateAge(patient?.date_of_birth);
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -58,9 +58,9 @@ const OverViewTab = ({ isDarkMode, patient, stats }) => {
                     color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
                   }}
                 >
-                  {patient.first_name}{' '}
-                  {patient.middle_name && `${patient.middle_name} `}
-                  {patient.last_name}
+                  {patient?.first_name}{' '}
+                  {patient?.middle_name && `${patient?.middle_name} `}
+                  {patient?.last_name}
                 </h1>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
                   <span
@@ -71,12 +71,12 @@ const OverViewTab = ({ isDarkMode, patient, stats }) => {
                         : COLORS.text.secondary,
                     }}
                   >
-                    {patient.mrn}
+                    {patient?.mrn}
                   </span>
                   <span
-                    className={`px-2 sm:px-3 py-1 rounded-full text-xs font-semibold ${patient.patient_status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+                    className={`px-2 sm:px-3 py-1 rounded-full text-xs font-semibold ${patient?.patient_status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
                   >
-                    {patient.patient_status}
+                    {patient?.patient_status}
                   </span>
                 </div>
               </div>
@@ -96,7 +96,7 @@ const OverViewTab = ({ isDarkMode, patient, stats }) => {
                       : COLORS.text.secondary,
                   }}
                 >
-                  {patient.email}
+                  {patient?.email}
                 </span>
               </div>
               <div className="flex items-center gap-2 min-w-0">
@@ -112,7 +112,7 @@ const OverViewTab = ({ isDarkMode, patient, stats }) => {
                       : COLORS.text.secondary,
                   }}
                 >
-                  {patient.phone}
+                  {patient?.phone}
                 </span>
               </div>
             </div>
@@ -262,7 +262,7 @@ const OverViewTab = ({ isDarkMode, patient, stats }) => {
                   color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
                 }}
               >
-                {formatDate(patient.date_of_birth)}
+                {formatDate(patient?.date_of_birth)}
               </p>
               {age && (
                 <span
@@ -289,7 +289,7 @@ const OverViewTab = ({ isDarkMode, patient, stats }) => {
                 color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
               }}
             >
-              {patient.gender || 'Not specified'}
+              {patient?.gender || 'Not specified'}
             </p>
           </div>
 
@@ -308,7 +308,7 @@ const OverViewTab = ({ isDarkMode, patient, stats }) => {
                 color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
               }}
             >
-              {patient.civil_status || 'Not specified'}
+              {patient?.civil_status || 'Not specified'}
             </p>
           </div>
 
@@ -327,7 +327,7 @@ const OverViewTab = ({ isDarkMode, patient, stats }) => {
                 color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
               }}
             >
-              {patient.nationality || 'Not specified'}
+              {patient?.nationality || 'Not specified'}
             </p>
           </div>
 
@@ -346,7 +346,7 @@ const OverViewTab = ({ isDarkMode, patient, stats }) => {
                 color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
               }}
             >
-              {patient.registration_type?.replace('_', ' ') || 'Not specified'}
+              {patient?.registration_type?.replace('_', ' ') || 'Not specified'}
             </p>
           </div>
 
@@ -365,7 +365,7 @@ const OverViewTab = ({ isDarkMode, patient, stats }) => {
                 color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
               }}
             >
-              {formatDate(patient.first_visit_date)}
+              {formatDate(patient?.first_visit_date)}
             </p>
           </div>
         </div>
@@ -410,9 +410,9 @@ const OverViewTab = ({ isDarkMode, patient, stats }) => {
               </p>
             </div>
             <p
-              className={`font-medium text-sm ${patient.blood_type ? '' : 'italic'}`}
+              className={`font-medium text-sm ${patient?.blood_type ? '' : 'italic'}`}
               style={{
-                color: patient.blood_type
+                color: patient?.blood_type
                   ? isDarkMode
                     ? COLORS.text.white
                     : COLORS.text.primary
@@ -421,7 +421,7 @@ const OverViewTab = ({ isDarkMode, patient, stats }) => {
                     : COLORS.text.secondary,
               }}
             >
-              {patient.blood_type || 'Not specified'}
+              {patient?.blood_type || 'Not specified'}
             </p>
           </div>
 
@@ -441,9 +441,9 @@ const OverViewTab = ({ isDarkMode, patient, stats }) => {
               </p>
             </div>
             <p
-              className={`font-medium text-sm ${patient.weight ? '' : 'italic'}`}
+              className={`font-medium text-sm ${patient?.weight ? '' : 'italic'}`}
               style={{
-                color: patient.weight
+                color: patient?.weight
                   ? isDarkMode
                     ? COLORS.text.white
                     : COLORS.text.primary
@@ -452,7 +452,7 @@ const OverViewTab = ({ isDarkMode, patient, stats }) => {
                     : COLORS.text.secondary,
               }}
             >
-              {patient.weight ? `${patient.weight} kg` : 'Not specified'}
+              {patient?.weight ? `${patient?.weight} kg` : 'Not specified'}
             </p>
           </div>
 
@@ -472,9 +472,9 @@ const OverViewTab = ({ isDarkMode, patient, stats }) => {
               </p>
             </div>
             <p
-              className={`font-medium text-sm ${patient.height ? '' : 'italic'}`}
+              className={`font-medium text-sm ${patient?.height ? '' : 'italic'}`}
               style={{
-                color: patient.height
+                color: patient?.height
                   ? isDarkMode
                     ? COLORS.text.white
                     : COLORS.text.primary
@@ -483,7 +483,7 @@ const OverViewTab = ({ isDarkMode, patient, stats }) => {
                     : COLORS.text.secondary,
               }}
             >
-              {patient.height ? `${patient.height} cm` : 'Not specified'}
+              {patient?.height ? `${patient?.height} cm` : 'Not specified'}
             </p>
           </div>
 
@@ -503,9 +503,9 @@ const OverViewTab = ({ isDarkMode, patient, stats }) => {
               </p>
             </div>
             <p
-              className={`font-medium text-sm break-words ${patient.current_medications ? '' : 'italic'}`}
+              className={`font-medium text-sm break-words ${patient?.current_medications ? '' : 'italic'}`}
               style={{
-                color: patient.current_medications
+                color: patient?.current_medications
                   ? isDarkMode
                     ? COLORS.text.white
                     : COLORS.text.primary
@@ -514,7 +514,7 @@ const OverViewTab = ({ isDarkMode, patient, stats }) => {
                     : COLORS.text.secondary,
               }}
             >
-              {patient.current_medications || 'None recorded'}
+              {patient?.current_medications || 'None recorded'}
             </p>
           </div>
         </div>
@@ -545,8 +545,8 @@ const OverViewTab = ({ isDarkMode, patient, stats }) => {
           </div>
 
           <div className="space-y-3">
-            {patient.contacts.length > 0 ? (
-              patient.contacts.map((contact, index) => (
+            {patient?.contacts.length > 0 ? (
+              patient?.contacts.map((contact, index) => (
                 <div
                   key={index}
                   className={`p-3 rounded-lg ${contact.is_primary ? (isDarkMode ? 'bg-gray-700' : 'bg-blue-50') : isDarkMode ? 'bg-gray-900/50' : 'bg-gray-50'}`}
@@ -648,9 +648,9 @@ const OverViewTab = ({ isDarkMode, patient, stats }) => {
                 Provider
               </p>
               <p
-                className={`font-medium text-sm break-words ${patient.insurance_provider ? '' : 'italic'}`}
+                className={`font-medium text-sm break-words ${patient?.insurance_provider ? '' : 'italic'}`}
                 style={{
-                  color: patient.insurance_provider
+                  color: patient?.insurance_provider
                     ? isDarkMode
                       ? COLORS.text.white
                       : COLORS.text.primary
@@ -659,7 +659,7 @@ const OverViewTab = ({ isDarkMode, patient, stats }) => {
                       : COLORS.text.secondary,
                 }}
               >
-                {patient.insurance_provider || 'Not specified'}
+                {patient?.insurance_provider || 'Not specified'}
               </p>
             </div>
 
@@ -673,9 +673,9 @@ const OverViewTab = ({ isDarkMode, patient, stats }) => {
                 Policy Number
               </p>
               <p
-                className={`font-medium font-mono text-sm break-all ${patient.insurance_number ? '' : 'italic'}`}
+                className={`font-medium font-mono text-sm break-all ${patient?.insurance_number ? '' : 'italic'}`}
                 style={{
-                  color: patient.insurance_number
+                  color: patient?.insurance_number
                     ? isDarkMode
                       ? COLORS.text.white
                       : COLORS.text.primary
@@ -684,11 +684,11 @@ const OverViewTab = ({ isDarkMode, patient, stats }) => {
                       : COLORS.text.secondary,
                 }}
               >
-                {patient.insurance_number || 'Not specified'}
+                {patient?.insurance_number || 'Not specified'}
               </p>
             </div>
 
-            {patient.insurance_expiry && (
+            {patient?.insurance_expiry && (
               <div className="space-y-1">
                 <p
                   className="text-xs uppercase tracking-wider"
@@ -706,7 +706,7 @@ const OverViewTab = ({ isDarkMode, patient, stats }) => {
                     color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
                   }}
                 >
-                  {formatDate(patient.insurance_expiry)}
+                  {formatDate(patient?.insurance_expiry)}
                 </p>
               </div>
             )}
@@ -717,7 +717,7 @@ const OverViewTab = ({ isDarkMode, patient, stats }) => {
       {/* Medical Notes Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Chronic Conditions */}
-        {patient.chronic_conditions && (
+        {patient?.chronic_conditions && (
           <div
             className={`rounded-lg border p-4 sm:p-5 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}
             style={{
@@ -746,13 +746,13 @@ const OverViewTab = ({ isDarkMode, patient, stats }) => {
                 color: isDarkMode ? COLORS.text.light : COLORS.text.secondary,
               }}
             >
-              {patient.chronic_conditions}
+              {patient?.chronic_conditions}
             </p>
           </div>
         )}
 
         {/* Medical History */}
-        {patient.medical_history && (
+        {patient?.medical_history && (
           <div
             className={`rounded-lg border p-4 sm:p-5 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}
             style={{
@@ -781,7 +781,7 @@ const OverViewTab = ({ isDarkMode, patient, stats }) => {
                 color: isDarkMode ? COLORS.text.light : COLORS.text.secondary,
               }}
             >
-              {patient.medical_history}
+              {patient?.medical_history}
             </p>
           </div>
         )}

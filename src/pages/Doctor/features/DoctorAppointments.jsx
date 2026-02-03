@@ -4,12 +4,10 @@ import { Filter, X, Calendar, Search } from 'lucide-react';
 
 import { useAuth } from '../../../contexts/AuthContext';
 import { useAppointment } from '../../../contexts/AppointmentContext';
-import { useSocket } from '../../../contexts/SocketContext';
 
 import { Button } from '../../../components/ui/button';
 import Modal from '../../../components/ui/Modal';
 import Pagination from '../../../components/ui/pagination';
-import { Select } from '../../../components/ui/select';
 import { LoadingSpinner } from '../../../components/ui/loading-spinner';
 import AppointmentDetailModal from '../../../components/Modals/AppointmentDetailModal';
 
@@ -20,7 +18,6 @@ const DoctorAppointment = () => {
   const { currentUser } = useAuth();
   const { isLoading, appointments, pagination, getDoctorAppointments } =
     useAppointment();
-  const { socket, isConnected } = useSocket();
 
   const [showDetails, setShowDetails] = useState(false);
   const [selectedAppt, setSelectedAppt] = useState(null);

@@ -5,6 +5,7 @@ import PatientRoute from './PatientRoute';
 import DoctorRoute from './DoctorRoute';
 import ReceptionistRoute from './ReceptionistRoute';
 import NurseRoute from './NurseRoute';
+import AdminRoute from './AdminRoute';
 
 const AppRoutes = () => {
   return (
@@ -13,6 +14,7 @@ const AppRoutes = () => {
       {ReceptionistRoute}
       {DoctorRoute}
       {PatientRoute}
+      {AdminRoute}
       {PublicRoutes}
     </Routes>
   );

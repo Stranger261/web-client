@@ -6,7 +6,7 @@ import { Button } from '../ui/button';
 import ConfirmationModal from './modals/ConfirmationModal';
 import authApi from '../../services/authApi';
 
-const TwoFactorSettings = () => {
+const TwoFactorSettings = ({ isDarkMode = false }) => {
   const [is2FAEnabled, setIs2FAEnabled] = useState(false);
   const [mfaMethod, setMfaMethod] = useState('disabled');
   const [trustedDevices, setTrustedDevices] = useState([]);
@@ -154,10 +154,22 @@ const TwoFactorSettings = () => {
   // Loading State
   if (isLoading) {
     return (
-      <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+      <div
+        className={`p-6 rounded-lg shadow border ${
+          isDarkMode
+            ? 'bg-gray-800 border-gray-700'
+            : 'bg-white border-gray-200'
+        }`}
+      >
         <div className="flex items-center space-x-3">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-          <p className="text-gray-600">Loading security settings...</p>
+          <div
+            className={`animate-spin rounded-full h-6 w-6 border-b-2 ${
+              isDarkMode ? 'border-blue-500' : 'border-blue-600'
+            }`}
+          ></div>
+          <p className={isDarkMode ? 'text-gray-300' : 'text-gray-600'}>
+            Loading security settings...
+          </p>
         </div>
       </div>
     );
@@ -166,14 +178,30 @@ const TwoFactorSettings = () => {
   // Error State
   if (error) {
     return (
-      <div className="bg-white p-6 rounded-lg shadow border border-red-200">
+      <div
+        className={`p-6 rounded-lg shadow border ${
+          isDarkMode
+            ? 'bg-gray-800 border-red-700/50'
+            : 'bg-white border-red-200'
+        }`}
+      >
         <div className="flex items-start space-x-3">
-          <AlertCircle className="h-6 w-6 text-red-600 flex-shrink-0 mt-0.5" />
+          <AlertCircle className="h-6 w-6 text-red-500 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
-            <h3 className="text-lg font-semibold text-red-900">
+            <h3
+              className={`text-lg font-semibold ${
+                isDarkMode ? 'text-red-300' : 'text-red-900'
+              }`}
+            >
               Error Loading Settings
             </h3>
-            <p className="text-sm text-red-600 mt-1">{error}</p>
+            <p
+              className={`text-sm mt-1 ${
+                isDarkMode ? 'text-red-400' : 'text-red-600'
+              }`}
+            >
+              {error}
+            </p>
             <Button
               onClick={handleRefresh}
               variant="outline"
@@ -192,15 +220,29 @@ const TwoFactorSettings = () => {
     <>
       <div className="space-y-6">
         {/* 2FA Toggle */}
-        <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+        <div
+          className={`p-6 rounded-lg shadow border ${
+            isDarkMode
+              ? 'bg-gray-800 border-gray-700'
+              : 'bg-white border-gray-200'
+          }`}
+        >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3">
               <Shield className="h-6 w-6 text-blue-600" />
               <div>
-                <h3 className="text-lg font-semibold">
+                <h3
+                  className={`text-lg font-semibold ${
+                    isDarkMode ? 'text-white' : 'text-gray-900'
+                  }`}
+                >
                   Two-Factor Authentication
                 </h3>
-                <p className="text-sm text-gray-600">
+                <p
+                  className={`text-sm ${
+                    isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                  }`}
+                >
                   Add an extra layer of security to your account
                 </p>
               </div>
@@ -212,7 +254,7 @@ const TwoFactorSettings = () => {
               variant={is2FAEnabled ? 'outline' : 'primary'}
               className={
                 is2FAEnabled
-                  ? 'border-red-300 text-red-600 hover:bg-red-50'
+                  ? `border-red-300 ${isDarkMode ? 'text-red-400 hover:bg-red-900/30' : 'text-red-600 hover:bg-red-50'}`
                   : ''
               }
             >
@@ -228,24 +270,46 @@ const TwoFactorSettings = () => {
 
           {/* Status Badge */}
           {is2FAEnabled ? (
-            <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+            <div
+              className={`p-4 rounded-lg border ${
+                isDarkMode
+                  ? 'bg-green-900/20 border-green-700'
+                  : 'bg-green-50 border-green-200'
+              }`}
+            >
               <div className="flex items-start space-x-3">
                 <div className="flex-shrink-0">
-                  <div className="flex items-center justify-center h-6 w-6 rounded-full bg-green-100">
+                  <div
+                    className={`flex items-center justify-center h-6 w-6 rounded-full ${
+                      isDarkMode ? 'bg-green-800' : 'bg-green-100'
+                    }`}
+                  >
                     <span className="text-green-600 font-bold text-sm">✓</span>
                   </div>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-green-900">
+                  <p
+                    className={`text-sm font-medium ${
+                      isDarkMode ? 'text-green-300' : 'text-green-900'
+                    }`}
+                  >
                     Two-Factor Authentication is Active
                   </p>
-                  <p className="text-sm text-green-700 mt-1">
+                  <p
+                    className={`text-sm mt-1 ${
+                      isDarkMode ? 'text-green-400' : 'text-green-700'
+                    }`}
+                  >
                     Authentication method:{' '}
                     <span className="font-semibold capitalize">
                       {mfaMethod}
                     </span>
                   </p>
-                  <p className="text-xs text-green-600 mt-2">
+                  <p
+                    className={`text-xs mt-2 ${
+                      isDarkMode ? 'text-green-500' : 'text-green-600'
+                    }`}
+                  >
                     You will be asked to enter a verification code sent to your{' '}
                     {mfaMethod} when logging in from new devices.
                   </p>
@@ -253,14 +317,28 @@ const TwoFactorSettings = () => {
               </div>
             </div>
           ) : (
-            <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+            <div
+              className={`p-4 rounded-lg border ${
+                isDarkMode
+                  ? 'bg-yellow-900/20 border-yellow-700'
+                  : 'bg-yellow-50 border-yellow-200'
+              }`}
+            >
               <div className="flex items-start space-x-3">
-                <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                <AlertCircle className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-yellow-900">
+                  <p
+                    className={`text-sm font-medium ${
+                      isDarkMode ? 'text-yellow-300' : 'text-yellow-900'
+                    }`}
+                  >
                     Two-Factor Authentication is Disabled
                   </p>
-                  <p className="text-xs text-yellow-700 mt-1">
+                  <p
+                    className={`text-xs mt-1 ${
+                      isDarkMode ? 'text-yellow-400' : 'text-yellow-700'
+                    }`}
+                  >
                     Your account is less secure without 2FA. Enable it to
                     protect your account from unauthorized access.
                   </p>
@@ -272,13 +350,29 @@ const TwoFactorSettings = () => {
 
         {/* Trusted Devices */}
         {is2FAEnabled && (
-          <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
+          <div
+            className={`p-6 rounded-lg shadow border ${
+              isDarkMode
+                ? 'bg-gray-800 border-gray-700'
+                : 'bg-white border-gray-200'
+            }`}
+          >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-2">
                 <Smartphone className="h-6 w-6 text-blue-600" />
                 <div>
-                  <h3 className="text-lg font-semibold">Trusted Devices</h3>
-                  <p className="text-sm text-gray-600">
+                  <h3
+                    className={`text-lg font-semibold ${
+                      isDarkMode ? 'text-white' : 'text-gray-900'
+                    }`}
+                  >
+                    Trusted Devices
+                  </h3>
+                  <p
+                    className={`text-sm ${
+                      isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                    }`}
+                  >
                     {trustedDevices.length === 0
                       ? 'No trusted devices yet'
                       : `${trustedDevices.length} trusted ${trustedDevices.length === 1 ? 'device' : 'devices'}`}
@@ -293,10 +387,32 @@ const TwoFactorSettings = () => {
             </div>
 
             {trustedDevices.length === 0 ? (
-              <div className="p-8 text-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                <Smartphone className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-600 font-medium">No trusted devices</p>
-                <p className="text-sm text-gray-500 mt-1">
+              <div
+                className={`p-8 text-center rounded-lg border-2 border-dashed ${
+                  isDarkMode
+                    ? 'bg-gray-900/50 border-gray-600'
+                    : 'bg-gray-50 border-gray-300'
+                }`}
+              >
+                <Smartphone
+                  className={`h-12 w-12 mx-auto mb-3 ${
+                    isDarkMode ? 'text-gray-500' : 'text-gray-400'
+                  }`}
+                />
+                <p
+                  className={
+                    isDarkMode
+                      ? 'text-gray-300 font-medium'
+                      : 'text-gray-600 font-medium'
+                  }
+                >
+                  No trusted devices
+                </p>
+                <p
+                  className={`text-sm mt-1 ${
+                    isDarkMode ? 'text-gray-500' : 'text-gray-500'
+                  }`}
+                >
                   When you check "Trust this device" during login, it will
                   appear here
                 </p>
@@ -314,37 +430,77 @@ const TwoFactorSettings = () => {
                     <div
                       key={device.device_id}
                       className={`
-                      flex items-center justify-between p-4 border rounded-lg transition-colors
-                      ${isExpired ? 'border-red-200 bg-red-50' : 'border-gray-200 hover:bg-gray-50'}
-                    `}
+                        flex items-center justify-between p-4 border rounded-lg transition-colors
+                        ${
+                          isExpired
+                            ? isDarkMode
+                              ? 'border-red-800 bg-red-900/20'
+                              : 'border-red-200 bg-red-50'
+                            : isDarkMode
+                              ? 'border-gray-700 hover:bg-gray-750'
+                              : 'border-gray-200 hover:bg-gray-50'
+                        }
+                      `}
                     >
                       <div className="flex items-center space-x-3">
                         <div
                           className={`
-                        p-2 rounded-full
-                        ${isExpired ? 'bg-red-100' : 'bg-gray-100'}
-                      `}
+                            p-2 rounded-full
+                            ${
+                              isExpired
+                                ? isDarkMode
+                                  ? 'bg-red-800/50'
+                                  : 'bg-red-100'
+                                : isDarkMode
+                                  ? 'bg-gray-700'
+                                  : 'bg-gray-100'
+                            }
+                          `}
                         >
                           <Smartphone
-                            className={`h-5 w-5 ${isExpired ? 'text-red-600' : 'text-gray-600'}`}
+                            className={`h-5 w-5 ${
+                              isExpired
+                                ? 'text-red-500'
+                                : isDarkMode
+                                  ? 'text-gray-400'
+                                  : 'text-gray-600'
+                            }`}
                           />
                         </div>
                         <div>
                           <div className="flex items-center space-x-2">
-                            <p className="font-medium capitalize">
+                            <p
+                              className={`font-medium capitalize ${
+                                isDarkMode ? 'text-gray-300' : 'text-gray-900'
+                              }`}
+                            >
                               {device.device_type.replace(/_/g, ' ')}
                             </p>
                             {isExpired && (
-                              <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-medium">
+                              <span
+                                className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                  isDarkMode
+                                    ? 'bg-red-800/50 text-red-300'
+                                    : 'bg-red-100 text-red-700'
+                                }`}
+                              >
                                 Expired
                               </span>
                             )}
                           </div>
-                          <p className="text-sm text-gray-600">
+                          <p
+                            className={`text-sm ${
+                              isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                            }`}
+                          >
                             {device.ip_address}
                           </p>
                           <div className="flex items-center space-x-4 mt-1">
-                            <p className="text-xs text-gray-500">
+                            <p
+                              className={`text-xs ${
+                                isDarkMode ? 'text-gray-500' : 'text-gray-500'
+                              }`}
+                            >
                               Last used:{' '}
                               {new Date(device.last_used_at).toLocaleDateString(
                                 'en-US',
@@ -356,7 +512,13 @@ const TwoFactorSettings = () => {
                               )}
                             </p>
                             {!isExpired && (
-                              <p className="text-xs text-green-600 font-medium">
+                              <p
+                                className={`text-xs font-medium ${
+                                  isDarkMode
+                                    ? 'text-green-400'
+                                    : 'text-green-600'
+                                }`}
+                              >
                                 Expires in {expiresIn}{' '}
                                 {expiresIn === 1 ? 'day' : 'days'}
                               </p>
@@ -368,7 +530,11 @@ const TwoFactorSettings = () => {
                         onClick={() =>
                           handleRevokeDeviceClick(device.device_id)
                         }
-                        className="text-red-600 hover:text-red-800 p-2 hover:bg-red-50 rounded-lg transition-colors"
+                        className={`p-2 rounded-lg transition-colors ${
+                          isDarkMode
+                            ? 'text-red-400 hover:text-red-300 hover:bg-red-900/30'
+                            : 'text-red-600 hover:text-red-800 hover:bg-red-50'
+                        }`}
                         title="Remove device"
                       >
                         <Trash2 className="h-5 w-5" />
@@ -382,12 +548,30 @@ const TwoFactorSettings = () => {
         )}
 
         {/* Info Box */}
-        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+        <div
+          className={`p-4 rounded-lg border ${
+            isDarkMode
+              ? 'bg-blue-900/20 border-blue-700'
+              : 'bg-blue-50 border-blue-200'
+          }`}
+        >
           <div className="flex items-start space-x-3">
-            <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-blue-900">
+            <AlertCircle
+              className={`h-5 w-5 flex-shrink-0 mt-0.5 ${
+                isDarkMode ? 'text-blue-400' : 'text-blue-600'
+              }`}
+            />
+            <div
+              className={`text-sm ${
+                isDarkMode ? 'text-blue-300' : 'text-blue-900'
+              }`}
+            >
               <p className="font-medium mb-1">How does 2FA work?</p>
-              <ul className="list-disc list-inside space-y-1 text-blue-800">
+              <ul
+                className={`list-disc list-inside space-y-1 ${
+                  isDarkMode ? 'text-blue-400' : 'text-blue-800'
+                }`}
+              >
                 <li>
                   When you login from a new device, you'll receive a code via
                   email

@@ -36,7 +36,7 @@ import Tabs from '../../ui/tabs';
 
 const DoctorAdmissionsList = ({ isDarkMode }) => {
   // State
-  const [activeTab, setActiveTab] = useState('all'); // 'all', 'rounds', 'pending', 'discharged'
+  const [activeTab, setActiveTab] = useState('all');
   const [admissions, setAdmissions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -295,7 +295,7 @@ const DoctorAdmissionsList = ({ isDarkMode }) => {
   }
 
   return (
-    <div className="space-y-3 sm:space-y-4">
+    <div className="space-y-3 sm:space-y-4 px-2 sm:px-0">
       {/* Modals */}
       {showDetailsModal && selectedAdmission && (
         <DoctorAdmissionDetailsModal
@@ -382,15 +382,15 @@ const DoctorAdmissionsList = ({ isDarkMode }) => {
 
       {/* Header Section */}
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-lg overflow-hidden">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-3 sm:px-4 md:px-6 py-3 sm:py-4 gap-3 sm:gap-4">
-          <div className="min-w-0 w-full sm:w-auto">
-            <div className="flex items-center gap-2 mb-1">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 sm:px-5 md:px-6 py-3 sm:py-4 gap-3">
+          <div className="min-w-0 flex-1 w-full sm:w-auto">
+            <div className="flex items-center gap-2 sm:gap-2.5 mb-1">
               <Stethoscope
-                className="w-5 h-5"
+                className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0"
                 style={{ color: COLORS.primary }}
               />
               <h2
-                className="text-xl sm:text-2xl font-bold truncate"
+                className="text-lg sm:text-xl md:text-2xl font-bold truncate"
                 style={{
                   color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
                 }}
@@ -399,7 +399,7 @@ const DoctorAdmissionsList = ({ isDarkMode }) => {
               </h2>
             </div>
             <p
-              className="text-xs sm:text-sm"
+              className="text-xs sm:text-sm leading-relaxed"
               style={{ color: COLORS.text.secondary }}
             >
               {getFilterStatusMessage()}
@@ -410,27 +410,27 @@ const DoctorAdmissionsList = ({ isDarkMode }) => {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-2 w-full sm:w-auto">
+          <div className="flex gap-2 w-full sm:w-auto flex-shrink-0">
             <Button
               variant="outline"
               icon={BarChart3}
               onClick={() => setShowStats(!showStats)}
-              className="flex-1 sm:flex-none"
+              className="flex-1 sm:flex-none text-xs sm:text-sm"
+              size="sm"
             >
-              <span className="hidden sm:inline">Stats</span>
-              <span className="sm:hidden">Stats</span>
+              <span>Stats</span>
             </Button>
 
             <Button
               variant="outline"
               icon={Filter}
               onClick={() => setShowFilters(!showFilters)}
-              className="flex-1 sm:flex-none"
+              className="flex-1 sm:flex-none text-xs sm:text-sm relative"
+              size="sm"
             >
-              <span className="hidden sm:inline">Filters</span>
-              <span className="sm:hidden">Filter</span>
+              <span>Filters</span>
               {activeFiltersCount > 0 && (
-                <span className="ml-1 px-2 sm:px-2.5 py-0.5 bg-teal-600 text-white text-xs font-bold rounded-full">
+                <span className="absolute -top-1.5 -right-1.5 sm:static sm:ml-1.5 min-w-[18px] h-[18px] sm:min-w-[20px] sm:h-auto flex items-center justify-center px-1.5 sm:px-2 py-0.5 bg-teal-600 text-white text-[10px] sm:text-xs font-bold rounded-full">
                   {activeFiltersCount}
                 </span>
               )}
@@ -451,7 +451,7 @@ const DoctorAdmissionsList = ({ isDarkMode }) => {
         {showFilters && (
           <FilterPanel
             filters={filters}
-            onFilterChange={handleFilterChange} // Use the proper handler
+            onFilterChange={handleFilterChange}
             onClearFilters={handleClearFilters}
             filterConfig={doctorAdmissionFilterConfig}
             showFilters={showFilters}
@@ -514,7 +514,7 @@ const DoctorAdmissionsList = ({ isDarkMode }) => {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
             {admissions.map(admission => (
               <DoctorAdmissionCard
                 key={admission.admission_id}
@@ -531,14 +531,16 @@ const DoctorAdmissionsList = ({ isDarkMode }) => {
           </div>
 
           {/* Pagination */}
-          <Pagination
-            onPageChange={handlePageChange}
-            onItemsPerPageChange={handleItemsPerPageChange}
-            currentPage={pagination?.currentPage}
-            totalItems={pagination.total}
-            itemsPerPage={pagination.limit}
-            totalPages={pagination.totalPages}
-          />
+          {pagination.totalPages > 1 && (
+            <Pagination
+              onPageChange={handlePageChange}
+              onItemsPerPageChange={handleItemsPerPageChange}
+              currentPage={pagination?.currentPage}
+              totalItems={pagination.total}
+              itemsPerPage={pagination.limit}
+              totalPages={pagination.totalPages}
+            />
+          )}
         </>
       )}
     </div>

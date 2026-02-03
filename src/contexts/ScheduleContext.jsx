@@ -56,7 +56,7 @@ const ScheduleProvider = ({ children }) => {
         const res = await scheduleApi.getDoctorsAvailability(
           doctorUuid,
           startDate,
-          endDate
+          endDate,
         );
 
         setDoctorSchedule(res.data || []);
@@ -68,7 +68,7 @@ const ScheduleProvider = ({ children }) => {
         setIsLoading(false);
       }
     },
-    []
+    [],
   );
 
   const getCombinedSchedule = useCallback(
@@ -79,7 +79,7 @@ const ScheduleProvider = ({ children }) => {
         const res = await scheduleApi.getCombinedSchedule(
           departmentId,
           startDate,
-          endDate
+          endDate,
         );
 
         setCombinedSchedule(res.data || []);
@@ -91,8 +91,19 @@ const ScheduleProvider = ({ children }) => {
         setIsLoading(false);
       }
     },
-    []
+    [],
   );
+
+  const createDoctorSchedule = useCallback(async scheduleData => {
+    try {
+      const res = await scheduleApi.createDoctorSchedule(scheduleData);
+
+      return res.data;
+    } catch (error) {
+      console.error('Failed to create doctor schedule: ', error);
+      throw error;
+    }
+  }, []);
 
   const changeMonth = useCallback(
     async yearMonth => {
@@ -106,7 +117,7 @@ const ScheduleProvider = ({ children }) => {
           await getDoctorAvailability(
             doctorSchedule.doctor.id,
             startDate,
-            endDate
+            endDate,
           );
         } else if (combinedSchedule?.length > 0) {
           const deptId = combinedSchedule[0]?.doctor?.department?._id;
@@ -123,7 +134,7 @@ const ScheduleProvider = ({ children }) => {
       combinedSchedule,
       getDoctorAvailability,
       getCombinedSchedule,
-    ]
+    ],
   );
 
   const clearSchedules = useCallback(() => {
@@ -144,6 +155,7 @@ const ScheduleProvider = ({ children }) => {
     getCombinedSchedule,
     changeMonth,
     clearSchedules,
+    createDoctorSchedule,
   };
 
   return (

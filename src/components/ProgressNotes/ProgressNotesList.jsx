@@ -14,7 +14,7 @@ import Badge from '../ui/badge';
 import { COLORS } from '../../configs/CONST';
 import { LoadingSpinner } from '../ui/loading-spinner';
 
-const ProgressNotesList = ({ notes, loading, onRefresh, admission }) => {
+const ProgressNotesList = ({ notes, loading }) => {
   const isDarkMode = document.documentElement.classList.contains('dark');
   const [expandedNoteId, setExpandedNoteId] = useState(null);
 

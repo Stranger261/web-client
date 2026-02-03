@@ -19,6 +19,7 @@ const PatientDetails = () => {
   const [activeTab, setActiveTab] = useState('basic');
   const { patientData, loadingData, updateField, updateFields } =
     usePatientData();
+  const isDarkMode = document.documentElement.classList.contains('dark');
 
   const handleFieldUpdate = field => async newValue => {
     const result = await updateField(field, newValue);
@@ -49,6 +50,7 @@ const PatientDetails = () => {
           <BasicInfoTab
             patientData={patientData}
             onFieldUpdate={handleFieldUpdate}
+            isDarkMode={isDarkMode}
           />
         );
       case 'contact':
@@ -57,6 +59,7 @@ const PatientDetails = () => {
             patientData={patientData}
             onFieldUpdate={handleFieldUpdate}
             onFieldsUpdate={handleFieldsUpdate}
+            isDarkMode={isDarkMode}
           />
         );
       case 'medical':
@@ -64,6 +67,7 @@ const PatientDetails = () => {
           <MedicalTab
             patientData={patientData}
             onFieldUpdate={handleFieldUpdate}
+            isDarkMode={isDarkMode}
           />
         );
       default:
@@ -77,24 +81,26 @@ const PatientDetails = () => {
 
   return (
     <div
-      className="min-h-screen p-6"
-      style={{ backgroundColor: COLORS.background.main }}
+      className={`min-h-screen p-6 transition-colors duration-200 ${
+        isDarkMode ? 'bg-gray-900' : 'bg-gray-50'
+      }`}
     >
       <div className="max-w-6xl mx-auto">
-        <PatientHeader patientData={patientData} />
-        <SecurityAlert />
+        <PatientHeader patientData={patientData} isDarkMode={isDarkMode} />
+        <SecurityAlert isDarkMode={isDarkMode} />
 
         <div
-          className="mb-6 rounded-lg border overflow-hidden"
-          style={{
-            backgroundColor: COLORS.surface.light,
-            borderColor: COLORS.border.light,
-          }}
+          className={`mb-6 rounded-lg border overflow-hidden transition-colors duration-200 ${
+            isDarkMode
+              ? 'bg-gray-800 border-gray-700'
+              : 'bg-white border-gray-200'
+          }`}
         >
           <TabNavigation
             tabs={PATIENT_TABS}
             activeTab={activeTab}
             onTabChange={setActiveTab}
+            isDarkMode={isDarkMode}
           />
 
           <div className="p-6">{renderTabContent()}</div>

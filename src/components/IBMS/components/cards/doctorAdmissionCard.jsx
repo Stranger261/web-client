@@ -394,7 +394,7 @@ const DoctorAdmissionCard = ({
           </div>
         )}
 
-        {isPendingDischarge && (
+        {/* {isPendingDischarge && (
           <Button
             variant="warning"
             size="sm"
@@ -404,7 +404,7 @@ const DoctorAdmissionCard = ({
           >
             Pending Discharge
           </Button>
-        )}
+        )} */}
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 import { Button } from '../components/ui/button';
 import { LogOut } from 'lucide-react';
+import RegistrationSteps from '../pages/Patient/features/RegistrationSteps';
 
 const RegistrationLayout = () => {
   const { logout, currentUser } = useAuth();
@@ -92,7 +93,7 @@ const RegistrationLayout = () => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Outlet />
+        <RegistrationSteps />
       </main>
 
       {/* Footer (Optional) */}

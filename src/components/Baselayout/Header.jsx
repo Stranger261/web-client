@@ -1,9 +1,11 @@
-import { Bell, ChevronDown, Moon, RefreshCw, Sun } from 'lucide-react';
+// components/Baselayout/Header.jsx
+import { Bell, Moon, RefreshCw, Sun } from 'lucide-react';
 import { COLORS, GRADIENTS } from '../../configs/CONST';
 import { normalizedWord } from '../../utils/normalizedWord';
 import { useRef } from 'react';
 import LiveClockHeader from '../shared/LiveClock';
 import { Button } from '../ui/button';
+import NotificationItem from './NotificationItem'; // Import the new component
 
 const Header = ({
   currentUser,
@@ -25,13 +27,14 @@ const Header = ({
   formatNotificationTime,
   loadMore,
   setIsNotifOpen,
-  notificationRef, // Add this prop
+  notificationRef,
 }) => {
   const notificationScrollRef = useRef(null);
 
   const uuidDisplay =
     currentUser?.staff?.staff_uuid ||
     currentUser?.person?.patient?.patient_uuid;
+
   return (
     <header
       className="hidden lg:flex items-center justify-between px-6 py-4 shadow-sm sticky top-0 z-20"
@@ -61,7 +64,7 @@ const Header = ({
             iconOnly
             onClick={toggleNotifications}
             className="relative"
-            data-notification-button // Add this attribute
+            data-notification-button
           />
           {unreadCount > 0 && (
             <span
@@ -75,7 +78,7 @@ const Header = ({
           {/* Desktop Notification Dropdown */}
           {isNotifOpen && (
             <div
-              ref={notificationRef} // Attach the ref here
+              ref={notificationRef}
               className="absolute right-0 mt-2 w-96 rounded-lg shadow-lg overflow-hidden z-50"
               style={{
                 backgroundColor: darkMode
@@ -83,7 +86,7 @@ const Header = ({
                   : COLORS.surface.light,
                 border: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}`,
               }}
-              data-notification-panel // Add this attribute
+              data-notification-panel
             >
               {/* Header */}
               <div
@@ -162,67 +165,18 @@ const Header = ({
                   </div>
                 ) : (
                   <>
-                    {notifications.map(notif => {
-                      const NotifIcon = getNotificationIcon(notif.type);
-                      return (
-                        <div
-                          key={notif.notification_id}
-                          className="px-4 py-3 border-b hover:bg-opacity-50 cursor-pointer transition-colors"
-                          style={{
-                            backgroundColor: !notif.is_read
-                              ? darkMode
-                                ? 'rgba(59, 130, 246, 0.1)'
-                                : 'rgba(59, 130, 246, 0.05)'
-                              : 'transparent',
-                            borderColor: darkMode ? '#374151' : '#e5e7eb',
-                          }}
-                          onClick={() => markAsRead(notif.notification_id)}
-                        >
-                          <div className="flex items-start gap-3">
-                            <div
-                              className="p-2 rounded-full flex-shrink-0"
-                              style={{
-                                backgroundColor: darkMode
-                                  ? 'rgba(59, 130, 246, 0.2)'
-                                  : 'rgba(59, 130, 246, 0.1)',
-                              }}
-                            >
-                              <NotifIcon
-                                className="h-4 w-4"
-                                style={{ color: COLORS.primary }}
-                              />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-2">
-                                <p className="font-medium text-sm">
-                                  {notif.title}
-                                </p>
-                                {!notif.is_read && (
-                                  <div
-                                    className="w-2 h-2 rounded-full mt-1 flex-shrink-0"
-                                    style={{
-                                      backgroundColor: COLORS.primary,
-                                    }}
-                                  />
-                                )}
-                              </div>
-                              <p
-                                className="text-sm mt-1"
-                                style={{ color: COLORS.text.secondary }}
-                              >
-                                {notif.message}
-                              </p>
-                              <p
-                                className="text-xs mt-1"
-                                style={{ color: COLORS.text.secondary }}
-                              >
-                                {formatNotificationTime(notif.created_at)}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
+                    {notifications.map(notif => (
+                      <NotificationItem
+                        key={notif.notification_id}
+                        notif={notif}
+                        darkMode={darkMode}
+                        markAsRead={markAsRead}
+                        getNotificationIcon={getNotificationIcon}
+                        formatNotificationTime={formatNotificationTime}
+                        COLORS={COLORS}
+                        isMobile={false} // Desktop version
+                      />
+                    ))}
                     {isLoadingMore && (
                       <div className="px-4 py-3 text-center">
                         <RefreshCw
@@ -268,12 +222,12 @@ const Header = ({
               background: GRADIENTS.primary,
             }}
           >
-            {currentUser?.person.first_name?.charAt(0) || 'P'}
+            {currentUser?.person?.first_name?.charAt(0) || 'P'}
           </div>
           <div className="hidden md:block">
             <div className="font-medium">
-              {currentUser?.person.first_name || 'Patient'}{' '}
-              {currentUser?.person.last_name || ''}
+              {currentUser?.person?.first_name || currentUser?.role}{' '}
+              {currentUser?.person?.last_name || ''}
             </div>
             <div
               className="text-xs truncate"
@@ -285,10 +239,6 @@ const Header = ({
               UUID: {uuidDisplay || 'N/A'}
             </div>
           </div>
-          <ChevronDown
-            className="h-5 w-5"
-            style={{ color: COLORS.text.secondary }}
-          />
         </div>
       </div>
     </header>

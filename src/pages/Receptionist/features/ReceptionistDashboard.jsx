@@ -19,8 +19,9 @@ import {
   TrendingUp,
   TrendingDown,
   Info,
+  CalendarClock,
 } from 'lucide-react';
-import { COLORS, DEVELOPMENT_BASE_URL } from '../../../configs/CONST';
+import { DEVELOPMENT_BASE_URL } from '../../../configs/CONST';
 import StatsCard from '../../../components/ui/stat-card';
 import { Button } from '../../../components/ui/button';
 import Modal from '../../../components/ui/Modal';
@@ -30,6 +31,7 @@ import AppointmentDetailModal from '../../../components/Modals/AppointmentDetail
 import CreateAppointment from '../../../components/Forms/Appointments/CreateAppointment';
 import AppointmentList from '../../../components/shared/AppointmentList';
 import WalkInPatientRegistration from '../components/patientRegistration/WalkInPatientRegistration';
+import CreateScheduleModal from '../../../components/Modals/ScheduleModal';
 
 const ReceptionistDashboard = () => {
   const { currentUser } = useAuth();
@@ -51,6 +53,7 @@ const ReceptionistDashboard = () => {
     getDoctorAvailability,
     getCombinedSchedule,
     clearSchedules,
+    createDoctorSchedule, // Make sure this function exists in your ScheduleContext
     isLoading: scheduleLoading,
   } = useSchedule();
 
@@ -60,7 +63,6 @@ const ReceptionistDashboard = () => {
   const [searchingPatients, setSearchingPatients] = useState(false);
 
   const darkMode = document.documentElement.classList.contains('dark');
-  const navigate = useNavigate();
 
   const [isViewAppointModalOpen, setIsViewAppointModalOpen] = useState(false);
   const [isCreateAppointmentModalOpen, setIsCreateAppointmentModalOpen] =
@@ -72,7 +74,8 @@ const ReceptionistDashboard = () => {
   const [isCreatePatientModalOpen, setIsCreatePatientModalOpen] =
     useState(false);
   const [registeredPatients, setRegisteredPatients] = useState([]);
-
+  const [isCreateScheduleModalOpen, setIsCreateScheduleModalOpen] =
+    useState(false);
   // Filter state
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -155,44 +158,36 @@ const ReceptionistDashboard = () => {
       window.removeEventListener('refresh-today-appointments', fetch);
   }, [filters, limit, currentPage]);
 
+  const fetchData = async () => {
+    try {
+      setFetchingStats(true);
+      const res = await axios.get(`${DEVELOPMENT_BASE_URL}/dashboard/stats`, {
+        withCredentials: true,
+        params: {
+          role: 'receptionist',
+        },
+      });
+
+      setDashboardStats(res.data.data);
+    } catch (error) {
+      console.error('Dashboard stats error:', error);
+      toast.error('Failed to fetch dashboard statistics');
+      // Set fallback stats
+      setDashboardStats({
+        totalPatients: 0,
+        activePatients: 0,
+        newPatientsToday: 0,
+        breakdown: {
+          appointmentTypes: {},
+        },
+      });
+    } finally {
+      setFetchingStats(false);
+    }
+  };
+
   // Fetch dashboard stats
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setFetchingStats(true);
-        const res = await axios.get(`${DEVELOPMENT_BASE_URL}/dashboard/stats`, {
-          withCredentials: true,
-          params: {
-            role: 'receptionist',
-          },
-        });
-
-        setDashboardStats(res.data.data);
-      } catch (error) {
-        console.error('Dashboard stats error:', error);
-        toast.error('Failed to fetch dashboard statistics');
-        // Set fallback stats
-        setDashboardStats({
-          totalPatients: 0,
-          activePatients: 0,
-          newPatientsToday: 0,
-          todaysOverview: {
-            appointments: 0,
-            revenue: 0,
-            waitingPatients: 0,
-          },
-          financial: {
-            weeklyRevenue: 0,
-          },
-          breakdown: {
-            appointmentTypes: {},
-          },
-        });
-      } finally {
-        setFetchingStats(false);
-      }
-    };
-
     fetchData();
   }, []);
 
@@ -236,11 +231,11 @@ const ReceptionistDashboard = () => {
 
   // Initialize schedule data
   useEffect(() => {
-    if (isCreateAppointmentModalOpen) {
+    if (isCreateAppointmentModalOpen || isCreateScheduleModalOpen) {
       getDepartments();
       getAllDoctors();
     }
-  }, [isCreateAppointmentModalOpen]);
+  }, [isCreateAppointmentModalOpen, isCreateScheduleModalOpen]);
 
   // Search patients function for CreateAppointment component
   const handleSearchPatients = async searchTerm => {
@@ -283,6 +278,25 @@ const ReceptionistDashboard = () => {
       return response;
     } catch (error) {
       throw new Error(error.message || 'Failed to create appointment');
+    }
+  };
+
+  // Handle schedule creation
+  const handleCreateSchedule = async scheduleData => {
+    try {
+      if (!createDoctorSchedule) {
+        throw new Error('Schedule creation function not available');
+      }
+
+      await createDoctorSchedule(scheduleData);
+
+      toast.success('Doctor schedule created successfully!');
+    } catch (error) {
+      const errorMsg =
+        error?.response?.data?.message || 'Failed to create schedule';
+      console.error('Error creating schedule:', error);
+      toast.error(errorMsg);
+      throw error;
     }
   };
 
@@ -340,9 +354,9 @@ const ReceptionistDashboard = () => {
           value: (
             dashboardStats.todaysOverview?.appointments || 0
           ).toLocaleString(),
-          change: `${
-            dashboardStats.todaysOverview?.waitingPatients || 0
-          } waiting`,
+          // change: `${
+          //   dashboardStats.todaysOverview?.waitingPatients || 0
+          // } waiting`,
           trend:
             calculateAppointmentTrend() > 0
               ? 'up'
@@ -356,21 +370,6 @@ const ReceptionistDashboard = () => {
           }\nPatients waiting: ${
             dashboardStats.todaysOverview?.waitingPatients || 0
           }`,
-        },
-        {
-          label: "Today's Revenue",
-          value: formatCurrency(dashboardStats.todaysOverview?.revenue || 0),
-          change: `Weekly: ${formatCurrency(
-            dashboardStats.financial?.weeklyRevenue || 0,
-          )}`,
-          trend: dashboardStats.todaysOverview?.revenue > 0 ? 'up' : 'neutral',
-          icon: DollarSign,
-          color: 'success',
-          tooltip: `Revenue today: ${formatCurrency(
-            dashboardStats.todaysOverview?.revenue || 0,
-          )}\nWeekly revenue: ${formatCurrency(
-            dashboardStats.financial?.weeklyRevenue || 0,
-          )}`,
         },
         {
           label: 'Completion Rate',
@@ -411,14 +410,6 @@ const ReceptionistDashboard = () => {
       color: 'warning',
     },
     {
-      label: "Today's Revenue",
-      value: '₱0',
-      change: 'Loading...',
-      trend: 'neutral',
-      icon: DollarSign,
-      color: 'success',
-    },
-    {
       label: 'Completion Rate',
       value: '0%',
       change: 'Loading...',
@@ -430,28 +421,6 @@ const ReceptionistDashboard = () => {
 
   // Appointment type breakdown for chart
   const appointmentTypes = dashboardStats?.breakdown?.appointmentTypes || {};
-
-  const alerts = [
-    {
-      id: 1,
-      type: 'critical',
-      message:
-        'Critical lab result for Emma Davis requires immediate attention',
-      time: '10 min ago',
-    },
-    {
-      id: 2,
-      type: 'warning',
-      message: 'Prescription refill request from 3 patients pending approval',
-      time: '1 hour ago',
-    },
-    {
-      id: 3,
-      type: 'info',
-      message: 'New patient registration: Robert Martinez',
-      time: '2 hours ago',
-    },
-  ];
 
   const quickActions = [
     {
@@ -467,6 +436,12 @@ const ReceptionistDashboard = () => {
       label: 'Patient Registry',
       color: 'purple',
       functions: () => setIsCreatePatientModalOpen(true),
+    },
+    {
+      icon: CalendarClock,
+      label: 'Create Doctor Schedule',
+      color: 'blue',
+      functions: () => setIsCreateScheduleModalOpen(true),
     },
     // {
     //   icon: Clock,
@@ -496,6 +471,11 @@ const ReceptionistDashboard = () => {
 
   const handleRegisterPatient = () => {
     toast.success('New patient registered.');
+  };
+
+  const handleScheduleCreated = newSchedule => {
+    toast.success('Doctor schedule created successfully!');
+    // You could refresh any schedule data here if needed
   };
 
   // ===== Pagination handlers =====
@@ -570,10 +550,20 @@ const ReceptionistDashboard = () => {
         />
       </Modal>
 
+      {/* Walk-in Patient Registration Modal */}
       <WalkInPatientRegistration
         isOpen={isCreatePatientModalOpen}
         onClose={() => setIsCreatePatientModalOpen(false)}
         onSuccess={handleRegisterPatient}
+      />
+
+      {/* Create Doctor Schedule Modal */}
+      <CreateScheduleModal
+        isOpen={isCreateScheduleModalOpen}
+        onClose={() => setIsCreateScheduleModalOpen(false)}
+        doctors={allDoctors} // Pass the list of doctors
+        onSubmit={handleCreateSchedule}
+        onSuccess={handleScheduleCreated}
       />
 
       {/* Welcome Section */}
@@ -590,9 +580,7 @@ const ReceptionistDashboard = () => {
                 : dashboardStats
                   ? `Today's summary: ${
                       dashboardStats.todaysOverview?.appointments || 0
-                    } appointments, ${formatCurrency(
-                      dashboardStats.todaysOverview?.revenue || 0,
-                    )} revenue`
+                    } appointments`
                   : 'Dashboard summary'}
             </p>
           </div>
@@ -612,7 +600,7 @@ const ReceptionistDashboard = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {fetchingStats
           ? loadingStats.map((stat, idx) => (
               <StatsCard
@@ -784,78 +772,6 @@ const ReceptionistDashboard = () => {
                 </button>
               ))}
             </div>
-          </div>
-
-          {/* Alerts Card */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                  Alerts & Notifications
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Important notices
-                </p>
-              </div>
-              <div className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-semibold rounded-full">
-                3 New
-              </div>
-            </div>
-            <div className="space-y-3">
-              {alerts.map(alert => {
-                const alertColors = {
-                  critical: {
-                    bg: darkMode ? '#7f1d1d' : '#fee2e2',
-                    text: darkMode ? '#fca5a5' : '#dc2626',
-                    icon: COLORS.danger,
-                  },
-                  warning: {
-                    bg: darkMode ? '#713f12' : '#fef3c7',
-                    text: darkMode ? '#fbbf24' : '#d97706',
-                    icon: COLORS.warning,
-                  },
-                  info: {
-                    bg: darkMode ? '#1e3a8a' : '#dbeafe',
-                    text: darkMode ? '#93c5fd' : '#2563eb',
-                    icon: COLORS.info,
-                  },
-                };
-                const alertColor = alertColors[alert.type];
-
-                return (
-                  <div
-                    key={alert.id}
-                    className="p-3 rounded-lg"
-                    style={{
-                      backgroundColor: alertColor.bg,
-                      borderLeft: `4px solid ${alertColor.icon}`,
-                    }}
-                  >
-                    <div className="flex gap-3">
-                      <AlertCircle
-                        size={18}
-                        color={alertColor.text}
-                        className="flex-shrink-0 mt-0.5"
-                      />
-                      <div className="flex-1">
-                        <p
-                          className="text-sm font-medium"
-                          style={{ color: alertColor.text }}
-                        >
-                          {alert.message}
-                        </p>
-                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                          {alert.time}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <button className="w-full mt-4 py-2 text-sm font-medium rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 transition-colors">
-              View All Alerts
-            </button>
           </div>
 
           {/* Daily Summary */}

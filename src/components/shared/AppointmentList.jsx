@@ -83,7 +83,10 @@ const AppointmentList = ({
     // NURSE ROLE LOGIC
     if (userRole === 'nurse') {
       // Nurse can only act when patient has arrived
-      if (appointment.status === 'arrived') {
+      if (
+        appointment.status === 'arrived' &&
+        !appointment.is_online_consultation
+      ) {
         // Nurse can start appointment/mark as ready
         if (onStartAppointment) {
           actions.push({

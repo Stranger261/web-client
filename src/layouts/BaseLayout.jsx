@@ -25,6 +25,7 @@ import { formatNotificationTime } from '../utils/FormatTime';
 import { getLocalDateString } from '../utils/dateFormatter';
 import Header from '../components/Baselayout/Header';
 import MobileHeader from '../components/Baselayout/MobileHeader';
+import NotificationItem from '../components/Baselayout/NotificationItem';
 
 const BaseLayout = () => {
   const navigate = useNavigate();
@@ -78,6 +79,39 @@ const BaseLayout = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isNotifOpen]);
+
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    const handleNewAppointmentReminder = data => {
+      console.log('New appointment reminder via socket:', data);
+
+      // Refresh notifications to show the new one
+      getUserNotifications();
+
+      // Play a subtle sound for 5-minute reminders
+      if (data.type === '5_min_before') {
+        try {
+          const audio = new Audio('/sounds/notification.mp3');
+          audio.volume = 0.3;
+          audio.play();
+        } catch (err) {
+          console.log('Could not play notification sound');
+        }
+
+        // Auto-open notification panel for 5-minute reminders
+        if (!isNotifOpen) {
+          setIsNotifOpen(true);
+        }
+      }
+    };
+
+    socket.on('appointment_reminder', handleNewAppointmentReminder);
+
+    return () => {
+      socket.off('appointment_reminder', handleNewAppointmentReminder);
+    };
+  }, [socket, isConnected, getUserNotifications, isNotifOpen]);
 
   const hasMore = notifPagination.currentPage < notifPagination.totalPages;
 
@@ -473,61 +507,16 @@ const BaseLayout = () => {
                 ) : (
                   <>
                     {notifications.map(notif => {
-                      const NotifIcon = getNotificationIcon(notif.type);
-                      return (
-                        <div
-                          key={notif.notification_id}
-                          className="px-4 py-4 border-b active:bg-opacity-70 transition-colors"
-                          style={{
-                            backgroundColor: !notif.is_read
-                              ? darkMode
-                                ? 'rgba(59, 130, 246, 0.1)'
-                                : 'rgba(59, 130, 246, 0.05)'
-                              : 'transparent',
-                            borderColor: darkMode ? '#374151' : '#e5e7eb',
-                          }}
-                          onClick={() => markAsRead(notif.notification_id)}
-                        >
-                          <div className="flex items-start gap-3">
-                            <div
-                              className="p-2 rounded-full flex-shrink-0"
-                              style={{
-                                backgroundColor: darkMode
-                                  ? 'rgba(59, 130, 246, 0.2)'
-                                  : 'rgba(59, 130, 246, 0.1)',
-                              }}
-                            >
-                              <NotifIcon
-                                className="h-5 w-5"
-                                style={{ color: COLORS.primary }}
-                              />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-2">
-                                <p className="font-medium">{notif.title}</p>
-                                {!notif.is_read && (
-                                  <div
-                                    className="w-2 h-2 rounded-full mt-1 flex-shrink-0"
-                                    style={{ backgroundColor: COLORS.primary }}
-                                  />
-                                )}
-                              </div>
-                              <p
-                                className="text-sm mt-1"
-                                style={{ color: COLORS.text.secondary }}
-                              >
-                                {notif.message}
-                              </p>
-                              <p
-                                className="text-xs mt-2"
-                                style={{ color: COLORS.text.secondary }}
-                              >
-                                {formatNotificationTime(notif.created_at)}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      );
+                      <NotificationItem
+                        key={notif.notification_id}
+                        notif={notif}
+                        darkMode={darkMode}
+                        markAsRead={markAsRead}
+                        getNotificationIcon={getNotificationIcon}
+                        formatNotificationTime={formatNotificationTime}
+                        COLORS={COLORS}
+                        isMobile={true} // Mobile version
+                      />;
                     })}
                     {isLoadingMore && (
                       <div className="px-4 py-4 text-center">

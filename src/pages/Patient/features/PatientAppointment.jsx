@@ -37,7 +37,7 @@ const PatientAppointment = () => {
   });
 
   const activeFiltersCount = Object.values(filters).filter(
-    v => v !== ''
+    v => v !== '',
   ).length;
 
   // ===== Pagination handlers =====

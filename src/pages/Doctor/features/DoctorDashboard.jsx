@@ -254,32 +254,6 @@ const DoctorDashboard = () => {
           )}`,
         },
         {
-          label: 'Avg. Duration',
-          value: `${
-            dashboardStats.performance?.avgConsultationDuration || 0
-          } min`,
-          change: `${
-            dashboardStats.performance?.durationTrend > 0 ? '↑' : '↓'
-          } ${Math.abs(
-            dashboardStats.performance?.durationTrend || 0,
-          )}% from last month`,
-          trend:
-            dashboardStats.performance?.durationTrend < 0
-              ? 'up' // Lower duration is better
-              : dashboardStats.performance?.durationTrend > 0
-                ? 'down'
-                : 'neutral',
-          icon: Clock,
-          color: 'success',
-          tooltip: `Average consultation duration: ${
-            dashboardStats.performance?.avgConsultationDuration || 0
-          } min\nTrend vs last month: ${
-            dashboardStats.performance?.durationTrend > 0 ? '+' : ''
-          }${
-            dashboardStats.performance?.durationTrend || 0
-          }%\n(Lower is better)`,
-        },
-        {
           label: 'Monthly Completion',
           value: formatPercentage(
             dashboardStats.performance?.monthlyCompletionRate || 0,
@@ -309,9 +283,6 @@ const DoctorDashboard = () => {
   // Current appointment info
   const currentAppointment = dashboardStats?.todaysOverview?.currentAppointment;
   const nextAppointment = dashboardStats?.todaysOverview?.nextAppointment;
-
-  // Pending tasks
-  const pendingTasks = dashboardStats?.pendingTasks;
 
   // Loading stats
   const loadingStats = [
@@ -350,30 +321,30 @@ const DoctorDashboard = () => {
   ];
 
   const quickActions = [
-    {
-      icon: Calendar,
-      label: 'New Appointment',
-      color: 'green',
-      functions: () => navigate('/doctor/appointments/new'),
-    },
+    // {
+    //   icon: Calendar,
+    //   label: 'New Appointment',
+    //   color: 'green',
+    //   functions: () => navigate('/doctor/appointments/new'),
+    // },
     {
       icon: Users,
       label: 'My Patients',
       color: 'purple',
       functions: () => navigate('/doctor/my-patients'),
     },
-    {
-      icon: FileText,
-      label: 'Lab Results',
-      color: 'orange',
-      functions: () => navigate('/doctor/lab-results'),
-    },
-    {
-      icon: Pill,
-      label: 'Prescriptions',
-      color: 'blue',
-      functions: () => navigate('/doctor/prescriptions'),
-    },
+    // {
+    //   icon: FileText,
+    //   label: 'Lab Results',
+    //   color: 'orange',
+    //   functions: () => navigate('/doctor/lab-results'),
+    // },
+    // {
+    //   icon: Pill,
+    //   label: 'Prescriptions',
+    //   color: 'blue',
+    //   functions: () => navigate('/doctor/prescriptions'),
+    // },
   ];
 
   const appointmentFilterConfig = [
@@ -654,7 +625,7 @@ const DoctorDashboard = () => {
       )}
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {fetchingStats
           ? loadingStats.map((stat, idx) => (
               <StatsCard
@@ -767,142 +738,6 @@ const DoctorDashboard = () => {
 
         {/* Right Column */}
         <div className="space-y-6">
-          {/* Pending Tasks Card */}
-          <div
-            className={`${
-              darkMode
-                ? 'bg-gray-800 border-gray-700'
-                : 'bg-white border-gray-200'
-            } rounded-xl border shadow-sm p-6`}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3
-                  className={`text-lg font-semibold ${
-                    darkMode ? 'text-white' : 'text-gray-900'
-                  } mb-1`}
-                >
-                  Pending Tasks
-                </h3>
-                <p
-                  className={`text-sm ${
-                    darkMode ? 'text-gray-400' : 'text-gray-500'
-                  }`}
-                >
-                  Require your attention
-                </p>
-              </div>
-              {pendingTasks &&
-                (pendingTasks.labResults > 0 ||
-                  pendingTasks.prescriptions > 0) && (
-                  <div className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-semibold rounded-full">
-                    {pendingTasks.labResults + pendingTasks.prescriptions}{' '}
-                    Urgent
-                  </div>
-                )}
-            </div>
-
-            <div className="space-y-3">
-              {/* Lab Results */}
-              <div
-                className={`flex items-center justify-between p-3 rounded-lg ${
-                  pendingTasks?.labResults > 0
-                    ? 'bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500'
-                    : 'bg-gray-50 dark:bg-gray-700'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`p-2 rounded-lg ${
-                      pendingTasks?.labResults > 0
-                        ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
-                        : 'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400'
-                    }`}
-                  >
-                    <FileText size={18} />
-                  </div>
-                  <div>
-                    <p
-                      className={`font-medium ${
-                        darkMode ? 'text-white' : 'text-gray-900'
-                      }`}
-                    >
-                      Lab Results
-                    </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Pending review
-                    </p>
-                  </div>
-                </div>
-                <div
-                  className={`text-lg font-bold ${
-                    pendingTasks?.labResults > 0
-                      ? 'text-red-600 dark:text-red-400'
-                      : 'text-gray-500 dark:text-gray-400'
-                  }`}
-                >
-                  {pendingTasks?.labResults || 0}
-                </div>
-              </div>
-
-              {/* Prescriptions */}
-              <div
-                className={`flex items-center justify-between p-3 rounded-lg ${
-                  pendingTasks?.prescriptions > 0
-                    ? 'bg-orange-50 dark:bg-orange-900/20 border-l-4 border-orange-500'
-                    : 'bg-gray-50 dark:bg-gray-700'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`p-2 rounded-lg ${
-                      pendingTasks?.prescriptions > 0
-                        ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
-                        : 'bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-400'
-                    }`}
-                  >
-                    <Pill size={18} />
-                  </div>
-                  <div>
-                    <p
-                      className={`font-medium ${
-                        darkMode ? 'text-white' : 'text-gray-900'
-                      }`}
-                    >
-                      Prescriptions
-                    </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Pending approval
-                    </p>
-                  </div>
-                </div>
-                <div
-                  className={`text-lg font-bold ${
-                    pendingTasks?.prescriptions > 0
-                      ? 'text-orange-600 dark:text-orange-400'
-                      : 'text-gray-500 dark:text-gray-400'
-                  }`}
-                >
-                  {pendingTasks?.prescriptions || 0}
-                </div>
-              </div>
-            </div>
-
-            {(pendingTasks?.labResults > 0 ||
-              pendingTasks?.prescriptions > 0) && (
-              <button
-                onClick={() => navigate('/doctor/tasks')}
-                className={`w-full mt-4 py-2 text-sm font-medium rounded-lg ${
-                  darkMode
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white'
-                } transition-colors`}
-              >
-                Review All Tasks
-              </button>
-            )}
-          </div>
-
           {/* Quick Actions */}
           <div
             className={`${
@@ -962,103 +797,6 @@ const DoctorDashboard = () => {
               ))}
             </div>
           </div>
-
-          {/* Performance Summary */}
-          {dashboardStats && (
-            <div
-              className={`${
-                darkMode
-                  ? 'bg-gray-800 border-gray-700'
-                  : 'bg-white border-gray-200'
-              } rounded-xl border shadow-sm p-6`}
-            >
-              <h3
-                className={`text-lg font-semibold ${
-                  darkMode ? 'text-white' : 'text-gray-900'
-                } mb-4`}
-              >
-                Performance Summary
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <span
-                      className={`text-sm ${
-                        darkMode ? 'text-gray-400' : 'text-gray-600'
-                      }`}
-                    >
-                      Monthly Completion Rate
-                    </span>
-                    <div className="flex items-center gap-1">
-                      {getTrendIcon(
-                        dashboardStats.performance?.monthlyTrendPercentage || 0,
-                      )}
-                      <span
-                        className={getTrendColor(
-                          dashboardStats.performance?.monthlyTrendPercentage ||
-                            0,
-                        )}
-                      >
-                        {dashboardStats.performance?.monthlyTrendPercentage > 0
-                          ? '+'
-                          : ''}
-                        {dashboardStats.performance?.monthlyTrendPercentage ||
-                          0}
-                        %
-                      </span>
-                    </div>
-                  </div>
-                  <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-blue-500 rounded-full"
-                      style={{
-                        width: `${
-                          dashboardStats.performance?.monthlyCompletionRate || 0
-                        }%`,
-                      }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    <span>0%</span>
-                    <span>
-                      {formatPercentage(
-                        dashboardStats.performance?.monthlyCompletionRate || 0,
-                      )}
-                    </span>
-                    <span>100%</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <div>
-                    <p
-                      className={`text-sm ${
-                        darkMode ? 'text-gray-400' : 'text-gray-600'
-                      }`}
-                    >
-                      Avg. Duration
-                    </p>
-                    <p className="text-lg font-bold text-gray-900 dark:text-white">
-                      {dashboardStats.performance?.avgConsultationDuration || 0}{' '}
-                      min
-                    </p>
-                  </div>
-                  <div>
-                    <p
-                      className={`text-sm ${
-                        darkMode ? 'text-gray-400' : 'text-gray-600'
-                      }`}
-                    >
-                      Patients This Week
-                    </p>
-                    <p className="text-lg font-bold text-gray-900 dark:text-white">
-                      {dashboardStats.patientPanel?.seenThisWeek || 0}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

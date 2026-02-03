@@ -20,7 +20,6 @@ export const FilterPanel = ({
   const handleFilterChange = e => {
     const { name, value } = e.target;
     !!pageOnChangeFilter && pageOnChangeFilter(1);
-    console.log(name, value);
     onFilterChange({ ...filters, [name]: value });
   };
 

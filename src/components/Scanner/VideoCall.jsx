@@ -84,12 +84,10 @@ const VideoCall = () => {
   const checkStatus = async () => {
     try {
       setCheckingStatus(true);
-      console.log('🔍 Checking room status for:', roomId);
 
       const response = await checkRoomStatus(roomId);
       const status = response.data;
 
-      console.log('📊 Room status:', status);
       setRoomStatus(status);
 
       // ✅ Handle different scenarios based on status
@@ -160,7 +158,7 @@ const VideoCall = () => {
 
       navigator.sendBeacon(
         apiUrl,
-        new Blob([payload], { type: 'application/json' })
+        new Blob([payload], { type: 'application/json' }),
       );
     };
 
@@ -411,7 +409,7 @@ const VideoCall = () => {
                 ) : (
                   <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                     <Calendar className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                    <p>No scheduled consultations for today</p>
+                    <p>No scheduled consultationss for today</p>
                   </div>
                 )}
               </div>
@@ -429,7 +427,7 @@ const VideoCall = () => {
                       if (e.key === 'Enter' && roomInput.trim()) {
                         navigate(
                           `/${currentUser?.role}/video-call/${roomInput}`,
-                          { replace: true }
+                          { replace: true },
                         );
                       }
                     }}
@@ -442,7 +440,7 @@ const VideoCall = () => {
                     if (roomInput.trim()) {
                       navigate(
                         `/${currentUser?.role}/video-call/${roomInput}`,
-                        { replace: true }
+                        { replace: true },
                       );
                     }
                   }}
@@ -560,8 +558,8 @@ const VideoCall = () => {
                         callStatus === 'connected'
                           ? 'bg-green-500 animate-pulse'
                           : callStatus === 'connecting'
-                          ? 'bg-yellow-500 animate-pulse'
-                          : 'bg-gray-500'
+                            ? 'bg-yellow-500 animate-pulse'
+                            : 'bg-gray-500'
                       }`}
                     />
                     <span className="text-white text-sm capitalize">

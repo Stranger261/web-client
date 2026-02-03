@@ -7,27 +7,38 @@ import {
 } from '../constants/patientConstants';
 import { normalizedWord } from '../../../../../utils/normalizedWord';
 
-export const BasicInfoTab = ({ patientData, onFieldUpdate }) => {
+export const BasicInfoTab = ({
+  patientData,
+  onFieldUpdate,
+  isDarkMode = false,
+}) => {
   return (
     <div>
       <div
-        className="flex items-center gap-3 mb-6 pb-4 border-b"
-        style={{ borderColor: COLORS.border.light }}
+        className={`flex items-center gap-3 mb-6 pb-4 border-b transition-colors duration-200 ${
+          isDarkMode ? 'border-gray-700' : 'border-gray-200'
+        }`}
       >
         <div
-          className="p-3 rounded-xl"
-          style={{ backgroundColor: COLORS.primary + '20' }}
+          className={`p-3 rounded-xl ${
+            isDarkMode ? 'bg-blue-900/30' : 'bg-blue-50'
+          }`}
         >
           <User size={24} style={{ color: COLORS.primary }} />
         </div>
         <div>
           <h3
-            className="text-xl font-bold"
-            style={{ color: COLORS.text.primary }}
+            className={`text-xl font-bold ${
+              isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}
           >
             Basic Information
           </h3>
-          <p className="text-sm" style={{ color: COLORS.text.secondary }}>
+          <p
+            className={`text-sm ${
+              isDarkMode ? 'text-gray-300' : 'text-gray-600'
+            }`}
+          >
             Personal details and identification
           </p>
         </div>
@@ -40,6 +51,7 @@ export const BasicInfoTab = ({ patientData, onFieldUpdate }) => {
           onSave={onFieldUpdate('firstName')}
           locked
           icon={User}
+          isDarkMode={isDarkMode}
         />
         <EditableField
           label="Middle Name"
@@ -47,6 +59,7 @@ export const BasicInfoTab = ({ patientData, onFieldUpdate }) => {
           onSave={onFieldUpdate('middleName')}
           locked
           icon={User}
+          isDarkMode={isDarkMode}
         />
         <EditableField
           label="Last Name"
@@ -54,6 +67,7 @@ export const BasicInfoTab = ({ patientData, onFieldUpdate }) => {
           onSave={onFieldUpdate('lastName')}
           locked
           icon={User}
+          isDarkMode={isDarkMode}
         />
         <EditableField
           label="Birth Date"
@@ -62,6 +76,7 @@ export const BasicInfoTab = ({ patientData, onFieldUpdate }) => {
           type="date"
           locked
           icon={Calendar}
+          isDarkMode={isDarkMode}
         />
         <EditableField
           label="Gender"
@@ -71,6 +86,7 @@ export const BasicInfoTab = ({ patientData, onFieldUpdate }) => {
           options={GENDER_OPTIONS}
           locked
           icon={User}
+          isDarkMode={isDarkMode}
         />
         <EditableField
           label="Civil Status"
@@ -79,6 +95,7 @@ export const BasicInfoTab = ({ patientData, onFieldUpdate }) => {
           type="select"
           options={CIVIL_STATUS_OPTIONS}
           icon={Users}
+          isDarkMode={isDarkMode}
         />
         <EditableField
           label="Nationality"
@@ -86,6 +103,7 @@ export const BasicInfoTab = ({ patientData, onFieldUpdate }) => {
           onSave={onFieldUpdate('nationality')}
           locked
           icon={User}
+          isDarkMode={isDarkMode}
         />
       </div>
     </div>
