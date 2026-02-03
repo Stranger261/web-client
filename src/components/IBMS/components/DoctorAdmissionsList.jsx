@@ -1,4 +1,3 @@
-// components/DoctorAdmissionsList.jsx
 import { useState, useEffect, useCallback } from 'react';
 import {
   Search,
@@ -19,10 +18,10 @@ import { doctorAdmissionFilterConfig } from '../../../configs/doctorAdmissionFil
 import { SOCKET_EVENTS, SOCKET_ROOMS } from '../../../configs/socketEvents';
 
 import DoctorAdmissionCard from '../components/cards/doctorAdmissionCard';
-import DoctorAdmissionDetailsModal from './modals/DoctorAdmissionDetailsModal';
-import DoctorRoundNoteModal from './modals/DoctorRoundNoteModal';
-import DischargeRequestModal from './modals/DischargeRequestModal';
-import RoundsViewModal from './modals/RoundsViewModal';
+import DoctorAdmissionDetailsModal from './Modals/DoctorAdmissionDetailsModal';
+import DoctorRoundNoteModal from './Modals/DoctorRoundNoteModal';
+import DischargeRequestModal from './Modals/DischargeRequestModal';
+import RoundsViewModal from './Modals/RoundsViewModal';
 import DoctorStatsPanel from './DoctorStatsPanel';
 
 import { useSocket } from '../../../contexts/SocketContext';
