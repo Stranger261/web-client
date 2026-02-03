@@ -11,7 +11,14 @@ const PageLayout = () => {
   const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const { isLoading, logout, currentUser } = useAuth();
+  const { isLoading, logout } = useAuth();
+
+  // Temporary mock user for testing
+  const currentUser = {
+    first_name: 'Carlo',
+    last_name: 'Garcia',
+    role: 'doctor',
+  };
 
   const toggleDesktopSidebar = () => setIsDesktopSidebarOpen(prev => !prev);
   const toggleMobileSidebar = () => setIsMobileSidebarOpen(prev => !prev);
