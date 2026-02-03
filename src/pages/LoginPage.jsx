@@ -47,6 +47,7 @@ const LoginPage = () => {
     try {
       const response = await login(formData);
 
+      console.log(response);
       // Check if OTP is required for 2FA
       if (response?.data?.requiresOtp) {
         toast.success(response.data.message || '2FA code sent to your email.');
@@ -64,7 +65,7 @@ const LoginPage = () => {
       toast.success(response?.message || 'Login successful.');
 
       // Navigate based on registration status
-      if (response.data.user.registration_status === 'completed') {
+      if (response?.data?.user?.registration_status === 'completed') {
         const targetPath = `/${response.data.user.role}/${
           response.data.user.role === 'patient' ? 'my-' : ''
         }dashboard`;
