@@ -73,6 +73,7 @@ export const AuthProvider = ({ children }) => {
       try {
         const user = await authApi.login(email, password, rememberMe);
         console.log(user);
+
         if (user?.data?.requiresOtp) {
           setAuthState(AUTH_STATES.UNAUTHENTICATED);
           return user;
