@@ -25,13 +25,11 @@ class authService {
 
   async login(email, password, rememberMe) {
     try {
-      console.log('nako po');
       const res = await this.authApi.post('/auth/login', {
         email,
         password,
         rememberMe,
       });
-      console.log('recieved res');
       return res.data;
     } catch (error) {
       console.error(error);
