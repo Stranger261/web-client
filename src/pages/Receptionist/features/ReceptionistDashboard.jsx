@@ -1,5 +1,4 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
 
@@ -10,12 +9,8 @@ import { useSchedule } from '../../../contexts/ScheduleContext';
 import {
   Activity,
   Calendar,
-  DollarSign,
   Filter,
   Users,
-  AlertCircle,
-  Clock,
-  UserPlus,
   TrendingUp,
   TrendingDown,
   Info,
@@ -73,7 +68,6 @@ const ReceptionistDashboard = () => {
   // create patient
   const [isCreatePatientModalOpen, setIsCreatePatientModalOpen] =
     useState(false);
-  const [registeredPatients, setRegisteredPatients] = useState([]);
   const [isCreateScheduleModalOpen, setIsCreateScheduleModalOpen] =
     useState(false);
   // Filter state
@@ -300,16 +294,6 @@ const ReceptionistDashboard = () => {
     }
   };
 
-  // Format currency
-  const formatCurrency = amount => {
-    return new Intl.NumberFormat('en-PH', {
-      style: 'currency',
-      currency: 'PHP',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount || 0);
-  };
-
   // Format percentage
   const formatPercentage = value => {
     return `${Math.round(value || 0)}%`;
@@ -443,24 +427,6 @@ const ReceptionistDashboard = () => {
       color: 'blue',
       functions: () => setIsCreateScheduleModalOpen(true),
     },
-    // {
-    //   icon: Clock,
-    //   label: 'Check-in Queue',
-    //   color: 'orange',
-    //   functions: () => navigate('/receptionist/checkin'),
-    // },
-    // {
-    //   icon: DollarSign,
-    //   label: 'Billing & Payments',
-    //   color: 'blue',
-    //   functions: () => navigate('/receptionist/billing'),
-    // },
-    // {
-    //   icon: AlertCircle,
-    //   label: 'Pending Tasks',
-    //   color: 'yellow',
-    //   functions: () => navigate('/receptionist/tasks'),
-    // },
   ];
 
   // MODALS
@@ -473,9 +439,8 @@ const ReceptionistDashboard = () => {
     toast.success('New patient registered.');
   };
 
-  const handleScheduleCreated = newSchedule => {
+  const handleScheduleCreated = () => {
     toast.success('Doctor schedule created successfully!');
-    // You could refresh any schedule data here if needed
   };
 
   // ===== Pagination handlers =====
@@ -519,6 +484,7 @@ const ReceptionistDashboard = () => {
           onClose={() => setIsViewAppointModalOpen(false)}
           appointment={selectedAppt}
           currentUser={currentUser}
+          onGetDoctorAvailability={getDoctorAvailability}
         />
       </Modal>
 

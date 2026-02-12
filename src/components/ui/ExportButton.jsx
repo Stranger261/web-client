@@ -1,178 +1,150 @@
-import { useState, useRef, useEffect } from 'react';
-import { Download, FileText, FileJson, File } from 'lucide-react';
-import { exportPatients } from '../../utils/exportUtil';
-import { COLORS } from '../../configs/CONST';
-import toast from 'react-hot-toast';
+import { useState } from 'react';
+import axios from 'axios';
+import { Download, FileText, FileSpreadsheet, Loader2 } from 'lucide-react';
+import { DEVELOPMENT_BASE_URL } from '../../configs/CONST';
 
-const ExportButton = ({ patients, isDarkMode, userRole }) => {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
-  const dropdownRef = useRef(null);
+const ExportButton = ({
+  endpoint,
+  filename = 'export',
+  format = 'csv',
+  params = {},
+  label,
+  variant = 'primary',
+  size = 'md',
+  icon = true,
+  fullWidth = false,
+  className = '',
+}) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
 
-  // Only show export button for admin and receptionist roles
-  const canExport = ['admin', 'receptionist'].includes(userRole);
-
-  useEffect(() => {
-    const handleClickOutside = event => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const handleExport = async format => {
-    setIsExporting(true);
-    setIsDropdownOpen(false);
+  const handleExport = async () => {
+    setLoading(true);
+    setError(null);
+    setSuccess(false);
 
     try {
-      // Small delay to show loading state
-      await new Promise(resolve => setTimeout(resolve, 300));
+      const queryParams = new URLSearchParams({
+        format,
+        ...params,
+      });
 
-      exportPatients(patients, format);
-      toast.success(
-        `Successfully exported ${patients.length} patients as ${format.toUpperCase()}`,
+      const response = await axios.get(
+        `${DEVELOPMENT_BASE_URL}${endpoint}?${queryParams.toString()}`,
+        {
+          withCredentials: true,
+          responseType: 'blob', // ⚠️ CRITICAL: Must be 'blob' for PDF/CSV binary files!
+          headers: {
+            'x-internal-api-key': 'core-1-secret-key',
+          },
+        },
       );
-    } catch (error) {
-      console.error('Export error:', error);
-      toast.error('Failed to export patient data. Please try again.');
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+
+      const contentDisposition = response.headers['content-disposition'];
+      const filenameMatch = contentDisposition?.match(/filename="(.+)"/);
+      const downloadFilename = filenameMatch
+        ? filenameMatch[1]
+        : `${filename}.${format}`;
+
+      link.setAttribute('download', downloadFilename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      console.error('❌ Export error:', err);
+      console.error('Error response:', err.response);
+
+      // Try to read error from blob if it's JSON
+      if (err.response?.data instanceof Blob) {
+        try {
+          const text = await err.response.data.text();
+          const errorData = JSON.parse(text);
+          setError(errorData.message || 'Failed to export file');
+        } catch {
+          setError('Failed to export file. Please check server logs.');
+        }
+      } else {
+        setError(
+          err.response?.data?.message || err.message || 'Failed to export file',
+        );
+      }
+
+      setTimeout(() => setError(null), 5000);
     } finally {
-      setIsExporting(false);
+      setLoading(false);
     }
   };
 
-  if (!canExport) {
-    return null;
-  }
+  const getIcon = () => {
+    if (!icon) return null;
+    if (loading) return <Loader2 className="w-4 h-4 animate-spin" />;
+    if (format === 'pdf') return <FileText className="w-4 h-4" />;
+    if (format === 'csv') return <FileSpreadsheet className="w-4 h-4" />;
+    return <Download className="w-4 h-4" />;
+  };
 
-  const exportOptions = [
-    {
-      id: 'csv',
-      label: 'Export as CSV',
-      icon: FileText,
-      description: 'Spreadsheet format',
-    },
-    {
-      id: 'json',
-      label: 'Export as JSON',
-      icon: FileJson,
-      description: 'Structured data',
-    },
-    {
-      id: 'pdf',
-      label: 'Export as PDF',
-      icon: File,
-      description: 'Document format',
-    },
-  ];
+  const variants = {
+    primary:
+      'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40',
+    success:
+      'bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/40',
+    danger:
+      'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-lg shadow-red-500/30 hover:shadow-red-500/40',
+    purple:
+      'bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white shadow-lg shadow-purple-500/30 hover:shadow-purple-500/40',
+    orange:
+      'bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white shadow-lg shadow-orange-500/30 hover:shadow-orange-500/40',
+    teal: 'bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white shadow-lg shadow-teal-500/30 hover:shadow-teal-500/40',
+    outline:
+      'border-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400',
+  };
+
+  const sizes = {
+    sm: 'px-3 py-1.5 text-sm',
+    md: 'px-4 py-2.5 text-sm',
+    lg: 'px-6 py-3 text-base',
+  };
+
+  const baseClass = `
+        inline-flex items-center justify-center gap-2.5 
+        font-medium rounded-lg 
+        transition-all duration-200 
+        disabled:opacity-50 disabled:cursor-not-allowed
+        focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
+        transform hover:scale-105 active:scale-95
+        ${fullWidth ? 'w-full' : ''}
+    `;
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className={fullWidth ? 'w-full' : ''}>
       <button
-        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-        disabled={isExporting || !patients || patients.length === 0}
-        className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-        style={{
-          backgroundColor: isDarkMode ? COLORS.surface.dark : COLORS.primary,
-          color: COLORS.text.white,
-        }}
+        onClick={handleExport}
+        disabled={loading}
+        className={`${baseClass} ${variants[variant] || variants.primary} ${sizes[size]} ${className}`}
       >
-        <Download className="w-4 h-4" />
-        <span>{isExporting ? 'Exporting...' : 'Export'}</span>
+        {getIcon()}
+        <span className="font-semibold">
+          {loading
+            ? 'Exporting...'
+            : success
+              ? 'Downloaded!'
+              : label || `Export ${format.toUpperCase()}`}
+        </span>
       </button>
 
-      {isDropdownOpen && (
-        <div
-          className="absolute right-0 mt-2 w-56 rounded-lg shadow-lg z-50 overflow-hidden"
-          style={{
-            backgroundColor: isDarkMode
-              ? COLORS.surface.dark
-              : COLORS.surface.light,
-            border: `1px solid ${isDarkMode ? COLORS.border.dark : COLORS.border.light}`,
-          }}
-        >
-          <div
-            className="px-3 py-2 border-b"
-            style={{
-              borderColor: isDarkMode
-                ? COLORS.border.dark
-                : COLORS.border.light,
-              backgroundColor: isDarkMode
-                ? COLORS.surface.darker
-                : COLORS.surface.lighter,
-            }}
-          >
-            <p
-              className="text-xs font-semibold"
-              style={{
-                color: isDarkMode ? COLORS.text.light : COLORS.text.secondary,
-              }}
-            >
-              Export {patients?.length || 0} patients
-            </p>
-          </div>
-
-          <div className="py-1">
-            {exportOptions.map(option => {
-              const Icon = option.icon;
-              return (
-                <button
-                  key={option.id}
-                  onClick={() => handleExport(option.id)}
-                  className="w-full px-3 py-2.5 flex items-start gap-3 transition-colors duration-150"
-                  style={{
-                    color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.backgroundColor = isDarkMode
-                      ? COLORS.surface.darker
-                      : COLORS.surface.lighter;
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
-                >
-                  <Icon className="w-5 h-5 mt-0.5 flex-shrink-0" />
-                  <div className="flex flex-col items-start">
-                    <span className="text-sm font-medium">{option.label}</span>
-                    <span
-                      className="text-xs"
-                      style={{
-                        color: isDarkMode
-                          ? COLORS.text.light
-                          : COLORS.text.secondary,
-                      }}
-                    >
-                      {option.description}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          <div
-            className="px-3 py-2 border-t"
-            style={{
-              borderColor: isDarkMode
-                ? COLORS.border.dark
-                : COLORS.border.light,
-              backgroundColor: isDarkMode
-                ? COLORS.surface.darker
-                : COLORS.surface.lighter,
-            }}
-          >
-            <p
-              className="text-xs"
-              style={{
-                color: isDarkMode ? COLORS.text.light : COLORS.text.secondary,
-              }}
-            >
-              All patient data will be exported
-            </p>
-          </div>
+      {error && (
+        <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-sm text-red-700 font-medium">{error}</p>
         </div>
       )}
     </div>

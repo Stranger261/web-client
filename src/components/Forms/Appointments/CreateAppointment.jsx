@@ -25,8 +25,6 @@ const CreateAppointment = ({
   selectedPatient = null,
   isFollowUp = false,
   previousAppointments = [],
-  onGetDepartments,
-  onGetAllDoctors,
   onGetDoctorAvailability,
   onGetCombinedSchedule,
   onClearSchedules,
@@ -211,6 +209,7 @@ const CreateAppointment = ({
     const payload = preparePayload();
 
     try {
+      console.log(payload);
       await onSubmit(payload);
       nextStep();
     } catch (error) {

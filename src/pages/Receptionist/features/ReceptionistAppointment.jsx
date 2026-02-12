@@ -18,11 +18,17 @@ import { Button } from '../../../components/ui/button';
 import AppointmentDetailModal from '../../../components/Modals/AppointmentDetailModal';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useSchedule } from '../../../contexts/ScheduleContext';
+import { formatTime } from '../../../utils/FormatTime';
 
 const AppointmentsPage = () => {
   const { currentUser } = useAuth();
-  const { allDoctors, getAllDoctors, departments, getDepartments } =
-    useSchedule();
+  const {
+    allDoctors,
+    getAllDoctors,
+    departments,
+    getDepartments,
+    getDoctorAvailability,
+  } = useSchedule();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
 
@@ -111,8 +117,6 @@ const AppointmentsPage = () => {
         formattedDate,
         queryParams,
       );
-
-      console.log(result);
 
       if (result.success) {
         setAppointments(result.data.res || []);
@@ -372,10 +376,8 @@ const AppointmentsPage = () => {
         {showModal && (
           <AppointmentDetailModal
             appointment={selectedAppointment}
-            loading={loadingDetails}
-            error={detailsError}
+            onGetDoctorAvailability={getDoctorAvailability}
             onClose={handleCloseModal}
-            getStatusColor={getStatusColor}
             isOpen={showModal}
             currentUser={currentUser}
           />
@@ -732,7 +734,7 @@ const AppointmentCard = ({ appointment, getStatusColor, onClick }) => {
             <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300 transition-colors">
               <Clock className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
               <span className="font-semibold text-base sm:text-lg">
-                {appointment.appointment_time}
+                {formatTime(appointment.appointment_time)}
               </span>
             </div>
             <span

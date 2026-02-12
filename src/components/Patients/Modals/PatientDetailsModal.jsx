@@ -13,6 +13,7 @@ import PatientRecordsTab from '../Tabs/PatientRecordsTab';
 const PatientDetailsModal = ({ isOpen, onClose, patient, isLoading }) => {
   const { currentUser } = useAuth();
   const isDarkMode = document.documentElement.classList.contains('dark');
+  console.log(patient);
 
   const [activeTab, setActiveTab] = useState('overview');
   const [stats, setStats] = useState([]);

@@ -160,7 +160,7 @@ const AppointmentsTable = ({
                 className="inline-flex text-[10px] px-2.5 py-1"
               >
                 {appointment.status
-                  ? normalizedWord(appointment.status)
+                  ? normalizedWord(appointment.status).replace('_', ' ')
                   : 'Unknown'}
               </Badge>
               {appointment.priority === 'high' && (
@@ -367,7 +367,7 @@ const AppointmentsTable = ({
       accessor: 'status',
       render: appt => (
         <Badge variant={getStatusVariant(appt.status)}>
-          {normalizedWord(appt.status)}
+          {normalizedWord(appt.status).replace('_', ' ')}
         </Badge>
       ),
     });
@@ -381,7 +381,7 @@ const AppointmentsTable = ({
       align: 'center',
       render: appt => (
         <div className="font-medium truncate">
-          {normalizedWord(appt.appointment_type)}
+          {appt.is_online_consultation ? 'Online' : 'In-Person'}
         </div>
       ),
     });

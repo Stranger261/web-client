@@ -13,6 +13,7 @@ import {
   FileJson,
   FileSpreadsheet,
   ChevronDown,
+  X,
 } from 'lucide-react';
 import { FilterPanel } from '../../../components/ui/filter-panel';
 import Pagination from '../../../components/ui/pagination';
@@ -22,6 +23,7 @@ import AppointmentDetailModal from '../../../components/Modals/AppointmentDetail
 import { useAuth } from '../../../contexts/AuthContext';
 import { useSchedule } from '../../../contexts/ScheduleContext';
 import { exportAppointments } from '../../../utils/appointmentExportUtil';
+import AppointmentsList from '../components/AppointmentList';
 
 const AdminAppointments = () => {
   const { currentUser } = useAuth();
@@ -703,240 +705,6 @@ const CalendarWidget = ({
   );
 };
 
-// Appointments List Component (keeping your existing component with minimal changes)
-const AppointmentsList = ({
-  selectedDate,
-  appointments,
-  loading,
-  error,
-  filters,
-  showFilters,
-  setShowFilters,
-  filterConfig,
-  onFilterChange,
-  onClearFilters,
-  pagination,
-  currentPage,
-  itemsPerPage,
-  onPageChange,
-  onItemsPerPageChange,
-  formatDate,
-  getStatusColor,
-  onBackToCalendar,
-  onAppointmentClick,
-  isExporting,
-  showExportDropdown,
-  setShowExportDropdown,
-  handleExport,
-  currentUser,
-  allAppointmentsCount,
-}) => {
-  const ExportDropdown = () => (
-    <div className="relative">
-      <button
-        onClick={() => setShowExportDropdown(!showExportDropdown)}
-        disabled={!selectedDate || allAppointmentsCount === 0 || isExporting}
-        className="inline-flex items-center justify-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <Download className="w-4 h-4 mr-1" />
-        <span className="hidden sm:inline">Export</span>
-        <span className="sm:hidden">Export</span>
-        <ChevronDown className="w-4 h-4 ml-1" />
-        {allAppointmentsCount > 0 && !isExporting && (
-          <span className="ml-2 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 px-2 py-0.5 rounded-full text-xs">
-            {allAppointmentsCount}
-          </span>
-        )}
-        {isExporting && (
-          <span className="ml-2 animate-pulse">Exporting...</span>
-        )}
-      </button>
-
-      {showExportDropdown && (
-        <>
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setShowExportDropdown(false)}
-          />
-          <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-20">
-            <div className="py-1">
-              <div className="px-4 py-2 text-xs text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
-                Exporting {allAppointmentsCount} appointments
-              </div>
-              <button
-                onClick={() => handleExport('pdf')}
-                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isExporting}
-              >
-                <FileText className="w-4 h-4 mr-2 text-red-500" />
-                Download PDF
-              </button>
-              <button
-                onClick={() => handleExport('csv')}
-                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isExporting}
-              >
-                <FileSpreadsheet className="w-4 h-4 mr-2 text-green-500" />
-                Download CSV
-              </button>
-              <button
-                onClick={() => handleExport('json')}
-                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isExporting}
-              >
-                <FileJson className="w-4 h-4 mr-2 text-yellow-500" />
-                Download JSON
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-    </div>
-  );
-
-  return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <div className="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-800">
-        <div className="flex items-start sm:items-center justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <button
-              onClick={onBackToCalendar}
-              className="lg:hidden mb-2 text-blue-600 dark:text-blue-400 text-sm font-medium flex items-center gap-1"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Back to Calendar
-            </button>
-
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white truncate">
-              {formatDate(selectedDate)}
-            </h2>
-            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
-              {loading
-                ? 'Loading...'
-                : `${pagination.total} ${pagination.total === 1 ? 'appointment' : 'appointments'} found`}
-            </p>
-          </div>
-
-          {!loading && selectedDate && allAppointmentsCount > 0 && (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="inline-flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
-              >
-                <Filter className="w-4 h-4 sm:w-5 sm:h-5 mr-1" />
-                <span className="hidden sm:inline">
-                  {showFilters ? 'Hide' : 'Show'} Filters
-                </span>
-                <span className="sm:hidden">Filter</span>
-              </button>
-
-              <ExportDropdown />
-            </div>
-          )}
-        </div>
-      </div>
-
-      {appointments && appointments.length > 0 && (
-        <FilterPanel
-          filters={filters}
-          onFilterChange={onFilterChange}
-          onClearFilters={onClearFilters}
-          filterConfig={filterConfig}
-          showFilters={showFilters}
-          onToggleFilters={() => setShowFilters(!showFilters)}
-          searchPlaceholder="Search by patient name, appointment number..."
-          title="Filter Appointments"
-          pageOnChangeFilter={page => onPageChange(page)}
-        />
-      )}
-
-      {loading && (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      )}
-
-      {error && !loading && (
-        <div className="mx-4 sm:mx-6 my-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-          <div>
-            <h4 className="font-semibold text-red-900 dark:text-red-200">
-              Error loading appointments
-            </h4>
-            <p className="text-sm text-red-700 dark:text-red-300 mt-1">
-              {error}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {!loading && !error && (
-        <>
-          {appointments.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 px-4">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
-                <CalendarIcon className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400" />
-              </div>
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2 text-center">
-                No appointments found
-              </h3>
-              {filters.departmentId ||
-              filters.doctorId ||
-              filters.status ||
-              filters.search ? (
-                <div className="text-center max-w-md">
-                  <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mb-4">
-                    No appointments match your current filters for this date.
-                  </p>
-                  <button
-                    onClick={() =>
-                      onClearFilters({
-                        search: '',
-                        status: '',
-                        departmentId: '',
-                        doctorId: '',
-                      })
-                    }
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
-                  >
-                    Clear All Filters
-                  </button>
-                </div>
-              ) : (
-                <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 text-center max-w-md">
-                  There are no appointments scheduled for this date.
-                </p>
-              )}
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-200 dark:divide-gray-700">
-              {appointments.map(appointment => (
-                <AppointmentCard
-                  key={appointment.appointment_id}
-                  appointment={appointment}
-                  getStatusColor={getStatusColor}
-                  onClick={() => onAppointmentClick(appointment.appointment_id)}
-                />
-              ))}
-            </div>
-          )}
-
-          {appointments.length > 0 && (
-            <Pagination
-              currentPage={currentPage}
-              totalPages={pagination.totalPages}
-              totalItems={pagination.total}
-              itemsPerPage={itemsPerPage}
-              onPageChange={onPageChange}
-              onItemsPerPageChange={onItemsPerPageChange}
-            />
-          )}
-        </>
-      )}
-    </div>
-  );
-};
-
 // Appointment Card Component (keeping original)
 const AppointmentCard = ({ appointment, getStatusColor, onClick }) => {
   return (
@@ -1014,20 +782,6 @@ const AppointmentCard = ({ appointment, getStatusColor, onClick }) => {
               </div>
             </div>
           </div>
-
-          {appointment.payment_status && (
-            <div className="flex sm:justify-end items-start">
-              <span
-                className={`px-2 py-1 rounded text-xs font-medium ${
-                  appointment.payment_status === 'paid'
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
-                }`}
-              >
-                {appointment.payment_status}
-              </span>
-            </div>
-          )}
         </div>
       </div>
     </div>

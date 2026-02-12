@@ -39,7 +39,7 @@ const CreateScheduleModal = ({
   ];
 
   // Time slots (30 min intervals from 6 AM to 10 PM)
-  const timeSlots = Array.from({ length: 32 }, (_, i) => {
+  const timeSlots = Array.from({ length: 35 }, (_, i) => {
     const hour = Math.floor(i / 2) + 6; // Start from 6 AM
     const minute = i % 2 === 0 ? '00' : '30';
     return `${hour.toString().padStart(2, '0')}:${minute}`;
@@ -171,7 +171,7 @@ const CreateScheduleModal = ({
   const timePresets = [
     { label: 'Morning (9AM - 12PM)', start: '09:00', end: '12:00' },
     { label: 'Afternoon (1PM - 5PM)', start: '13:00', end: '17:00' },
-    { label: 'Evening (6PM - 9PM)', start: '18:00', end: '21:00' },
+    { label: 'Evening (6PM - 11PM)', start: '16:00', end: '23:00' },
   ];
 
   const applyTimePreset = (start, end) => {

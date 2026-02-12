@@ -281,7 +281,6 @@ const PatientDashboard = () => {
   const handleCreateAppointment = async payload => {
     try {
       const patientUuid = currentUser?.patient?.patient_uuid;
-      if (!patientUuid) return;
       // Use the same booking function but with receptionist context
       const response = await bookUserAppointment({
         ...payload,

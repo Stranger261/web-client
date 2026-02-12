@@ -357,6 +357,25 @@ const OverViewTab = ({ isDarkMode, patient, stats }) => {
                 color: isDarkMode ? COLORS.text.light : COLORS.text.secondary,
               }}
             >
+              Face registration status
+            </p>
+            <p
+              className="font-medium text-sm"
+              style={{
+                color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
+              }}
+            >
+              {patient?.has_face ? 'Registered' : 'Not registered'}
+            </p>
+          </div>
+
+          <div className="space-y-1">
+            <p
+              className="text-xs uppercase tracking-wider"
+              style={{
+                color: isDarkMode ? COLORS.text.light : COLORS.text.secondary,
+              }}
+            >
               First Visit
             </p>
             <p

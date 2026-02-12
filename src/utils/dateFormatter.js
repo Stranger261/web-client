@@ -1,14 +1,12 @@
 export const formatDate = dateString => {
-  // First, create a new Date object from the input string
   if (!dateString) return 'N/A';
+
   const date = new Date(dateString);
 
-  // Then, call toLocaleDateString on the new Date object
   return date.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-    minute: '2-digit',
   });
 };
 

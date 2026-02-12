@@ -68,17 +68,11 @@ const VideoCallProvider = ({ children }) => {
     });
 
     socket.on('video:registered', data => {
-      console.log('✅ Registered:', data);
       setMyPeerId(data.peerId);
       setMySocketId(data.socketId);
     });
 
     socket.on('video:room-users-updated', async data => {
-      console.log(
-        '📊 Room users updated:',
-        data.participantsCount,
-        'participants'
-      );
       setRoomParticipants(data.participants);
 
       if (data.participantsCount >= 2) {
@@ -93,20 +87,24 @@ const VideoCallProvider = ({ children }) => {
           }
         }
 
-        // Skip if peer connection already exists
+        // Skip if peer connection already exists and is connected
         if (peerConnectionRef.current) {
-          console.log('⚠️ Peer connection exists, skipping');
-          return;
+          const state = peerConnectionRef.current.connectionState;
+          if (state === 'connected' || state === 'connecting') {
+            return;
+          } else {
+            peerConnectionRef.current.close();
+            peerConnectionRef.current = null;
+          }
         }
 
         const myIndex = data.participants.findIndex(
-          p => p.socketId === socket.id
+          p => p.socketId === socket.id,
         );
         const otherUser = data.participants.find(p => p.socketId !== socket.id);
 
         // Only User #1 creates offer
         if (myIndex === 0 && otherUser && localStreamRef.current) {
-          console.log('👤 User #1 - Creating offer');
           const pc = createPeerConnection(otherUser.socketId, data.roomId);
           peerConnectionRef.current = pc;
           currentRoomRef.current = data.roomId;
@@ -121,12 +119,10 @@ const VideoCallProvider = ({ children }) => {
               to: otherUser.socketId,
               offer,
             });
-            console.log('✅ Offer sent');
           } catch (error) {
             console.error('❌ Offer error:', error);
           }
         } else if (myIndex === 1) {
-          console.log('👤 User #2 - Waiting for offer');
           setCallStatus('connecting');
         }
       } else {
@@ -138,10 +134,13 @@ const VideoCallProvider = ({ children }) => {
     });
 
     socket.on('video:offer', async data => {
-      console.log('📥 Received offer from:', data.fromName);
+      // Clean up existing connection if any
+      if (peerConnectionRef.current) {
+        peerConnectionRef.current.close();
+        peerConnectionRef.current = null;
+      }
 
-      if (!peerConnectionRef.current && localStreamRef.current) {
-        console.log('🔗 Creating answer');
+      if (localStreamRef.current) {
         const pc = createPeerConnection(data.from, data.roomId);
         peerConnectionRef.current = pc;
         currentRoomRef.current = data.roomId;
@@ -152,10 +151,6 @@ const VideoCallProvider = ({ children }) => {
 
           // Process queued ICE candidates
           if (pc.pendingCandidates?.length > 0) {
-            console.log(
-              '🧊 Adding queued candidates:',
-              pc.pendingCandidates.length
-            );
             for (const candidate of pc.pendingCandidates) {
               await pc.addIceCandidate(new RTCIceCandidate(candidate));
             }
@@ -169,7 +164,6 @@ const VideoCallProvider = ({ children }) => {
             to: data.from,
             answer,
           });
-          console.log('✅ Answer sent');
         } catch (error) {
           console.error('❌ Answer error:', error);
         }
@@ -177,27 +171,20 @@ const VideoCallProvider = ({ children }) => {
     });
 
     socket.on('video:answer', async data => {
-      console.log('📥 Received answer');
       if (peerConnectionRef.current) {
         try {
           await peerConnectionRef.current.setRemoteDescription(
-            new RTCSessionDescription(data.answer)
+            new RTCSessionDescription(data.answer),
           );
 
           // Process queued ICE candidates
           const pc = peerConnectionRef.current;
           if (pc.pendingCandidates?.length > 0) {
-            console.log(
-              '🧊 Adding queued candidates:',
-              pc.pendingCandidates.length
-            );
             for (const candidate of pc.pendingCandidates) {
               await pc.addIceCandidate(new RTCIceCandidate(candidate));
             }
             pc.pendingCandidates = [];
           }
-
-          console.log('✅ Answer applied');
         } catch (error) {
           console.error('❌ Answer error:', error);
         }
@@ -205,8 +192,6 @@ const VideoCallProvider = ({ children }) => {
     });
 
     socket.on('video:user-left', data => {
-      console.log('👋 User left:', data.name);
-
       if (data.isDisconnect) {
         toast(`${data.name} disconnected`, { icon: '🔌' });
       } else {
@@ -221,6 +206,8 @@ const VideoCallProvider = ({ children }) => {
         peerConnectionRef.current.close();
         peerConnectionRef.current = null;
       }
+
+      remoteUserRef.current = null;
     });
 
     socket.on('video:ice-candidate', handleRemoteICECandidate);
@@ -238,7 +225,6 @@ const VideoCallProvider = ({ children }) => {
   // Media stream functions
   const startLocalStream = useCallback(async () => {
     try {
-      console.log('🎥 Starting local stream');
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: {
@@ -250,7 +236,6 @@ const VideoCallProvider = ({ children }) => {
 
       localStreamRef.current = stream;
       setLocalStreamReady(true);
-      console.log('✅ Local stream ready');
       return stream;
     } catch (error) {
       console.error('❌ Media error:', error);
@@ -264,7 +249,6 @@ const VideoCallProvider = ({ children }) => {
       localStreamRef.current.getTracks().forEach(track => track.stop());
       localStreamRef.current = null;
       setLocalStreamReady(false);
-      console.log('🛑 Local stream stopped');
     }
   }, []);
 
@@ -273,16 +257,14 @@ const VideoCallProvider = ({ children }) => {
       if (peerConnectionRef.current && data.candidate) {
         if (peerConnectionRef.current.remoteDescription) {
           await peerConnectionRef.current.addIceCandidate(
-            new RTCIceCandidate(data.candidate)
+            new RTCIceCandidate(data.candidate),
           );
-          console.log('🧊 ICE candidate added');
         } else {
           // Queue candidates if remote description not set yet
           if (!peerConnectionRef.current.pendingCandidates) {
             peerConnectionRef.current.pendingCandidates = [];
           }
           peerConnectionRef.current.pendingCandidates.push(data.candidate);
-          console.log('⏳ ICE candidate queued');
         }
       }
     } catch (error) {
@@ -292,20 +274,17 @@ const VideoCallProvider = ({ children }) => {
 
   const createPeerConnection = useCallback(
     (otherSocketId, roomId) => {
-      console.log('🔗 Creating peer connection');
       const pc = new RTCPeerConnection(rtcConfig);
 
       // Add local tracks
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach(track => {
           pc.addTrack(track, localStreamRef.current);
-          console.log('➕ Added track:', track.kind);
         });
       }
 
       // Handle remote tracks
       pc.ontrack = event => {
-        console.log('📥 Remote track:', event.track.kind);
         if (event.streams?.[0]) {
           remoteStreamRef.current = event.streams[0];
           setRemoteStreamReady(true);
@@ -332,20 +311,19 @@ const VideoCallProvider = ({ children }) => {
 
       // Connection state
       pc.onconnectionstatechange = () => {
-        console.log('🔄 Connection:', pc.connectionState);
         if (pc.connectionState === 'failed') {
           toast.error('Connection failed');
+        } else if (pc.connectionState === 'disconnected') {
+          console.log('⚠️ Peer disconnected');
         }
       };
 
       return pc;
     },
-    [socket]
+    [socket],
   );
 
   const cleanupCall = useCallback(() => {
-    console.log('🧹 Cleanup');
-
     if (peerConnectionRef.current) {
       peerConnectionRef.current.close();
       peerConnectionRef.current = null;
@@ -381,12 +359,11 @@ const VideoCallProvider = ({ children }) => {
     if (callTimerRef.current) clearInterval(callTimerRef.current);
     callTimerRef.current = setInterval(
       () => setCallDuration(prev => prev + 1),
-      1000
+      1000,
     );
   };
 
   const handleEndCall = useCallback(() => {
-    console.log('📴 Ending call');
     if (remoteUserRef.current) {
       socket.emit('video:end-call', {
         to: remoteUserRef.current,
@@ -402,7 +379,7 @@ const VideoCallProvider = ({ children }) => {
       return await videoApi.getTodaysOnlineConsultation(filters);
     } catch (error) {
       toast.error(
-        error?.response?.data?.message || 'Failed to get consultations'
+        error?.response?.data?.message || 'Failed to get consultations',
       );
       throw error;
     }
@@ -432,7 +409,6 @@ const VideoCallProvider = ({ children }) => {
       }
 
       if (status.canRejoin) {
-        console.log('🔄 Can rejoin - calling rejoin');
         setIsLoading(false);
         await rejoinRoom({
           roomId: data.roomId,
@@ -505,6 +481,28 @@ const VideoCallProvider = ({ children }) => {
       setIsLoading(true);
       setCanRejoin(false);
 
+      // Clean up any existing peer connection
+      if (peerConnectionRef.current) {
+        peerConnectionRef.current.close();
+        peerConnectionRef.current = null;
+      }
+
+      // Reset remote stream
+      if (remoteStreamRef.current) {
+        remoteStreamRef.current = null;
+        setRemoteStreamReady(false);
+      }
+
+      // Reset refs
+      remoteUserRef.current = null;
+      currentRoomRef.current = null;
+
+      // Reset toast flags to allow new toasts
+      toastShownRef.current = {
+        callStarted: false,
+        videoConnected: false,
+      };
+
       const rejoinedRoom = await videoApi.rejoinRoom({
         roomId,
         socketId,
@@ -512,12 +510,19 @@ const VideoCallProvider = ({ children }) => {
       });
 
       if (rejoinedRoom.success) {
-        await startLocalStream();
+        // Start fresh local stream if not exists
+        if (!localStreamRef.current) {
+          await startLocalStream();
+        }
+
+        // Emit join event to trigger room update
         socket.emit('video:join-room', { roomId });
+
+        setCallStatus('waiting');
         navigate(`/${currentUser?.role}/video-call/${roomId}`, {
           replace: true,
         });
-        toast.success('Reconnected');
+        toast.success('Reconnected to consultation');
       }
 
       return rejoinedRoom;

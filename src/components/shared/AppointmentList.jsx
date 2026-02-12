@@ -17,6 +17,7 @@ import EmptyState from '../ui/EmptyState';
 import { calculateAge } from '../../utils/patientHelpers';
 import { formatDate } from '../../utils/dateFormatter';
 import Pagination from '../ui/pagination';
+import { formatTime } from '../../utils/FormatTime';
 
 const AppointmentList = ({
   isLoading,
@@ -330,7 +331,7 @@ const AppointmentList = ({
                   }`}
                 >
                   <Clock size={14} className="mr-1" />
-                  {apt.start_time}
+                  {formatTime(apt.start_time)}
                 </span>
                 <span
                   className={`text-sm ${

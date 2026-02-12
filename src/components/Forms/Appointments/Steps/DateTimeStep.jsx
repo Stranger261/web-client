@@ -75,7 +75,7 @@ export const DateTimeStep = ({
       const slotDateTime = parse(
         `${dateStr} ${timeStr}`,
         'yyyy-MM-dd HH:mm:ss',
-        new Date()
+        new Date(),
       );
       return isBefore(slotDateTime, new Date());
     } catch (error) {
@@ -138,7 +138,7 @@ export const DateTimeStep = ({
 
     if (selectedDoctor && doctorSchedule?.availableSlots) {
       const slotsForDay = doctorSchedule.availableSlots.filter(
-        slot => slot.date === dateKey && !isTimeSlotPast(slot.date, slot.time)
+        slot => slot.date === dateKey && !isTimeSlotPast(slot.date, slot.time),
       );
 
       const slotsWithDoctor = slotsForDay.map(slot => ({
@@ -166,7 +166,8 @@ export const DateTimeStep = ({
         if (!schedule?.availableSlots) continue;
 
         const slotsForDay = schedule.availableSlots.filter(
-          slot => slot.date === dateKey && !isTimeSlotPast(slot.date, slot.time)
+          slot =>
+            slot.date === dateKey && !isTimeSlotPast(slot.date, slot.time),
         );
 
         slotsForDay.forEach(slot => {
@@ -237,8 +238,10 @@ export const DateTimeStep = ({
         if (currentDateKey === takenSlot.date) {
           setLocalTimeSlot(prevSlots =>
             prevSlots.map(slot =>
-              slot.time === takenSlot.time ? { ...slot, is_booked: true } : slot
-            )
+              slot.time === takenSlot.time
+                ? { ...slot, is_booked: true }
+                : slot,
+            ),
           );
         }
       }
@@ -386,8 +389,8 @@ export const DateTimeStep = ({
                     slot.is_booked
                       ? 'bg-red-50 border-red-300 text-red-500 cursor-not-allowed'
                       : isSelected
-                      ? 'bg-blue-600 border-blue-700 text-white shadow-md'
-                      : 'bg-white border-gray-300 text-gray-800 hover:border-blue-500 hover:bg-blue-50 hover:shadow-sm'
+                        ? 'bg-blue-600 border-blue-700 text-white shadow-md'
+                        : 'bg-white border-gray-300 text-gray-800 hover:border-blue-500 hover:bg-blue-50 hover:shadow-sm'
                   }`}
                 >
                   <div className="font-bold text-base">
@@ -441,8 +444,8 @@ export const DateTimeStep = ({
                           slot.is_booked
                             ? 'bg-red-50 border-red-300 text-red-500 cursor-not-allowed'
                             : isSelected
-                            ? 'bg-blue-600 border-blue-700 text-white shadow-md'
-                            : 'bg-white border-gray-300 text-gray-800 hover:border-blue-500 hover:bg-blue-50 hover:shadow-sm'
+                              ? 'bg-blue-600 border-blue-700 text-white shadow-md'
+                              : 'bg-white border-gray-300 text-gray-800 hover:border-blue-500 hover:bg-blue-50 hover:shadow-sm'
                         }`}
                       >
                         <div className="font-bold text-base">

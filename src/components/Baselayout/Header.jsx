@@ -234,7 +234,7 @@ const Header = ({
               style={{ color: COLORS.text.secondary, maxWidth: '200px' }}
             >
               {normalizedWord(
-                currentUser.role === 'doctor' ? 'Staff' : currentUser.role,
+                currentUser.role === 'patient' ? currentUser.role : 'Staff',
               )}{' '}
               UUID: {uuidDisplay || 'N/A'}
             </div>

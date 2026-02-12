@@ -1,4 +1,11 @@
-import { Eye, Edit, Trash2, Phone, Mail } from 'lucide-react';
+import {
+  Eye,
+  Phone,
+  Mail,
+  Camera,
+  AlertCircle,
+  CheckCircle,
+} from 'lucide-react';
 
 import Table from '../../ui/table';
 import Pagination from '../../ui/pagination';
@@ -15,10 +22,13 @@ const PatientTableView = ({
   pagination,
   isLoading,
   onViewPatient,
+  onAddFace,
   onPageChange,
   onLimitChange,
   isDarkMode,
+  userRole,
 }) => {
+  console.log(patients);
   const columns = [
     {
       header: 'Patient Info',
@@ -148,6 +158,25 @@ const PatientTableView = ({
       ),
     },
     {
+      header: 'Face ID',
+      accessor: 'face_id',
+      render: row => (
+        <div>
+          {row.has_face ? (
+            <div className="flex items-center gap-2 text-green-600">
+              <CheckCircle className="w-4 h-4" />
+              <span className="text-xs font-medium">Registered</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-amber-600">
+              <AlertCircle className="w-4 h-4" />
+              <span className="text-xs font-medium">Not Set</span>
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
       header: 'Actions',
       accessor: 'actions',
       align: 'center',
@@ -163,6 +192,20 @@ const PatientTableView = ({
               onViewPatient(row);
             }}
           />
+          {userRole === 'receptionist' && !row.has_face && (
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={Camera}
+              iconOnly
+              onClick={e => {
+                e.stopPropagation();
+                onAddFace(row);
+              }}
+              title="Add Face ID"
+              style={{ color: '#10b981' }} // green color
+            />
+          )}
         </div>
       ),
     },

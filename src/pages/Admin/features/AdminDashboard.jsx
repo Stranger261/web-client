@@ -1,836 +1,539 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { toast } from 'react-hot-toast';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-
-import { useSocket } from '../../../contexts/SocketContext';
-import { useAuth } from '../../../contexts/AuthContext';
-import { useAppointment } from '../../../contexts/AppointmentContext';
-import { useSchedule } from '../../../contexts/ScheduleContext';
 import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
+import {
+  Download,
+  Users,
   Activity,
   Calendar,
-  DollarSign,
-  Filter,
-  Users,
-  AlertCircle,
-  Clock,
-  UserPlus,
-  TrendingUp,
-  TrendingDown,
-  Info,
-  CalendarClock,
+  Stethoscope,
+  Video,
+  RefreshCw,
+  FileText,
 } from 'lucide-react';
 import { DEVELOPMENT_BASE_URL } from '../../../configs/CONST';
-import StatsCard from '../../../components/ui/stat-card';
-import { Button } from '../../../components/ui/button';
-import Modal from '../../../components/ui/Modal';
-import { FilterPanel } from '../../../components/ui/filter-panel';
-
-import AppointmentDetailModal from '../../../components/Modals/AppointmentDetailModal';
-import CreateAppointment from '../../../components/Forms/Appointments/CreateAppointment';
-import AppointmentList from '../../../components/shared/AppointmentList';
-import CreateScheduleModal from '../../../components/Modals/ScheduleModal';
 
 const AdminDashboard = () => {
-  const { currentUser } = useAuth();
-
-  const { socket, isConnected } = useSocket();
-  const {
-    appointments,
-    setAppointments,
-    pagination,
-    getAppointmentsToday,
-    bookUserAppointment,
-    isBooking,
-  } = useAppointment();
-
-  const {
-    departments,
-    allDoctors,
-    getDepartments,
-    getAllDoctors,
-    getDoctorAvailability,
-    getCombinedSchedule,
-    clearSchedules,
-    createDoctorSchedule, // Make sure this function exists in your ScheduleContext
-    isLoading: scheduleLoading,
-  } = useSchedule();
-
-  const [dashboardStats, setDashboardStats] = useState(null);
-  const [fetchingStats, setFetchingStats] = useState(false);
-  const [patients, setPatients] = useState([]);
-  const [searchingPatients, setSearchingPatients] = useState(false);
-
-  const darkMode = document.documentElement.classList.contains('dark');
-
-  const [isViewAppointModalOpen, setIsViewAppointModalOpen] = useState(false);
-  const [isCreateAppointmentModalOpen, setIsCreateAppointmentModalOpen] =
-    useState(false);
-  const [selectedAppt, setSelectedAppt] = useState(null);
-  const modalRef = useRef(null);
-
-  // create patient
-  const [isCreatePatientModalOpen, setIsCreatePatientModalOpen] =
-    useState(false);
-  const [isCreateScheduleModalOpen, setIsCreateScheduleModalOpen] =
-    useState(false);
-  // Filter state
-  const [showFilters, setShowFilters] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [limit, setLimit] = useState(20);
-  const [filters, setFilters] = useState({
-    status: '',
-    appointment_type: '',
-    priority: '',
-    search: '',
-    appointment_mode: '',
+  const [dateRange, setDateRange] = useState({
+    startDate: new Date(new Date().setDate(new Date().getDate() - 30))
+      .toISOString()
+      .split('T')[0],
+    endDate: new Date().toISOString().split('T')[0],
   });
 
-  const appointmentFilterConfig = [
-    {
-      type: 'search',
-      name: 'search',
-    },
-    {
-      type: 'select',
-      name: 'status',
-      label: 'Status',
-      options: [
-        { value: 'scheduled', label: 'Scheduled' },
-        { value: 'in_progress', label: 'In-progress' },
-        { value: 'checked_in', label: 'Checked In' },
-        { value: 'completed', label: 'Completed' },
-        { value: 'cancelled', label: 'Cancelled' },
-        { value: 'no_show', label: 'No Show' },
-      ],
-    },
-    {
-      type: 'select',
-      name: 'appointment_mode',
-      label: 'Appointment Mode',
-      options: [
-        { value: 'in-person', label: 'In-person' },
-        { value: 'online', label: 'Online' },
-      ],
-    },
-    {
-      type: 'select',
-      name: 'appointment_type',
-      label: 'Appointment Type',
-      options: [
-        { value: 'consultation', label: 'Consultation' },
-        { value: 'followup', label: 'Follow-up' },
-        { value: 'procedure', label: 'Procedure' },
-        { value: 'checkup', label: 'Check-up' },
-      ],
-    },
-    {
-      type: 'select',
-      name: 'priority',
-      label: 'Priority',
-      options: [
-        { value: 'urgent', label: 'Urgent' },
-        { value: 'normal', label: 'Normal' },
-        { value: 'emergency', label: 'Emergency' },
-      ],
-    },
-  ];
+  const [metrics, setMetrics] = useState({
+    inbed: [],
+    erTriage: [],
+    registration: [],
+    telehealth: [],
+    appointments: [],
+  });
 
-  const activeFiltersCount = Object.values(filters).filter(
-    v => v !== '',
-  ).length;
+  const [summary, setSummary] = useState({
+    total_admissions: 0,
+    total_er_visits: 0,
+    total_appointments: 0,
+  });
 
-  // Fetch appointments
-  useEffect(() => {
-    const fetch = () => {
-      const apiFilter = {
-        ...filters,
-        limit,
-        page: currentPage,
-      };
-      getAppointmentsToday(apiFilter);
-    };
-    fetch();
-    window.addEventListener('refresh-today-appointments', fetch);
-    return () =>
-      window.removeEventListener('refresh-today-appointments', fetch);
-  }, [filters, limit, currentPage]);
+  const [loading, setLoading] = useState(false);
 
-  const fetchData = async () => {
+  // Fetch real data from analytics API
+  const fetchMetrics = async () => {
+    setLoading(true);
     try {
-      setFetchingStats(true);
-      const res = await axios.get(`${DEVELOPMENT_BASE_URL}/dashboard/stats`, {
+      const axiosCall = axios.create({
+        baseURL: DEVELOPMENT_BASE_URL,
         withCredentials: true,
+        headers: {
+          'x-internal-api-key': 'core-1-secret-key',
+          'Content-Type': 'application/json',
+        },
+      });
+
+      // Add query parameters here
+      const params = {
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate,
+      };
+
+      const [inbed, er, registration, telehealth, appointments, summaryData] =
+        await Promise.all([
+          axiosCall.get('/analytics/inbed-management', { params }),
+          axiosCall.get('/analytics/er-triage', { params }),
+          axiosCall.get('/analytics/patient-registration', { params }),
+          axiosCall.get('/analytics/telehealth', { params }),
+          axiosCall.get('/analytics/appointment-system', { params }),
+          axiosCall.get('/analytics/summary', { params }), // Optional: if you want filtered summary
+        ]);
+
+      setMetrics({
+        inbed: inbed.data.data.metrics || [],
+        erTriage: er.data.data.metrics || [],
+        registration: registration.data.data.metrics || [],
+        telehealth: telehealth.data.data.metrics || [],
+        appointments: appointments.data.data.metrics || [],
+      });
+
+      setSummary(summaryData.data.data || {});
+    } catch (error) {
+      console.error('Error fetching metrics:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMetrics();
+  }, [dateRange]);
+
+  const COLORS = ['#0891b2', '#7c3aed', '#059669', '#ea580c', '#dc2626'];
+
+  const handleExport = async (endpoint, format) => {
+    try {
+      const exportBackend = axios.create({
+        baseURL: DEVELOPMENT_BASE_URL,
+        withCredentials: true,
+        headers: {
+          'x-internal-api-key': 'core-1-secret-key',
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const response = await exportBackend.get(endpoint, {
         params: {
-          role: 'admin',
+          format,
+          startDate: dateRange.startDate,
+          endDate: dateRange.endDate,
         },
+        responseType: 'blob',
       });
 
-      setDashboardStats(res.data.data);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      const filename =
+        response.headers['content-disposition']
+          ?.split('filename=')[1]
+          ?.replace(/"/g, '') || `export_${Date.now()}.${format}`;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Dashboard stats error:', error);
-      toast.error('Failed to fetch dashboard statistics');
-      // Set fallback stats
-      setDashboardStats({
-        totalPatients: 0,
-        activePatients: 0,
-        newPatientsToday: 0,
-        breakdown: {
-          appointmentTypes: {},
-        },
-      });
-    } finally {
-      setFetchingStats(false);
+      console.error('Export error:', error);
+      alert('Failed to export. Please try again.');
     }
-  };
-
-  // Fetch dashboard stats
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  // live update and notif on patient arrive
-  useEffect(() => {
-    if (!socket || !isConnected) return;
-
-    const statusChangeHandler = data => {
-      toast(`Patient: ${data.patientName} ${data.status}`, { icon: <Info /> });
-      setAppointments(prevAppointments =>
-        prevAppointments.map(appt =>
-          appt.appointment_id === data.appointmentId
-            ? { ...appt, status: data.status }
-            : appt,
-        ),
-      );
-    };
-
-    const newAppointmentArrived = data => {
-      const todayStr = new Date().toISOString().split('T')[0];
-      if (data.appointment_date !== todayStr) return;
-
-      window.dispatchEvent(new Event('refresh-today-appointments'));
-
-      toast('New appointment arrived.', {
-        icon: <Info />,
-        duration: 3000,
-      });
-    };
-
-    socket.on('patient-arrived', statusChangeHandler);
-    socket.on('patient-status_changed', statusChangeHandler);
-    socket.on('new-appointment-booked', newAppointmentArrived);
-
-    return () => {
-      socket.off('patient-status_changed', statusChangeHandler);
-      socket.off('patient-arrived', statusChangeHandler);
-      socket.off('new-appointment-booked', newAppointmentArrived);
-    };
-  }, [socket, isConnected]);
-
-  // Initialize schedule data
-  useEffect(() => {
-    if (isCreateAppointmentModalOpen || isCreateScheduleModalOpen) {
-      getDepartments();
-      getAllDoctors();
-    }
-  }, [isCreateAppointmentModalOpen, isCreateScheduleModalOpen]);
-
-  // Search patients function for CreateAppointment component
-  const handleSearchPatients = async searchTerm => {
-    try {
-      setSearchingPatients(true);
-      const response = await axios.get(
-        `${DEVELOPMENT_BASE_URL}/patients/search`,
-        {
-          withCredentials: true,
-          params: { search: searchTerm },
-        },
-      );
-      setPatients(response.data.data || []);
-    } catch (error) {
-      console.error('Error searching patients:', error);
-      toast.error('Failed to search patients');
-    } finally {
-      setSearchingPatients(false);
-    }
-  };
-
-  // Handle appointment creation for receptionist
-  const handleCreateAppointment = async payload => {
-    try {
-      // Use the same booking function but with receptionist context
-      const response = await bookUserAppointment({
-        ...payload,
-        created_by: currentUser?.id,
-        created_by_type: 'staff',
-      });
-
-      // Refresh appointments list
-      getAppointmentsToday({
-        ...filters,
-        limit,
-        page: currentPage,
-      });
-
-      toast.success('Appointment created successfully!');
-      return response;
-    } catch (error) {
-      throw new Error(error.message || 'Failed to create appointment');
-    }
-  };
-
-  // Handle schedule creation
-  const handleCreateSchedule = async scheduleData => {
-    try {
-      if (!createDoctorSchedule) {
-        throw new Error('Schedule creation function not available');
-      }
-
-      await createDoctorSchedule(scheduleData);
-
-      toast.success('Doctor schedule created successfully!');
-    } catch (error) {
-      const errorMsg =
-        error?.response?.data?.message || 'Failed to create schedule';
-      console.error('Error creating schedule:', error);
-      toast.error(errorMsg);
-      throw error;
-    }
-  };
-
-  // Format currency
-  const formatCurrency = amount => {
-    return new Intl.NumberFormat('en-PH', {
-      style: 'currency',
-      currency: 'PHP',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount || 0);
-  };
-
-  // Format percentage
-  const formatPercentage = value => {
-    return `${Math.round(value || 0)}%`;
-  };
-
-  // Calculate completion rate
-  const calculateCompletionRate = () => {
-    if (!dashboardStats?.todaysOverview?.appointments) return 0;
-
-    const waiting = dashboardStats.todaysOverview?.waitingPatients || 0;
-    const total = dashboardStats.todaysOverview?.appointments || 0;
-
-    if (total === 0) return 0;
-    const completed = total - waiting;
-    return (completed / total) * 100;
-  };
-
-  // Calculate appointment trend
-  const calculateAppointmentTrend = () => {
-    const todayAppointments = dashboardStats?.todaysOverview?.appointments || 0;
-    return todayAppointments > 10 ? 15 : todayAppointments > 5 ? 5 : 0;
-  };
-
-  // Stats data
-  const stats = dashboardStats
-    ? [
-        {
-          label: 'Total Patients',
-          value: (dashboardStats.totalPatients || 0).toLocaleString(),
-          change: `+${dashboardStats.newPatientsToday || 0} new today`,
-          trend: dashboardStats.newPatientsToday > 0 ? 'up' : 'neutral',
-          icon: Users,
-          color: 'info',
-          tooltip: `Total registered patients: ${
-            dashboardStats.totalPatients || 0
-          }\nActive patients: ${
-            dashboardStats.activePatients || 0
-          }\nNew today: ${dashboardStats.newPatientsToday || 0}`,
-        },
-        {
-          label: "Today's Appointments",
-          value: (
-            dashboardStats.todaysOverview?.appointments || 0
-          ).toLocaleString(),
-          // change: `${
-          //   dashboardStats.todaysOverview?.waitingPatients || 0
-          // } waiting`,
-          trend:
-            calculateAppointmentTrend() > 0
-              ? 'up'
-              : calculateAppointmentTrend() < 0
-                ? 'down'
-                : 'neutral',
-          icon: Calendar,
-          color: 'warning',
-          tooltip: `Total appointments today: ${
-            dashboardStats.todaysOverview?.appointments || 0
-          }\nPatients waiting: ${
-            dashboardStats.todaysOverview?.waitingPatients || 0
-          }`,
-        },
-        {
-          label: 'Completion Rate',
-          value: formatPercentage(calculateCompletionRate()),
-          change: `Processing efficiency`,
-          trend:
-            calculateCompletionRate() > 70
-              ? 'up'
-              : calculateCompletionRate() > 50
-                ? 'neutral'
-                : 'down',
-          icon: Activity,
-          color: 'accent',
-          tooltip: `Today's completion rate: ${formatPercentage(
-            calculateCompletionRate(),
-          )}\nBased on ${
-            dashboardStats.todaysOverview?.appointments || 0
-          } total appointments`,
-        },
-      ]
-    : [];
-
-  const loadingStats = [
-    {
-      label: 'Total Patients',
-      value: '0',
-      change: 'Loading...',
-      trend: 'neutral',
-      icon: Users,
-      color: 'info',
-    },
-    {
-      label: "Today's Appointments",
-      value: '0',
-      change: 'Loading...',
-      trend: 'neutral',
-      icon: Calendar,
-      color: 'warning',
-    },
-    {
-      label: 'Completion Rate',
-      value: '0%',
-      change: 'Loading...',
-      trend: 'neutral',
-      icon: Activity,
-      color: 'accent',
-    },
-  ];
-
-  // Appointment type breakdown for chart
-  const appointmentTypes = dashboardStats?.breakdown?.appointmentTypes || {};
-
-  const quickActions = [
-    {
-      icon: Calendar,
-      label: 'New Appointment',
-      color: 'green',
-      functions: () => {
-        setIsCreateAppointmentModalOpen(true);
-      },
-    },
-    {
-      icon: Users,
-      label: 'Patient Registry',
-      color: 'purple',
-      functions: () => setIsCreatePatientModalOpen(true),
-    },
-    {
-      icon: CalendarClock,
-      label: 'Create Doctor Schedule',
-      color: 'blue',
-      functions: () => setIsCreateScheduleModalOpen(true),
-    },
-    // {
-    //   icon: Clock,
-    //   label: 'Check-in Queue',
-    //   color: 'orange',
-    //   functions: () => navigate('/receptionist/checkin'),
-    // },
-    // {
-    //   icon: DollarSign,
-    //   label: 'Billing & Payments',
-    //   color: 'blue',
-    //   functions: () => navigate('/receptionist/billing'),
-    // },
-    // {
-    //   icon: AlertCircle,
-    //   label: 'Pending Tasks',
-    //   color: 'yellow',
-    //   functions: () => navigate('/receptionist/tasks'),
-    // },
-  ];
-
-  // MODALS
-  const handleViewAppointment = appointmentId => {
-    setIsViewAppointModalOpen(true);
-    setSelectedAppt(appointmentId);
-  };
-
-  const handleRegisterPatient = () => {
-    toast.success('New patient registered.');
-  };
-
-  const handleScheduleCreated = newSchedule => {
-    toast.success('Doctor schedule created successfully!');
-    // You could refresh any schedule data here if needed
-  };
-
-  // ===== Pagination handlers =====
-  const handlePageChange = newPage => {
-    setCurrentPage(newPage);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleItemsPerPageChange = useCallback(newLimit => {
-    setLimit(newLimit);
-    setCurrentPage(1);
-  }, []);
-
-  const showFilterToggle = () => setShowFilters(!showFilters);
-
-  // filters
-  const handleClearFilters = () => {
-    setFilters({
-      status: '',
-      from_date: '',
-      to_date: '',
-      appointment_type: '',
-      priority: '',
-      search: '',
-      appointment_mode: '',
-    });
-    setCurrentPage(1);
-    setLimit(20);
   };
 
   return (
-    <div className="space-y-6 p-4">
-      {/* Appointment Detail Modal */}
-      <Modal
-        isOpen={isViewAppointModalOpen}
-        onClose={() => setIsViewAppointModalOpen(false)}
-        title="Appointment Details"
-      >
-        <AppointmentDetailModal
-          isOpen={isViewAppointModalOpen}
-          onClose={() => setIsViewAppointModalOpen(false)}
-          appointment={selectedAppt}
-          currentUser={currentUser}
-        />
-      </Modal>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50 p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent mb-2">
+            Hospital Analytics Dashboard
+          </h1>
+          <p className="text-gray-600 text-lg">
+            Real-time metrics across all hospital systems
+          </p>
+        </div>
 
-      {/* Create Appointment Modal */}
-      <Modal
-        isOpen={isCreateAppointmentModalOpen}
-        onClose={() => setIsCreateAppointmentModalOpen(false)}
-        title="Create Appointment"
-        modalRef={modalRef}
-      >
-        <CreateAppointment
-          userRole="receptionist"
-          departments={departments}
-          allDoctors={allDoctors}
-          patients={patients}
-          isLoading={scheduleLoading}
-          isSubmitting={isBooking}
-          onSubmit={handleCreateAppointment}
-          onClose={() => setIsCreateAppointmentModalOpen(false)}
-          onSearchPatients={handleSearchPatients}
-          onGetDepartments={getDepartments}
-          onGetAllDoctors={getAllDoctors}
-          onGetDoctorAvailability={getDoctorAvailability}
-          onGetCombinedSchedule={getCombinedSchedule}
-          onClearSchedules={clearSchedules}
-          socket={socket}
-          isConnected={isConnected}
-          modalRef={modalRef}
-        />
-      </Modal>
-
-      {/* Create Doctor Schedule Modal */}
-      <CreateScheduleModal
-        isOpen={isCreateScheduleModalOpen}
-        onClose={() => setIsCreateScheduleModalOpen(false)}
-        doctors={allDoctors} // Pass the list of doctors
-        onSubmit={handleCreateSchedule}
-        onSuccess={handleScheduleCreated}
-      />
-
-      {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white shadow-lg">
-        <div className="flex flex-col md:flex-row md:items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">
-              Welcome back, {currentUser?.person?.first_name}{' '}
-              {currentUser?.person?.last_name}
-            </h1>
-            <p className="mt-2 opacity-90">
-              {fetchingStats
-                ? 'Loading dashboard statistics...'
-                : dashboardStats
-                  ? `Today's summary: ${
-                      dashboardStats.todaysOverview?.appointments || 0
-                    } appointments`
-                  : 'Dashboard summary'}
-            </p>
-          </div>
-          <div className="mt-4 md:mt-0">
-            <div className="flex items-center gap-2 text-sm">
-              <div
-                className={`h-2 w-2 rounded-full ${
-                  isConnected ? 'bg-green-400' : 'bg-red-400'
-                }`}
+        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                From Date
+              </label>
+              <input
+                type="date"
+                value={dateRange.startDate}
+                onChange={e =>
+                  setDateRange({ ...dateRange, startDate: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
               />
-              <span>
-                {isConnected ? 'Live updates connected' : 'Disconnected'}
-              </span>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                To Date
+              </label>
+              <input
+                type="date"
+                value={dateRange.endDate}
+                onChange={e =>
+                  setDateRange({ ...dateRange, endDate: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              />
+            </div>
+            <div className="flex items-end">
+              <button
+                onClick={fetchMetrics}
+                disabled={loading}
+                className="w-full px-6 py-2 bg-gradient-to-r from-orange-600 to-amber-600 text-white font-semibold rounded-lg hover:from-orange-700 hover:to-amber-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                <RefreshCw
+                  className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`}
+                />
+                {loading ? 'Loading...' : 'Refresh'}
+              </button>
+            </div>
+            <div className="flex items-end">
+              <button
+                onClick={() => {
+                  const today = new Date();
+                  const thirtyDaysAgo = new Date(
+                    today.setDate(today.getDate() - 30),
+                  );
+                  setDateRange({
+                    startDate: thirtyDaysAgo.toISOString().split('T')[0],
+                    endDate: new Date().toISOString().split('T')[0],
+                  });
+                }}
+                className="w-full px-6 py-2 border-2 border-orange-600 text-orange-600 font-semibold rounded-lg hover:bg-orange-50 transition-all"
+              >
+                Last 30 Days
+              </button>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {fetchingStats
-          ? loadingStats.map((stat, idx) => (
-              <StatsCard
-                key={idx}
-                title={stat.label}
-                value={stat.value}
-                change={stat.change}
-                icon={<stat.icon className="h-6 w-6" />}
-                color={stat.color}
-                loading={true}
-              />
-            ))
-          : stats.map((stat, idx) => (
-              <StatsCard
-                key={idx}
-                title={stat.label}
-                value={stat.value}
-                change={stat.change}
-                icon={<stat.icon className="h-6 w-6" />}
-                color={stat.color}
-                tooltip={stat.tooltip}
-              />
-            ))}
-      </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <StatCard
+            icon={<Activity className="w-6 h-6" />}
+            title="Total Admissions"
+            value={summary.total_admissions || 0}
+            subtitle={`${dateRange.startDate} to ${dateRange.endDate}`}
+            color="from-blue-600 to-cyan-600"
+          />
+          <StatCard
+            icon={<Users className="w-6 h-6" />}
+            title="ER Visits"
+            value={summary.total_er_visits || 0}
+            subtitle="Emergency department"
+            color="from-red-600 to-pink-600"
+          />
+          <StatCard
+            icon={<Calendar className="w-6 h-6" />}
+            title="Appointments"
+            value={summary.total_appointments || 0}
+            subtitle="Total scheduled"
+            color="from-purple-600 to-indigo-600"
+          />
+        </div>
 
-      {/* Main content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left col */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Today's Appointments */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-            {/* Header */}
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <header className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-lg mb-4 overflow-hidden">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 sm:px-6 py-4 gap-4">
-                  <div className="min-w-0 flex-shrink">
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-                      Today's Appointments
-                    </h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                      Manage patient consultations and schedules for{' '}
-                      {new Date().toLocaleDateString('en-US', {
-                        weekday: 'long',
-                        month: 'long',
-                        day: 'numeric',
-                      })}
-                    </p>
-                  </div>
+        <div className="grid grid-cols-1 gap-8">
+          {/* Inbed Management */}
+          <ChartCard
+            title="Inbed Management"
+            subtitle="Bed occupancy and admission trends"
+            icon={<Activity className="w-6 h-6" />}
+            onExportCSV={() =>
+              handleExport('/exports/admin/inbed-management', 'csv')
+            }
+            onExportPDF={() =>
+              handleExport('/exports/admin/inbed-management', 'pdf')
+            }
+            color="from-blue-600 to-cyan-600"
+          >
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={metrics.inbed}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="admissions"
+                  stroke="#0891b2"
+                  strokeWidth={2}
+                  name="Admissions"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="discharges"
+                  stroke="#059669"
+                  strokeWidth={2}
+                  name="Discharges"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="occupancy"
+                  stroke="#ea580c"
+                  strokeWidth={2}
+                  name="Occupancy"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </ChartCard>
 
-                  <div className="flex flex-wrap gap-3 w-full sm:w-auto flex-shrink-0">
-                    <Button
-                      variant="outline"
-                      icon={Filter}
-                      onClick={() => setShowFilters(!showFilters)}
-                      className="flex-1 sm:flex-none"
-                    >
-                      <span className="hidden sm:inline">Filters</span>
-                      <span className="sm:hidden">Filter</span>
-                      {activeFiltersCount > 0 && (
-                        <span className="ml-1 px-2.5 py-0.5 bg-blue-600 text-white text-xs font-bold rounded-full">
-                          {activeFiltersCount}
-                        </span>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-                {showFilters && (
-                  <FilterPanel
-                    filters={filters}
-                    onFilterChange={setFilters}
-                    onClearFilters={handleClearFilters}
-                    filterConfig={appointmentFilterConfig}
-                    showFilters={showFilters}
-                    onToggleFilters={showFilterToggle}
-                    searchPlaceholder="Search by patient name, MRN, or reason..."
-                    title="Filter Appointments"
+          {/* ER & Triage */}
+          <ChartCard
+            title="ER & Triage"
+            subtitle="Emergency department triage levels"
+            icon={<Stethoscope className="w-6 h-6" />}
+            onExportCSV={() => handleExport('/exports/admin/er-triage', 'csv')}
+            onExportPDF={() => handleExport('/exports/admin/er-triage', 'pdf')}
+            color="from-red-600 to-pink-600"
+          >
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={metrics.erTriage}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="critical" fill="#dc2626" name="Critical" />
+                <Bar dataKey="urgent" fill="#ea580c" name="Urgent" />
+                <Bar dataKey="non_urgent" fill="#059669" name="Non-Urgent" />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartCard>
+
+          {/* Two Column Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <ChartCard
+              title="Patient Registration"
+              subtitle="Registration trends"
+              icon={<Users className="w-5 h-5" />}
+              onExportCSV={() =>
+                handleExport('/exports/admin/patient-registration', 'csv')
+              }
+              onExportPDF={() =>
+                handleExport('/exports/admin/patient-registration', 'pdf')
+              }
+              color="from-cyan-600 to-teal-600"
+              small
+            >
+              <ResponsiveContainer width="100%" height={250}>
+                <LineChart data={metrics.registration}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="online"
+                    stroke="#0891b2"
+                    strokeWidth={2}
+                    name="Online"
                   />
-                )}
-              </header>
-            </div>
-            <AppointmentList
-              isLoading={searchingPatients}
-              appointments={appointments}
-              currentPage={currentPage}
-              pagination={pagination}
-              limit={limit}
-              darkMode={darkMode}
-              onPageChange={handlePageChange}
-              onItemsPerPageChange={handleItemsPerPageChange}
-              onViewAppointment={handleViewAppointment}
-              userRole={currentUser?.role}
-              showPagination={true}
-            />
-          </div>
+                  <Line
+                    type="monotone"
+                    dataKey="walkin"
+                    stroke="#7c3aed"
+                    strokeWidth={2}
+                    name="Walk-in"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartCard>
 
-          {/* Appointment Type Breakdown */}
-          {Object.keys(appointmentTypes).length > 0 && (
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Today's Appointment Types
-              </h3>
-              <div className="space-y-3">
-                {Object.entries(appointmentTypes).map(([type, count]) => (
-                  <div key={type} className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                      <span className="text-gray-700 dark:text-gray-300 capitalize">
-                        {type.replace('_', ' ')}
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="font-semibold text-gray-900 dark:text-white">
-                        {count}
-                      </span>
-                      <span className="text-sm text-gray-500">
-                        (
-                        {Math.round(
-                          (count /
-                            dashboardStats.todaysOverview?.appointments) *
-                            100,
-                        )}
-                        %)
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Right Column */}
-        <div className="space-y-6">
-          {/* Quick Actions */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-              Quick Actions
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              Common tasks
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              {quickActions.map((action, index) => (
-                <button
-                  key={index}
-                  onClick={action.functions}
-                  className="flex flex-col items-center justify-center p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
-                >
-                  <div
-                    className={`p-3 rounded-lg mb-2 ${
-                      action.color === 'green'
-                        ? 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400'
-                        : action.color === 'purple'
-                          ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400'
-                          : action.color === 'orange'
-                            ? 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
-                            : action.color === 'blue'
-                              ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                              : action.color === 'red'
-                                ? 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400'
-                                : 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400'
-                    }`}
+            <ChartCard
+              title="Telehealth"
+              subtitle="Virtual consultations"
+              icon={<Video className="w-5 h-5" />}
+              onExportCSV={() =>
+                handleExport('/exports/admin/telehealth', 'csv')
+              }
+              onExportPDF={() =>
+                handleExport('/exports/admin/telehealth', 'pdf')
+              }
+              color="from-green-600 to-emerald-600"
+              small
+            >
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={metrics.telehealth}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) =>
+                      `${name}: ${(percent * 100).toFixed(0)}%`
+                    }
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
                   >
-                    <action.icon size={20} />
-                  </div>
-                  <span className="text-sm font-medium text-center text-gray-700 dark:text-gray-300">
-                    {action.label}
-                  </span>
-                </button>
-              ))}
-            </div>
+                    {metrics.telehealth.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </ChartCard>
           </div>
 
-          {/* Daily Summary */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Daily Summary
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    Patient Flow
-                  </span>
-                  <div className="flex items-center gap-1">
-                    {dashboardStats?.newPatientsToday > 0 ? (
-                      <>
-                        <TrendingUp className="h-4 w-4 text-green-500" />
-                        <span className="text-green-600 dark:text-green-400 text-sm">
-                          +{dashboardStats.newPatientsToday}
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <TrendingDown className="h-4 w-4 text-gray-400" />
-                        <span className="text-gray-500 dark:text-gray-400 text-sm">
-                          No new
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-blue-500 rounded-full"
-                    style={{
-                      width: `${Math.min(
-                        (dashboardStats?.newPatientsToday || 0) * 10,
-                        100,
-                      )}%`,
-                    }}
-                  />
-                </div>
-              </div>
+          {/* Appointments */}
+          <ChartCard
+            title="Smart Appointment System"
+            subtitle="Booking and completion rates"
+            icon={<Calendar className="w-6 h-6" />}
+            onExportCSV={() =>
+              handleExport('/exports/admin/appointment-system', 'csv')
+            }
+            onExportPDF={() =>
+              handleExport('/exports/admin/appointment-system', 'pdf')
+            }
+            color="from-purple-600 to-indigo-600"
+          >
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={metrics.appointments}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="scheduled" fill="#7c3aed" name="Scheduled" />
+                <Bar dataKey="completed" fill="#059669" name="Completed" />
+                <Bar dataKey="cancelled" fill="#dc2626" name="Cancelled" />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartCard>
+        </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Active Patients
-                  </p>
-                  <p className="text-lg font-bold text-gray-900 dark:text-white">
-                    {dashboardStats?.activePatients || 0}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Waiting Now
-                  </p>
-                  <p className="text-lg font-bold text-gray-900 dark:text-white">
-                    {dashboardStats?.todaysOverview?.waitingPatients || 0}
-                  </p>
-                </div>
-              </div>
-            </div>
+        {/* Bulk Export */}
+        <div className="mt-8 bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl shadow-lg p-6 border-2 border-orange-200">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <Download className="w-6 h-6 text-orange-600" />
+            Export All Reports
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Download comprehensive reports for the selected date range
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {[
+              {
+                name: 'Inbed Mgmt',
+                icon: Activity,
+                endpoint: '/exports/admin/inbed-management',
+                color: 'blue',
+              },
+              {
+                name: 'ER & Triage',
+                icon: Stethoscope,
+                endpoint: '/exports/admin/er-triage',
+                color: 'red',
+              },
+              {
+                name: 'Registration',
+                icon: Users,
+                endpoint: '/exports/admin/patient-registration',
+                color: 'cyan',
+              },
+              {
+                name: 'Telehealth',
+                icon: Video,
+                endpoint: '/exports/admin/telehealth',
+                color: 'green',
+              },
+              {
+                name: 'Appointments',
+                icon: Calendar,
+                endpoint: '/exports/admin/appointment-system',
+                color: 'purple',
+              },
+            ].map(({ name, icon: Icon, endpoint, color }) => (
+              <button
+                key={name}
+                onClick={() => handleExport(endpoint, 'pdf')}
+                className={`px-4 py-3 bg-white border-2 border-${color}-600 text-${color}-600 font-semibold rounded-lg hover:bg-${color}-50 transition-all flex flex-col items-center gap-2`}
+              >
+                <Icon className="w-5 h-5" />
+                <span className="text-sm">{name}</span>
+              </button>
+            ))}
           </div>
         </div>
       </div>
     </div>
   );
 };
+
+const StatCard = ({ icon, title, value, subtitle, color }) => (
+  <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+    <div className="flex items-center justify-between mb-4">
+      <div
+        className={`w-12 h-12 rounded-lg bg-gradient-to-r ${color} flex items-center justify-center text-white`}
+      >
+        {icon}
+      </div>
+    </div>
+    <h3 className="text-gray-600 text-sm font-medium mb-1">{title}</h3>
+    <p className="text-3xl font-bold text-gray-800 mb-1">
+      {value.toLocaleString()}
+    </p>
+    <p className="text-xs text-gray-500">{subtitle}</p>
+  </div>
+);
+
+const ChartCard = ({
+  title,
+  subtitle,
+  icon,
+  onExportCSV,
+  onExportPDF,
+  color,
+  children,
+  small = false,
+}) => (
+  <div className="bg-white rounded-2xl shadow-lg p-6">
+    <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center gap-3">
+        <div
+          className={`${small ? 'w-10 h-10' : 'w-12 h-12'} rounded-lg bg-gradient-to-r ${color} flex items-center justify-center text-white`}
+        >
+          {icon}
+        </div>
+        <div>
+          <h3
+            className={`${small ? 'text-lg' : 'text-xl'} font-bold text-gray-800`}
+          >
+            {title}
+          </h3>
+          <p className="text-xs text-gray-600">{subtitle}</p>
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <button
+          onClick={onExportCSV}
+          className={`${small ? 'px-3 py-1.5 text-sm' : 'px-4 py-2'} bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all flex items-center gap-2`}
+        >
+          <FileText className="w-4 h-4" />
+          CSV
+        </button>
+        <button
+          onClick={onExportPDF}
+          className={`${small ? 'px-3 py-1.5 text-sm' : 'px-4 py-2'} bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all flex items-center gap-2`}
+        >
+          <Download className="w-4 h-4" />
+          PDF
+        </button>
+      </div>
+    </div>
+    {children}
+  </div>
+);
 
 export default AdminDashboard;

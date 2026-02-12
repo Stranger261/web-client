@@ -1,4 +1,12 @@
-import { Eye, Trash2, Phone, Mail } from 'lucide-react';
+import {
+  Eye,
+  Trash2,
+  Phone,
+  Mail,
+  AlertCircle,
+  CheckCircle,
+  Camera,
+} from 'lucide-react';
 
 import Card, { CardBody } from '../../ui/card';
 import Badge from '../../ui/badge';
@@ -19,6 +27,8 @@ const PatientMobileCards = ({
   onPageChange,
   onLimitChange,
   isDarkMode,
+  userRole,
+  onAddFace,
 }) => {
   if (isLoading) {
     return (
@@ -238,6 +248,37 @@ const PatientMobileCards = ({
                   </p>
                 </div>
               )}
+              {/* Face */}
+              <div
+                className="mb-4 pb-4 border-b"
+                style={{
+                  borderColor: isDarkMode
+                    ? COLORS.border.dark
+                    : COLORS.border.light,
+                }}
+              >
+                <p
+                  className="text-xs mb-2"
+                  style={{
+                    color: isDarkMode
+                      ? COLORS.text.light
+                      : COLORS.text.secondary,
+                  }}
+                >
+                  Face ID Status
+                </p>
+                {patient.has_face ? (
+                  <div className="flex items-center gap-2 text-green-600">
+                    <CheckCircle className="w-4 h-4" />
+                    <span className="text-sm font-medium">Registered</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-amber-600">
+                    <AlertCircle className="w-4 h-4" />
+                    <span className="text-sm font-medium">Not Registered</span>
+                  </div>
+                )}
+              </div>
 
               {/* Action Buttons */}
               <div
@@ -264,6 +305,19 @@ const PatientMobileCards = ({
                   iconOnly
                   onClick={() => onDeletePatient(patient)}
                 />
+
+                {userRole === 'receptionist' && !patient.has_face && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    icon={Camera}
+                    onClick={() => onAddFace(patient)}
+                    className="flex-1"
+                    style={{ color: '#10b981', borderColor: '#10b981' }}
+                  >
+                    Add Face
+                  </Button>
+                )}
               </div>
             </CardBody>
           </Card>

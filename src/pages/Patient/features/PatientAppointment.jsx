@@ -15,7 +15,7 @@ import AppointmentsTable from '../../../components/shared/AppointmentsTable';
 import CreateAppointment from '../components/Appointment/CreateAppointment';
 
 const PatientAppointment = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, fetchCurrentUser } = useAuth();
   const { isLoading, appointments, pagination, getPatientAppointments } =
     useAppointment();
 
@@ -101,6 +101,10 @@ const PatientAppointment = () => {
 
     getPatientAppointments(currentUser?.patient?.patient_uuid, apiFilter);
   }, [getPatientAppointments, currentUser, filters, currentPage, limit]);
+
+  useEffect(() => {
+    fetchCurrentUser();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">

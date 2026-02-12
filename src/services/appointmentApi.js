@@ -82,12 +82,12 @@ class appointmentSerevice {
 
   async rescheduleAppointment(appointmentId, newAppointmentData) {
     try {
+      console.log(appointmentId);
       const { new_time, new_date } = newAppointmentData;
       const rescheduledAppointment = await this.appointmentApi.patch(
         `/${appointmentId}/reschedule`,
         { new_date, new_time },
       );
-      console.log(rescheduledAppointment);
 
       return rescheduledAppointment.data;
     } catch (error) {

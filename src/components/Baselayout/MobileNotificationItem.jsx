@@ -12,7 +12,7 @@ const MobileNotificationItem = ({ notif, darkMode, markAsRead, COLORS }) => {
   const roomId = notificationData.room_id;
   const joinLink =
     notificationData.join_link ||
-    (roomId ? `/video-consultation/${roomId}` : null);
+    (roomId ? `/patient/video-call/${roomId}` : null);
   const isFiveMinReminder = notificationData.type === '5_min_reminder';
 
   const handleJoinRoom = e => {

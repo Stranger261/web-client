@@ -11,7 +11,7 @@ import DeleteConfirmModal from '../../../components/Patients/Modals/DeleteConfir
 import { useAuth } from '../../../contexts/AuthContext';
 import { COLORS } from '../../../configs/CONST';
 
-const ReceptionistPatient = () => {
+const AdminPatient = () => {
   const isDarkMode = document.documentElement.classList.contains('dark');
   const { currentUser } = useAuth();
 
@@ -207,4 +207,4 @@ const ReceptionistPatient = () => {
   );
 };
 
-export default ReceptionistPatient;
+export default AdminPatient;

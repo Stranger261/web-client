@@ -29,7 +29,7 @@ const NotificationItem = ({
   const roomId = notificationData.room_id;
   const joinLink =
     notificationData.join_link ||
-    (roomId ? `/video-consultation/${roomId}` : null);
+    (roomId ? `/patient/video-call/${roomId}` : null);
   const appointmentTime = notificationData.appointment_time;
   const doctorName = notificationData.doctor_name;
   const isFiveMinReminder = notificationData.type === '5_min_reminder';

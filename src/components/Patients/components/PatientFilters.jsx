@@ -1,8 +1,8 @@
-import { Search, Filter, X, Download } from 'lucide-react';
+import { Search, Filter, X } from 'lucide-react';
 import { Button } from '../../ui/button';
 import { Select } from '../../ui/select';
 import { useState, useEffect, useRef } from 'react';
-import ExportButton from '../../ui/ExportButton';
+import PatientExportButton from './PatientExportButton';
 
 const PatientFilters = ({
   filters,
@@ -89,7 +89,7 @@ const PatientFilters = ({
 
         <div className="flex justify-between gap-5">
           {/* Export Button - Only visible for admin and receptionist */}
-          <ExportButton
+          <PatientExportButton
             patients={patients}
             isDarkMode={isDarkMode}
             userRole={userRole}

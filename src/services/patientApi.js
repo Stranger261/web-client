@@ -96,7 +96,7 @@ class patientService {
 
   async addFaceToPatient(personId, faceImageBase64, staffId) {
     try {
-      const response = await this.patientApi.post('/patients/add-face', {
+      const response = await this.patientApi.post(`/add-face/${personId}`, {
         personId,
         faceImageBase64,
         staffId,

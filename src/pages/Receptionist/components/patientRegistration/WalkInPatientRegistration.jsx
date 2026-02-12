@@ -69,10 +69,6 @@ const WalkInPatientRegistration = ({ isOpen, onClose, onSuccess }) => {
     region_code: '',
     postal_code: '',
 
-    // Face (Optional)
-    skip_face_registration: false,
-    face_image: null,
-
     // registration type
     registration_type: 'walk-in',
     staffId: currentUser.staff_id,
@@ -83,7 +79,6 @@ const WalkInPatientRegistration = ({ isOpen, onClose, onSuccess }) => {
     { id: 'contact', icon: Phone, label: 'Contact' },
     { id: 'emergency', icon: AlertCircle, label: 'Emergency' },
     { id: 'address', icon: MapPin, label: 'Address' },
-    { id: 'face', icon: Camera, label: 'Face (Optional)' },
   ];
 
   const handleChange = (field, value) => {
@@ -785,57 +780,6 @@ const WalkInPatientRegistration = ({ isOpen, onClose, onSuccess }) => {
                   placeholder="e.g., 1100"
                 />
               </div>
-            </div>
-          )}
-
-          {/* Face Registration Tab */}
-          {activeTab === 'face' && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 mb-4">
-                <Camera className="w-5 h-5 text-blue-600" />
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900">
-                  Face Registration
-                </h3>
-              </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
-                <p className="text-xs sm:text-sm text-blue-800">
-                  Face registration is optional and can be done now or when the
-                  patient returns for their appointment.
-                </p>
-              </div>
-
-              <div className="flex items-start gap-3 p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <input
-                  type="checkbox"
-                  id="skip_face"
-                  checked={formData.skip_face_registration}
-                  onChange={e =>
-                    handleChange('skip_face_registration', e.target.checked)
-                  }
-                  className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 mt-0.5 flex-shrink-0"
-                />
-                <label
-                  htmlFor="skip_face"
-                  className="text-xs sm:text-sm font-medium text-gray-700"
-                >
-                  Skip face registration for now (can be added later when
-                  patient returns)
-                </label>
-              </div>
-
-              {!formData.skip_face_registration && (
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 sm:p-8 text-center">
-                  <Camera className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-sm sm:text-base text-gray-600 mb-2">
-                    Face capture component
-                  </p>
-                  <p className="text-xs sm:text-sm text-gray-500">
-                    Integrate your FaceCapture component here for direct camera
-                    capture at the reception desk
-                  </p>
-                </div>
-              )}
             </div>
           )}
 

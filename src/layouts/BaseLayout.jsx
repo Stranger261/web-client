@@ -84,8 +84,6 @@ const BaseLayout = () => {
     if (!socket || !isConnected) return;
 
     const handleNewAppointmentReminder = data => {
-      console.log('New appointment reminder via socket:', data);
-
       // Refresh notifications to show the new one
       getUserNotifications();
 

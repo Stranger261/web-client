@@ -78,19 +78,6 @@ class videoService {
     }
   }
 
-  async userDisconnected(socketId) {
-    try {
-      const disconnectedUser = await this.videoApi.patch('/disconnected-user', {
-        socketId,
-      });
-
-      return disconnectedUser.data;
-    } catch (error) {
-      console.log('Failed to disconnect: ', error);
-      throw error;
-    }
-  }
-
   async leaveRoom({ roomId, duration }) {
     try {
       const leftRoom = await this.videoApi.patch(`/${roomId}/leave-room`, {
@@ -127,6 +114,59 @@ class videoService {
       console.log('Delete room failed: ', error.message);
       throw error;
     }
+  }
+
+  async getRoomParticipants(roomId) {
+    const response = await this.videoApi.get(`/${roomId}/participants`);
+    return response.data;
+  }
+
+  async handleDisconnect(data) {
+    const { socketId, userId, userType, reason } = data;
+    const response = await this.videoApi.patch(`/disconnected-user`, {
+      socketId,
+      userId,
+      userType,
+      reason,
+    });
+
+    return response.data;
+  }
+
+  async getChatMessages(roomId, params = {}) {
+    console.log('called');
+    const { limit = 50, offset = 0 } = params;
+    const response = await this.videoApi.get(`/chat/${roomId}/messages`, {
+      params: { limit, offset },
+    });
+
+    return response.data;
+  }
+
+  async sendChatMessage(data) {
+    console.log('called');
+    const { roomId, messageType, messageContent, fileUrl } = data;
+    const response = await this.videoApi.post(`/chat/message`, {
+      roomId,
+      messageType,
+      messageContent,
+      fileUrl,
+    });
+
+    return response.data;
+  }
+
+  async uploadChatFile(file, roomId) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('roomId', roomId);
+
+    const response = await this.videoApi.post(`/chat/upload`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
   }
 }
 
