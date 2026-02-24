@@ -47,7 +47,6 @@ const LoginPage = () => {
     try {
       const response = await login(formData);
 
-      console.log(response);
       // Check if OTP is required for 2FA
       if (response?.data?.requiresOtp) {
         toast.success(response.data.message || '2FA code sent to your email.');

@@ -28,7 +28,6 @@ const PatientTableView = ({
   isDarkMode,
   userRole,
 }) => {
-  console.log(patients);
   const columns = [
     {
       header: 'Patient Info',

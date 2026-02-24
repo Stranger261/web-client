@@ -9,16 +9,13 @@ import {
 } from 'lucide-react';
 import laboratoryService from '../../../../../../services/laboratoryApi';
 
-const OrdersTab = ({
-  data,
-  onChange,
-  handleImagingOrderUpdate,
-  handleLabOrderUpdate,
-  handleOrderDetailsChange,
-  isSavingOrder,
-  isDarkMode,
-  appointment,
-}) => {
+const formatPrice = price =>
+  Number(price).toLocaleString('en-PH', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+const OrdersTab = ({ data, onChange, isSavingOrder }) => {
   const [allServices, setAllServices] = useState({
     risServices: [],
     lisServices: [],
@@ -82,62 +79,32 @@ const OrdersTab = ({
     }
   };
 
-  const handleImagingServiceToggle = async serviceId => {
+  const handleImagingServiceToggle = serviceId => {
     const newSelection = selectedImagingServices.includes(serviceId)
       ? selectedImagingServices.filter(id => id !== serviceId)
       : [...selectedImagingServices, serviceId];
-
-    // Update local state immediately for better UX
     setSelectedImagingServices(newSelection);
-
-    // Call backend to save the change
-    if (handleImagingOrderUpdate) {
-      await handleImagingOrderUpdate(newSelection, 'ris');
-    } else {
-      // Fallback to onChange if handleImagingOrderUpdate not provided
-      onChange('imaging_ordered', newSelection.join(','));
-    }
+    onChange('imaging_ordered', newSelection.join(','));
   };
 
-  const handleLabServiceToggle = async serviceId => {
+  const handleLabServiceToggle = serviceId => {
     const newSelection = selectedLabServices.includes(serviceId)
       ? selectedLabServices.filter(id => id !== serviceId)
       : [...selectedLabServices, serviceId];
-
-    // Update local state immediately for better UX
     setSelectedLabServices(newSelection);
-
-    // Call backend to save the change
-    if (handleLabOrderUpdate) {
-      await handleLabOrderUpdate(newSelection, 'lis');
-    } else {
-      // Fallback to onChange if handleLabOrderUpdate not provided
-      onChange('lab_tests_ordered', newSelection.join(','));
-    }
+    onChange('lab_tests_ordered', newSelection.join(','));
   };
 
-  const handleClinicalNotesChange = async e => {
+  const handleClinicalNotesChange = e => {
     const value = e.target.value;
     setClinicalNotes(value);
-
-    // Update backend if handleOrderDetailsChange is provided
-    if (handleOrderDetailsChange) {
-      await handleOrderDetailsChange('clinical_notes', value);
-    } else {
-      onChange('clinical_notes', value);
-    }
+    onChange('clinical_notes', value);
   };
 
-  const handlePriorityChange = async e => {
+  const handlePriorityChange = e => {
     const value = e.target.value;
     setPriority(value);
-
-    // Update backend if handleOrderDetailsChange is provided
-    if (handleOrderDetailsChange) {
-      await handleOrderDetailsChange('order_priority', value);
-    } else {
-      onChange('order_priority', value);
-    }
+    onChange('order_priority', value);
   };
 
   const getPriorityBadgeStyle = priority => {
@@ -176,12 +143,6 @@ const OrdersTab = ({
   return (
     <div className="space-y-6 p-4">
       {/* Saving Indicator */}
-      {isSavingOrder && (
-        <div className="fixed top-4 right-4 z-50 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
-          <Loader2 className="w-4 h-4 animate-spin" />
-          <span className="text-sm">Saving order changes...</span>
-        </div>
-      )}
 
       {/* Laboratory Services (LIS) Section */}
       <div>
@@ -206,14 +167,12 @@ const OrdersTab = ({
             {allServices.lisServices.map(service => (
               <div
                 key={service.service_id}
-                className={`p-2 rounded border transition-all cursor-pointer hover:shadow-sm relative ${
+                className={`p-2 rounded border transition-all cursor-pointer hover:shadow-sm relative  ${
                   selectedLabServices.includes(service.service_id)
                     ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-inner'
                     : 'border-gray-200 dark:border-gray-700'
-                } ${isSavingOrder ? 'opacity-75' : ''}`}
-                onClick={() =>
-                  !isSavingOrder && handleLabServiceToggle(service.service_id)
-                }
+                }`}
+                onClick={() => handleLabServiceToggle(service.service_id)}
               >
                 {/* Small Checkbox */}
                 <div className="absolute top-2 right-2">
@@ -255,7 +214,7 @@ const OrdersTab = ({
                       )}
                     </div>
                     <div className="font-bold text-sm text-gray-900 dark:text-gray-100">
-                      ₱{service.base_price}
+                      ₱{formatPrice(service.base_price)}
                     </div>
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -296,10 +255,7 @@ const OrdersTab = ({
                     ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-inner'
                     : 'border-gray-200 dark:border-gray-700'
                 } ${isSavingOrder ? 'opacity-75' : ''}`}
-                onClick={() =>
-                  !isSavingOrder &&
-                  handleImagingServiceToggle(service.service_id)
-                }
+                onClick={() => handleImagingServiceToggle(service.service_id)}
               >
                 {/* Small Checkbox */}
                 <div className="absolute top-2 right-2">
@@ -341,7 +297,7 @@ const OrdersTab = ({
                       )}
                     </div>
                     <div className="font-bold text-sm text-gray-900 dark:text-gray-100">
-                      ₱{service.base_price}
+                      ₱{formatPrice(service.base_price)}
                     </div>
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
@@ -446,7 +402,7 @@ const OrdersTab = ({
                             • {service.test_name}
                           </span>
                           <span className="font-medium text-gray-900 dark:text-gray-100">
-                            ₱{service.base_price}
+                            ₱{formatPrice(service.base_price)}
                           </span>
                         </div>
                       ))}
@@ -478,7 +434,7 @@ const OrdersTab = ({
                             • {service.service_name}
                           </span>
                           <span className="font-medium text-gray-900 dark:text-gray-100">
-                            ₱{service.base_price}
+                            ₱{formatPrice(service.base_price)}
                           </span>
                         </div>
                       ))}

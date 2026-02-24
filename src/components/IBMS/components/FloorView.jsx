@@ -269,6 +269,22 @@ const FloorView = ({ isDarkMode, userRole }) => {
 
   return (
     <div className="space-y-4">
+      {/* Bed Details Modal */}
+      {showBedDetails && selectedBed && (
+        <BedDetailsModal
+          isOpen={showBedDetails}
+          onClose={() => {
+            setShowBedDetails(false);
+            setSelectedBed(null);
+          }}
+          bed={selectedBed}
+          isDarkMode={isDarkMode}
+          userRole={userRole}
+          onUpdate={() => {
+            if (selectedRoom) fetchBeds(selectedRoom.room_id);
+          }}
+        />
+      )}
       {/* Breadcrumb */}
       <div
         className="flex items-center gap-2 text-sm"
@@ -530,23 +546,6 @@ const FloorView = ({ isDarkMode, userRole }) => {
             );
           })}
         </div>
-      )}
-
-      {/* Bed Details Modal */}
-      {showBedDetails && selectedBed && (
-        <BedDetailsModal
-          isOpen={showBedDetails}
-          onClose={() => {
-            setShowBedDetails(false);
-            setSelectedBed(null);
-          }}
-          bed={selectedBed}
-          isDarkMode={isDarkMode}
-          userRole={userRole}
-          onUpdate={() => {
-            if (selectedRoom) fetchBeds(selectedRoom.room_id);
-          }}
-        />
       )}
     </div>
   );

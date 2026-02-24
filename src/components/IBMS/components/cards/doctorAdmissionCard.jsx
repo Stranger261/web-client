@@ -359,7 +359,7 @@ const DoctorAdmissionCard = ({
         </Button>
 
         {isActive && (
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-1">
             <Button
               variant="outline"
               size="sm"
@@ -368,16 +368,6 @@ const DoctorAdmissionCard = ({
               className="text-xs"
             >
               Add Note
-            </Button>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onViewRounds(admission)}
-              icon={Activity}
-              className="text-xs"
-            >
-              Rounds
             </Button>
 
             {admission.is_discharge_pending && (
@@ -394,7 +384,7 @@ const DoctorAdmissionCard = ({
           </div>
         )}
 
-        {/* {isPendingDischarge && (
+        {isPendingDischarge && (
           <Button
             variant="warning"
             size="sm"
@@ -404,7 +394,7 @@ const DoctorAdmissionCard = ({
           >
             Pending Discharge
           </Button>
-        )} */}
+        )}
       </div>
     </div>
   );

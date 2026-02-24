@@ -1,56 +1,55 @@
-import React, { useState } from 'react';
-import { X, UserX, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, UserX, AlertCircle, Camera } from 'lucide-react';
 import { erService } from '../../../services/erApi';
 import toast from 'react-hot-toast';
+
+const ARRIVAL_MODES = [
+  { value: 'ambulance', label: 'Ambulance' },
+  { value: 'police', label: 'Police' },
+  { value: 'helicopter', label: 'Helicopter' },
+  { value: 'walk_in', label: 'Walk-in' },
+  { value: 'other', label: 'Other' },
+];
+
+const defaultForm = {
+  temporaryInfo: {
+    estimatedAge: '',
+    gender: 'other',
+    gender_specification: '',
+    description: '',
+  },
+  visitData: {
+    arrival_mode: 'ambulance',
+    chief_complaint: '',
+    accompanied_by: 'EMS',
+    triage_level: 1,
+    triage_nurse_id: 1, // Replace with currentUser.staff_id
+  },
+};
 
 const UnknownPatientModal = ({ isOpen, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [form, setForm] = useState(defaultForm);
 
-  const [formData, setFormData] = useState({
-    temporaryInfo: {
-      estimatedAge: '',
-      gender: 'male',
-      description: '',
-    },
-    visitData: {
-      arrival_mode: 'ambulance',
-      chief_complaint: '',
-      accompanied_by: 'EMS',
-      triage_level: 1,
-      triage_nurse_id: 1, // Should come from logged-in user
-    },
-  });
-
-  // Reset form when modal opens/closes
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isOpen) {
-      resetForm();
+      setForm(defaultForm);
+      setError('');
     }
   }, [isOpen]);
 
-  const resetForm = () => {
-    setFormData({
-      temporaryInfo: {
-        estimatedAge: '',
-        gender: 'male',
-        description: '',
-      },
-      visitData: {
-        arrival_mode: 'ambulance',
-        chief_complaint: '',
-        accompanied_by: 'EMS',
-        triage_level: 1,
-        triage_nurse_id: 1,
-      },
-    });
-    setError('');
-  };
+  const setTemp = (field, value) =>
+    setForm(f => ({
+      ...f,
+      temporaryInfo: { ...f.temporaryInfo, [field]: value },
+    }));
+  const setVisit = (field, value) =>
+    setForm(f => ({ ...f, visitData: { ...f.visitData, [field]: value } }));
 
   const handleSubmit = async e => {
     e.preventDefault();
-
-    if (!formData.visitData.chief_complaint.trim()) {
+    if (!form.visitData.chief_complaint.trim()) {
       setError('Chief complaint is required');
       return;
     }
@@ -59,292 +58,281 @@ const UnknownPatientModal = ({ isOpen, onClose, onSuccess }) => {
     setError('');
 
     try {
-      const response = await erService.createUnknownPatient(formData);
-      onSuccess(response.data);
-      console.log(response);
-    } catch (err) {
-      setError(
-        err.response?.data?.message || 'Failed to register unknown patient',
+      const response = await erService.registerUnknownPatient(
+        form.visitData,
+        form.temporaryInfo,
+        null, // faceData — pass from face capture if used
       );
-      toast.error(err.response?.data?.message);
+      onSuccess(response.data);
+    } catch (err) {
+      const msg =
+        err.response?.data?.message || 'Failed to register unknown patient';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   };
 
-  const updateTemporaryInfo = (field, value) => {
-    setFormData({
-      ...formData,
-      temporaryInfo: {
-        ...formData.temporaryInfo,
-        [field]: value,
-      },
-    });
-  };
-
-  const updateVisitData = (field, value) => {
-    setFormData({
-      ...formData,
-      visitData: {
-        ...formData.visitData,
-        [field]: value,
-      },
-    });
-  };
-
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-6 border-b border-gray-100 sticky top-0 bg-white rounded-t-2xl z-10">
           <div className="flex items-center gap-3">
-            <div className="bg-yellow-100 p-2 rounded-lg">
-              <UserX size={24} className="text-yellow-600" />
+            <div className="bg-amber-100 p-2 rounded-xl">
+              <UserX size={22} className="text-amber-600" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-800">
-                Register Unknown Patient
+              <h2 className="text-lg font-bold text-gray-900">
+                Unknown Patient
               </h2>
-              <p className="text-sm text-gray-600">
+              <p className="text-xs text-gray-500 mt-0.5">
                 Create temporary record for unidentified patient
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
           >
-            <X size={24} />
+            <X size={20} className="text-gray-400" />
           </button>
         </div>
 
-        {/* Warning Alert */}
-        <div className="mx-6 mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start gap-3">
-          <AlertCircle
-            size={20}
-            className="text-yellow-600 flex-shrink-0 mt-0.5"
-          />
+        {/* Warning banner */}
+        <div className="mx-6 mt-5 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+          <AlertCircle size={18} className="text-amber-500 shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-yellow-900">
-              Patient Identity Unknown
+            <p className="text-sm font-semibold text-amber-800">
+              Temporary Record
             </p>
-            <p className="text-sm text-yellow-800 mt-1">
-              A temporary record will be created with a TEMP MRN. Please
-              identify the patient as soon as possible.
+            <p className="text-xs text-amber-700 mt-0.5">
+              A <strong>TEMP MRN</strong> will be assigned. Identify the patient
+              as soon as possible to merge with their real record.
             </p>
           </div>
         </div>
 
-        {/* Error Alert */}
+        {/* Error */}
         {error && (
-          <div className="mx-6 mt-4 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
-            <AlertCircle
-              size={20}
-              className="text-red-600 flex-shrink-0 mt-0.5"
-            />
-            <p className="text-sm text-red-800">{error}</p>
+          <div className="mx-6 mt-3 bg-red-50 border border-red-200 rounded-xl p-3 flex items-start gap-2">
+            <AlertCircle size={16} className="text-red-500 mt-0.5 shrink-0" />
+            <p className="text-sm text-red-700">{error}</p>
           </div>
         )}
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6">
-          {/* Temporary Patient Information */}
-          <div className="mb-6">
-            <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-sm">
-                Temporary Information
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* ── Temporary Patient Info ── */}
+          <section>
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-xs font-bold text-amber-700 bg-amber-100 px-3 py-1 rounded-full uppercase tracking-wider">
+                Physical Description
               </span>
-            </h3>
+            </div>
 
-            <div className="space-y-4">
-              {/* Estimated Age */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Estimated Age (years)
-                </label>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Estimated Age">
                 <input
                   type="number"
-                  value={formData.temporaryInfo.estimatedAge}
-                  onChange={e =>
-                    updateTemporaryInfo('estimatedAge', e.target.value)
-                  }
-                  placeholder="Approximate age..."
                   min="0"
                   max="120"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 
-                           focus:ring-yellow-500 focus:border-transparent"
+                  value={form.temporaryInfo.estimatedAge}
+                  onChange={e => setTemp('estimatedAge', e.target.value)}
+                  placeholder="Approximate age…"
+                  className={inputCls}
                 />
-              </div>
+              </Field>
 
-              {/* Gender */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Gender
-                </label>
+              <Field label="Apparent Gender">
                 <select
-                  value={formData.temporaryInfo.gender}
-                  onChange={e => updateTemporaryInfo('gender', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 
-                           focus:ring-yellow-500 focus:border-transparent"
+                  value={form.temporaryInfo.gender}
+                  onChange={e =>
+                    setTemp('gender', e.target.value) ||
+                    setTemp('gender_specification', '')
+                  }
+                  className={inputCls}
                 >
                   <option value="male">Male</option>
                   <option value="female">Female</option>
-                  <option value="other">Other/Unknown</option>
+                  <option value="other">Unknown / Other</option>
                 </select>
-              </div>
+              </Field>
 
-              {/* Description */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Physical Description / Notes
-                </label>
-                <textarea
-                  value={formData.temporaryInfo.description}
-                  onChange={e =>
-                    updateTemporaryInfo('description', e.target.value)
-                  }
-                  placeholder="Approximate height, weight, hair color, clothing, identifying marks, found location, etc..."
-                  rows={3}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 
-                           focus:ring-yellow-500 focus:border-transparent"
-                />
+              {/* Gender specification — only when 'other' selected */}
+              {form.temporaryInfo.gender === 'other' && (
+                <div className="col-span-2">
+                  <Field label="Specify Gender (if apparent)">
+                    <input
+                      value={form.temporaryInfo.gender_specification}
+                      onChange={e =>
+                        setTemp('gender_specification', e.target.value)
+                      }
+                      placeholder="If discernible, specify gender identity…"
+                      className={inputCls}
+                    />
+                  </Field>
+                </div>
+              )}
+
+              <div className="col-span-2">
+                <Field label="Physical Description / Notes">
+                  <textarea
+                    value={form.temporaryInfo.description}
+                    onChange={e => setTemp('description', e.target.value)}
+                    rows={3}
+                    placeholder="Height, weight, hair color, clothing, identifying marks, where found…"
+                    className={`${inputCls} resize-none`}
+                  />
+                </Field>
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* Arrival Information */}
-          <div className="mb-6">
-            <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+          {/* ── Arrival Info ── */}
+          <section>
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-xs font-bold text-blue-700 bg-blue-100 px-3 py-1 rounded-full uppercase tracking-wider">
                 Arrival Information
               </span>
-            </h3>
+            </div>
 
-            <div className="space-y-4">
-              {/* Arrival Mode */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Arrival Mode <span className="text-red-500">*</span>
-                </label>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Arrival Mode" required>
                 <select
-                  value={formData.visitData.arrival_mode}
-                  onChange={e =>
-                    updateVisitData('arrival_mode', e.target.value)
-                  }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 
-                           focus:ring-blue-500 focus:border-transparent"
+                  value={form.visitData.arrival_mode}
+                  onChange={e => setVisit('arrival_mode', e.target.value)}
+                  className={inputCls}
                   required
                 >
-                  <option value="ambulance">Ambulance</option>
-                  <option value="police">Police</option>
-                  <option value="helicopter">Helicopter</option>
-                  <option value="walk_in">Walk-in</option>
-                  <option value="other">Other</option>
+                  {ARRIVAL_MODES.map(m => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
                 </select>
-              </div>
+              </Field>
 
-              {/* Chief Complaint */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Chief Complaint / Condition{' '}
-                  <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  value={formData.visitData.chief_complaint}
-                  onChange={e =>
-                    updateVisitData('chief_complaint', e.target.value)
-                  }
-                  placeholder="e.g., Unconscious, found on street; Multiple trauma; Altered mental status..."
-                  rows={3}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 
-                           focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Describe the patient's condition and circumstances
-                </p>
-              </div>
-
-              {/* Found/Brought By */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Found/Brought By
-                </label>
+              <Field label="Found / Brought By">
                 <input
-                  type="text"
-                  value={formData.visitData.accompanied_by}
-                  onChange={e =>
-                    updateVisitData('accompanied_by', e.target.value)
-                  }
-                  placeholder="e.g., EMS, Police, Bystander..."
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 
-                           focus:ring-blue-500 focus:border-transparent"
+                  value={form.visitData.accompanied_by}
+                  onChange={e => setVisit('accompanied_by', e.target.value)}
+                  placeholder="EMS, Police, Bystander…"
+                  className={inputCls}
                 />
+              </Field>
+
+              <div className="col-span-2">
+                <Field label="Chief Complaint / Condition" required>
+                  <textarea
+                    value={form.visitData.chief_complaint}
+                    onChange={e => setVisit('chief_complaint', e.target.value)}
+                    rows={3}
+                    required
+                    placeholder="e.g. Unconscious, found on sidewalk; Multiple trauma; Altered mental status…"
+                    className={`${inputCls} resize-none`}
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    Describe condition and circumstances of discovery
+                  </p>
+                </Field>
               </div>
 
-              {/* Initial Triage Level */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Initial Triage Level <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={formData.visitData.triage_level}
-                  onChange={e =>
-                    updateVisitData('triage_level', parseInt(e.target.value))
-                  }
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 
-                           focus:ring-blue-500 focus:border-transparent"
-                  required
-                >
-                  <option value={1}>
-                    🔴 Level 1 - Resuscitation (Critical)
-                  </option>
-                  <option value={2}>🟠 Level 2 - Emergency</option>
-                  <option value={3}>🟡 Level 3 - Urgent</option>
-                  <option value={4}>🟢 Level 4 - Less Urgent</option>
-                  <option value={5}>🔵 Level 5 - Non-Urgent</option>
-                </select>
-                <p className="text-xs text-gray-500 mt-1">
-                  Unknown patients typically arrive as Level 1 or 2
-                </p>
+              <div className="col-span-2">
+                <Field label="Triage Level" required>
+                  <div className="grid grid-cols-5 gap-2 mt-1">
+                    {[
+                      {
+                        v: 1,
+                        label: 'Resuscitation',
+                        cls: 'text-red-700 bg-red-50 border-red-300',
+                      },
+                      {
+                        v: 2,
+                        label: 'Emergency',
+                        cls: 'text-orange-700 bg-orange-50 border-orange-300',
+                      },
+                      {
+                        v: 3,
+                        label: 'Urgent',
+                        cls: 'text-yellow-700 bg-yellow-50 border-yellow-300',
+                      },
+                      {
+                        v: 4,
+                        label: 'Less Urgent',
+                        cls: 'text-green-700 bg-green-50 border-green-300',
+                      },
+                      {
+                        v: 5,
+                        label: 'Non-Urgent',
+                        cls: 'text-blue-700 bg-blue-50 border-blue-300',
+                      },
+                    ].map(t => (
+                      <button
+                        key={t.v}
+                        type="button"
+                        onClick={() => setVisit('triage_level', t.v)}
+                        className={`py-3 rounded-xl border-2 text-center transition-all ${
+                          form.visitData.triage_level === t.v
+                            ? t.cls + ' border-current'
+                            : 'border-gray-200 text-gray-400 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="text-lg font-bold">L{t.v}</div>
+                        <div className="text-[10px] font-medium leading-tight mt-0.5 px-0.5">
+                          {t.label}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-2">
+                    Unknown patients typically arrive as Level 1 or 2
+                  </p>
+                </Field>
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* Info Box */}
-          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-900">
-              <span className="font-medium">Next Steps:</span> After creating
-              this record, you'll be able to:
+          {/* Next steps info */}
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+            <p className="text-xs font-semibold text-blue-800 mb-2">
+              After creating this record you can:
             </p>
-            <ul className="text-sm text-blue-800 mt-2 ml-4 list-disc space-y-1">
-              <li>Complete triage assessment</li>
+            <ul className="text-xs text-blue-700 space-y-1 ml-3 list-disc">
+              <li>Complete the triage assessment</li>
               <li>Provide emergency treatment</li>
-              <li>Identify the patient when information becomes available</li>
-              <li>Merge records with real patient data</li>
+              <li>Use facial recognition to attempt re-identification</li>
+              <li>
+                Manually link to a real patient record when identity is
+                confirmed
+              </li>
             </ul>
           </div>
 
-          {/* Action Buttons */}
+          {/* Actions */}
           <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-6 py-3 border-2 border-gray-300 rounded-lg 
-                       hover:bg-gray-50 font-medium transition-colors"
-            >
+            <button type="button" onClick={onClose} className={ghostBtn}>
               Cancel
             </button>
             <button
               type="submit"
-              disabled={loading}
-              className="flex-1 px-6 py-3 bg-yellow-600 text-white rounded-lg 
-                       hover:bg-yellow-700 font-medium transition-colors 
-                       disabled:bg-gray-400 disabled:cursor-not-allowed"
+              disabled={loading || !form.visitData.chief_complaint.trim()}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+                !loading && form.visitData.chief_complaint.trim()
+                  ? 'bg-amber-600 text-white hover:bg-amber-700'
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              }`}
             >
-              {loading ? 'Creating...' : 'Create Temporary Record'}
+              {loading ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Creating…
+                </>
+              ) : (
+                'Create Temporary Record'
+              )}
             </button>
           </div>
         </form>
@@ -352,5 +340,20 @@ const UnknownPatientModal = ({ isOpen, onClose, onSuccess }) => {
     </div>
   );
 };
+
+const inputCls =
+  'w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all';
+const ghostBtn =
+  'px-5 py-2.5 border-2 border-gray-200 text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors';
+
+const Field = ({ label, required, children, hint }) => (
+  <div className="flex flex-col gap-1.5">
+    <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+      {label} {required && <span className="text-red-500">*</span>}
+    </label>
+    {children}
+    {hint && <span className="text-xs text-gray-400">{hint}</span>}
+  </div>
+);
 
 export default UnknownPatientModal;

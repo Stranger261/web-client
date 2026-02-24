@@ -1,3 +1,4 @@
+// components/Patients/MedicalHistory/PatientMedicalHistory.js
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   FileText,
@@ -7,6 +8,7 @@ import {
   Building2,
   AlertCircle,
   TrendingUp,
+  Eye,
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import Card, { CardHeader, CardBody } from '../../../components/ui/card';
@@ -14,15 +16,16 @@ import Pagination from '../../../components/ui/pagination';
 import { FilterPanel } from '../../../components/ui/filter-panel';
 import { Button } from '../../../components/ui/button';
 import { LoadingSpinner } from '../../../components/ui/loading-spinner';
-
 import TimelineCard from '../../../components/Patients/cards/TimelineCard';
-import RecordDetailModal from '../components/MedicalHistory/RecordDetailModal';
-
+import RecordDetailsModal from '../components/modals/RecordDetailsModal';
 import { COLORS } from '../../../configs/CONST';
 import medicalRecordsService from '../../../services/medicalRecordApi';
 import exportService from '../../../services/exportService';
 import { getDateRangeText } from '../../../components/Patients/utils/getDateRangeText';
 import { useAuth } from '../../../contexts/AuthContext';
+
+// Keys that are pagination/meta — not user-facing filters
+const PAGINATION_KEYS = ['page', 'limit'];
 
 const PatientMedicalHistory = () => {
   const { currentUser } = useAuth();
@@ -42,7 +45,15 @@ const PatientMedicalHistory = () => {
   const [isExporting, setIsExporting] = useState(false);
   const exportMenuRef = useRef(null);
 
-  // Filters
+  // Pagination state
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 0,
+  });
+
+  // Filters — single source of truth. No separate debounce state.
   const [filters, setFilters] = useState({
     page: 1,
     limit: 20,
@@ -53,16 +64,10 @@ const PatientMedicalHistory = () => {
     status: '',
   });
 
-  // Debounce filters
-  const [debouncedFilters, setDebouncedFilters] = useState(filters);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedFilters(filters);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [filters]);
+  // FIX 1: Single debounce — only delay the API call for search changes.
+  // We store what was last *fetched* so we can skip redundant calls.
+  const fetchTimerRef = useRef(null);
+  const lastFetchedFilters = useRef(null);
 
   // Close export menu when clicking outside
   useEffect(() => {
@@ -74,17 +79,36 @@ const PatientMedicalHistory = () => {
         setShowExportMenu(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // FIX 1 (cont): Debounce only search; all other filter changes fire immediately.
+  useEffect(() => {
+    const isSearchChange =
+      lastFetchedFilters.current !== null &&
+      filters.search !== lastFetchedFilters.current?.search &&
+      // Make sure nothing else changed
+      JSON.stringify({ ...filters, search: '' }) ===
+        JSON.stringify({ ...lastFetchedFilters.current, search: '' });
+
+    const delay = isSearchChange ? 500 : 0;
+
+    clearTimeout(fetchTimerRef.current);
+    fetchTimerRef.current = setTimeout(() => {
+      fetchRecords(filters);
+    }, delay);
+
+    return () => clearTimeout(fetchTimerRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters]);
+
   // Fetch records
-  const fetchRecords = useCallback(async () => {
+  const fetchRecords = useCallback(async currentFilters => {
     setLoading(true);
     try {
-      // Clean filters - remove empty values
-      const cleanFilters = Object.entries(debouncedFilters).reduce(
+      // Clean filters — remove empty values
+      const cleanFilters = Object.entries(currentFilters).reduce(
         (acc, [key, value]) => {
           if (value !== '' && value !== null && value !== undefined) {
             acc[key] = value;
@@ -94,22 +118,26 @@ const PatientMedicalHistory = () => {
         {},
       );
 
+      lastFetchedFilters.current = currentFilters;
+
       const response =
         await medicalRecordsService.getMyMedicalRecords(cleanFilters);
 
       setRecords(response.timeline || []);
       setSummary(response.summary || {});
+      setPagination({
+        page: response.pagination?.page || 1,
+        limit: response.pagination?.limit || 20,
+        total: response.pagination?.total || 0,
+        totalPages: response.pagination?.totalPages || 1,
+      });
     } catch (error) {
       console.error('Error fetching medical records:', error);
       toast.error('Failed to load medical records');
     } finally {
       setLoading(false);
     }
-  }, [debouncedFilters]);
-
-  useEffect(() => {
-    fetchRecords();
-  }, [fetchRecords]);
+  }, []);
 
   const handleToggleRecord = recordId => {
     setExpandedRecordId(prev => (prev === recordId ? null : recordId));
@@ -135,14 +163,30 @@ const PatientMedicalHistory = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // FIX 2: FilterPanel only sends filter fields (no page/limit in its scope).
+  // We merge here and always reset to page 1 on a filter change.
   const handleFilterChange = newFilters => {
-    setFilters(prev => ({ ...prev, ...newFilters, page: 1 }));
+    // If recordType changed, also clear status to avoid invalid combinations
+    let adjustedFilters = { ...newFilters };
+
+    if (
+      'recordType' in newFilters &&
+      newFilters.recordType !== filters.recordType
+    ) {
+      adjustedFilters.status = ''; // Clear status when record type changes
+    }
+
+    setFilters(prev => ({
+      ...prev, // keep page, limit, and any existing filters
+      ...adjustedFilters, // overlay only what FilterPanel knows about
+      page: 1, // always reset to page 1
+    }));
   };
 
   const handleClearFilters = () => {
     setFilters({
       page: 1,
-      limit: 20,
+      limit: 20, // preserve limit
       search: '',
       startDate: '',
       endDate: '',
@@ -151,19 +195,13 @@ const PatientMedicalHistory = () => {
     });
   };
 
-  // Enhanced export functionality
+  // Export functionality
   const handleExport = async format => {
     try {
       setIsExporting(true);
       setShowExportMenu(false);
 
-      // Fetch ALL records
-      const exportFilters = {
-        ...filters,
-        page: 1,
-        limit: 1000,
-      };
-
+      const exportFilters = { ...filters, page: 1, limit: 1000 };
       const response =
         await medicalRecordsService.getMyMedicalRecords(exportFilters);
       const allRecords = response.timeline || [];
@@ -173,7 +211,6 @@ const PatientMedicalHistory = () => {
         return;
       }
 
-      // Prepare comprehensive data
       const exportData = exportService.prepareMedicalRecordsForExport(
         allRecords,
         {
@@ -182,18 +219,15 @@ const PatientMedicalHistory = () => {
         },
       );
 
-      // Export with enhanced service
       switch (format) {
         case 'CSV':
           exportService.exportToCSV(allRecords, `my-medical-records`);
           toast.success('✅ CSV exported successfully!');
           break;
-
         case 'JSON':
           exportService.exportToJSON(exportData, `my-medical-records`);
           toast.success('✅ JSON exported successfully!');
           break;
-
         case 'PDF':
           exportService.exportToPDF(
             allRecords,
@@ -205,6 +239,8 @@ const PatientMedicalHistory = () => {
           );
           toast.success('✅ PDF exported successfully!');
           break;
+        default:
+          break;
       }
     } catch (error) {
       console.error('Export failed:', error);
@@ -214,14 +250,92 @@ const PatientMedicalHistory = () => {
     }
   };
 
+  // FIX 4: Only count actual filter fields, not pagination meta keys.
   const getActiveFiltersCount = () => {
-    let count = 0;
-    if (filters.search) count++;
-    if (filters.startDate) count++;
-    if (filters.endDate) count++;
-    if (filters.recordType) count++;
-    if (filters.status) count++;
-    return count;
+    const filterOnlyKeys = [
+      'search',
+      'startDate',
+      'endDate',
+      'recordType',
+      'status',
+    ];
+    return filterOnlyKeys.filter(key => filters[key] && filters[key] !== '')
+      .length;
+  };
+
+  // Dynamic status options based on selected recordType
+  const getStatusOptions = () => {
+    const recordType = filters.recordType;
+
+    // No record type selected → show all possible statuses
+    if (!recordType) {
+      return [
+        { value: '', label: 'All Status' },
+        { value: 'completed', label: 'Completed' },
+        { value: 'scheduled', label: 'Scheduled' },
+        { value: 'in_progress', label: 'In Progress' },
+        { value: 'active', label: 'Active' },
+        { value: 'discharged', label: 'Discharged' },
+        { value: 'cancelled', label: 'Cancelled' },
+        { value: 'reported', label: 'Reported' },
+      ];
+    }
+
+    // Appointment-specific statuses
+    if (recordType === 'appointment') {
+      return [
+        { value: '', label: 'All Status' },
+        { value: 'scheduled', label: 'Scheduled' },
+        { value: 'completed', label: 'Completed' },
+        { value: 'in_progress', label: 'In Progress' },
+        { value: 'cancelled', label: 'Cancelled' },
+        { value: 'no_show', label: 'No Show' },
+      ];
+    }
+
+    // Admission-specific statuses
+    if (recordType === 'admission') {
+      return [
+        { value: '', label: 'All Status' },
+        { value: 'active', label: 'Active' },
+        { value: 'discharged', label: 'Discharged' },
+        { value: 'cancelled', label: 'Cancelled' },
+      ];
+    }
+
+    // Laboratory-specific statuses
+    if (recordType === 'laboratory') {
+      return [
+        { value: '', label: 'All Status' },
+        { value: 'pending', label: 'Pending' },
+        { value: 'in_progress', label: 'In Progress' },
+        { value: 'completed', label: 'Completed' },
+        { value: 'cancelled', label: 'Cancelled' },
+      ];
+    }
+
+    // Imaging-specific statuses
+    if (recordType === 'imaging') {
+      return [
+        { value: '', label: 'All Status' },
+        { value: 'scheduled', label: 'Scheduled' },
+        { value: 'in_progress', label: 'In Progress' },
+        { value: 'completed', label: 'Completed' },
+        { value: 'reported', label: 'Reported' },
+        { value: 'cancelled', label: 'Cancelled' },
+      ];
+    }
+
+    // Medical record - typically completed/finalized
+    if (recordType === 'medical_record') {
+      return [
+        { value: '', label: 'All Status' },
+        { value: 'completed', label: 'Completed' },
+        { value: 'in_progress', label: 'In Progress' },
+      ];
+    }
+
+    return [{ value: '', label: 'All Status' }];
   };
 
   const filterConfig = [
@@ -250,25 +364,31 @@ const PatientMedicalHistory = () => {
         { value: 'appointment', label: 'Appointments' },
         { value: 'admission', label: 'Admissions' },
         { value: 'medical_record', label: 'Medical Records' },
+        { value: 'laboratory', label: 'Laboratory Tests' },
+        { value: 'imaging', label: 'Imaging Studies' },
       ],
     },
     {
       type: 'select',
       name: 'status',
       label: 'Status',
-      options: [
-        { value: '', label: 'All Status' },
-        { value: 'completed', label: 'Completed' },
-        { value: 'scheduled', label: 'Scheduled' },
-        { value: 'active', label: 'Active' },
-        { value: 'discharged', label: 'Discharged' },
-        { value: 'cancelled', label: 'Cancelled' },
-      ],
+      options: getStatusOptions(),
+      // Hide status filter when no recordType selected to avoid confusion
+      hidden: !filters.recordType,
+      helperText: 'Select a record type first to filter by status',
     },
   ];
 
   const activeFiltersCount = getActiveFiltersCount();
-  const totalPages = Math.ceil((summary.totalRecords || 0) / filters.limit);
+
+  // Derive the filter-only slice to pass to FilterPanel (no page/limit)
+  const filterPanelValues = {
+    search: filters.search,
+    startDate: filters.startDate,
+    endDate: filters.endDate,
+    recordType: filters.recordType,
+    status: filters.status,
+  };
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -278,7 +398,6 @@ const PatientMedicalHistory = () => {
           subtitle="View your past medical records and consultations"
           action={
             <div className="flex items-center gap-3">
-              {/* Filter Button - Consistent with PatientRecordsTab */}
               <Button
                 variant="outline"
                 icon={Filter}
@@ -294,7 +413,6 @@ const PatientMedicalHistory = () => {
                 )}
               </Button>
 
-              {/* Export Button - Consistent with PatientRecordsTab */}
               <div className="relative">
                 <Button
                   className="px-4 py-2.5 rounded-lg text-sm whitespace-nowrap flex items-center gap-2"
@@ -380,8 +498,8 @@ const PatientMedicalHistory = () => {
           }
         />
 
-        {/* Summary Stats - Consistent with PatientRecordsTab */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 px-6 py-4">
+        {/* Summary Stats */}
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 px-6 py-4">
           <div
             className="relative overflow-hidden rounded-xl p-4 shadow-sm"
             style={{
@@ -451,6 +569,28 @@ const PatientMedicalHistory = () => {
           <div
             className="relative overflow-hidden rounded-xl p-4 shadow-sm"
             style={{
+              background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+            }}
+          >
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-2">
+                <FileText size={24} className="text-white opacity-80" />
+                <div className="text-3xl font-bold text-white">
+                  {summary.totalMedicalRecords || 0}
+                </div>
+              </div>
+              <div className="text-sm font-medium text-white opacity-90">
+                Medical Records
+              </div>
+            </div>
+            <div className="absolute -right-4 -bottom-4 opacity-10 text-6xl">
+              📝
+            </div>
+          </div>
+
+          <div
+            className="relative overflow-hidden rounded-xl p-4 shadow-sm"
+            style={{
               background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
             }}
           >
@@ -458,24 +598,25 @@ const PatientMedicalHistory = () => {
               <div className="flex items-center justify-between mb-2">
                 <TrendingUp size={24} className="text-white opacity-80" />
                 <div className="text-3xl font-bold text-white">
-                  {records.length}
+                  {(summary.totalLabOrders || 0) +
+                    (summary.totalImagingStudies || 0)}
                 </div>
               </div>
               <div className="text-sm font-medium text-white opacity-90">
-                Current Page
+                Labs & Imaging
               </div>
             </div>
             <div className="absolute -right-4 -bottom-4 opacity-10 text-6xl">
-              🔍
+              🔬
             </div>
           </div>
         </div>
 
-        {/* Filter Panel - Consistent with PatientRecordsTab */}
+        {/* FIX 2: Pass only filter-scoped values to FilterPanel, not page/limit */}
         {showFilters && (
           <div className="px-6 pb-4">
             <FilterPanel
-              filters={filters}
+              filters={filterPanelValues}
               onFilterChange={handleFilterChange}
               onClearFilters={handleClearFilters}
               filterConfig={filterConfig}
@@ -539,10 +680,7 @@ const PatientMedicalHistory = () => {
                 <button
                   onClick={handleClearFilters}
                   className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                  style={{
-                    backgroundColor: COLORS.primary,
-                    color: 'white',
-                  }}
+                  style={{ backgroundColor: COLORS.primary, color: 'white' }}
                 >
                   Clear Filters
                 </button>
@@ -564,18 +702,19 @@ const PatientMedicalHistory = () => {
                       handleToggleRecord(`${record.type}-${record.id}`)
                     }
                     userRole={currentUser?.role}
+                    onViewDetails={() => handleViewDetails(record)}
                   />
                 ))}
               </div>
 
               {/* Pagination */}
-              {totalPages > 1 && (
+              {pagination.totalPages > 1 && (
                 <div className="mt-6 px-4 pb-4">
                   <Pagination
-                    currentPage={filters.page}
-                    totalPages={totalPages}
-                    totalItems={summary.totalRecords || 0}
-                    itemsPerPage={filters.limit}
+                    currentPage={pagination.page}
+                    totalPages={pagination.totalPages}
+                    totalItems={pagination.total}
+                    itemsPerPage={pagination.limit}
                     onPageChange={handlePageChange}
                     onItemsPerPageChange={handleItemsPerPageChange}
                   />
@@ -586,11 +725,12 @@ const PatientMedicalHistory = () => {
         </CardBody>
       </Card>
 
-      {/* Detail Modal */}
-      <RecordDetailModal
+      {/* Record Details Modal */}
+      <RecordDetailsModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         record={selectedRecord}
+        userRole={currentUser?.role}
       />
     </div>
   );

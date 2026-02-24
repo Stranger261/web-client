@@ -881,6 +881,318 @@ class exportService {
       patientInfo: patientInfo,
     }));
   }
+
+  exportConsultationMessagesToCSV(
+    consultation,
+    messages,
+    filename = 'consultation-messages',
+  ) {
+    if (!messages || messages.length === 0) {
+      throw new Error('No messages to export');
+    }
+
+    const flattenedData = messages.map(msg => ({
+      'Message ID': msg.messageId,
+      'Sent At': new Date(msg.sentAt).toLocaleString(),
+      'Sender Name': msg.senderName,
+      'Sender Type': msg.senderType,
+      'Message Type': msg.messageType,
+      Content: msg.isFile ? `[FILE] ${msg.messageContent}` : msg.messageContent,
+      'File URL': msg.fileUrl || '',
+      'File Size': msg.fileSize ? this.formatFileSize(msg.fileSize) : '',
+      'File Type': msg.fileType || '',
+    }));
+
+    const headers = Object.keys(flattenedData[0]);
+    const csvContent = [
+      headers.join(','),
+      ...flattenedData.map(row =>
+        headers
+          .map(header => {
+            const cell = row[header];
+            if (cell === null || cell === undefined) return '';
+            return `"${String(cell).replace(/"/g, '""')}"`;
+          })
+          .join(','),
+      ),
+    ].join('\n');
+
+    const blob = new Blob(['\uFEFF' + csvContent], {
+      type: 'text/csv;charset=utf-8;',
+    });
+
+    saveAs(
+      blob,
+      `${filename}-${consultation.consultationId}-${new Date().toISOString().split('T')[0]}.csv`,
+    );
+  }
+
+  exportConsultationToPDF(
+    appointment,
+    consultation,
+    messages,
+    filename = 'consultation-transcript',
+  ) {
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+    });
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 15;
+    let currentY = 0;
+    let pageNumber = 1;
+
+    const colors = {
+      primary: [2, 132, 199],
+      secondary: [52, 73, 94],
+      lightBlue: [219, 234, 254],
+      lightGray: [243, 244, 246],
+      darkGray: [100, 100, 100],
+      doctorHeader: [255, 251, 235], // added for clarity
+    };
+
+    /* -------------------- HEADER -------------------- */
+    const addHeader = () => {
+      doc.setFillColor(...colors.primary);
+      doc.rect(0, 0, pageWidth, 40, 'F');
+
+      doc.setFontSize(18);
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.text('ONLINE CONSULTATION TRANSCRIPT', pageWidth / 2, 15, {
+        align: 'center',
+      });
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(
+        'Protected Health Information - Confidential',
+        pageWidth / 2,
+        25,
+        {
+          align: 'center',
+        },
+      );
+
+      doc.setFontSize(8);
+      doc.text(
+        `Consultation ID: ${consultation.consultationId}`,
+        pageWidth / 2,
+        33,
+        {
+          align: 'center',
+        },
+      );
+
+      return 45;
+    };
+
+    /* -------------------- FOOTER -------------------- */
+    const addFooter = () => {
+      doc.setFontSize(8);
+      doc.setTextColor(...colors.darkGray);
+      doc.line(margin, pageHeight - 15, pageWidth - margin, pageHeight - 15);
+
+      doc.text(
+        'CONFIDENTIAL: This document contains protected health information.',
+        pageWidth / 2,
+        pageHeight - 10,
+        { align: 'center' },
+      );
+
+      doc.text(`Page ${pageNumber}`, pageWidth - margin, pageHeight - 10, {
+        align: 'right',
+      });
+
+      pageNumber++;
+    };
+
+    /* -------------------- PAGE BREAK CHECK -------------------- */
+    const checkNewPage = requiredSpace => {
+      if (currentY + requiredSpace > pageHeight - 25) {
+        addFooter();
+        doc.addPage();
+        currentY = addHeader();
+        return true;
+      }
+      return false;
+    };
+
+    /* -------------------- START -------------------- */
+    currentY = addHeader();
+
+    /* -------------------- CONSULTATION SUMMARY -------------------- */
+    doc.setFillColor(...colors.lightBlue);
+    doc.roundedRect(margin, currentY, pageWidth - 2 * margin, 50, 3, 3, 'F');
+
+    doc.setDrawColor(...colors.primary);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(margin, currentY, pageWidth - 2 * margin, 50, 3, 3, 'S');
+
+    doc.setTextColor(...colors.secondary);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('CONSULTATION SUMMARY', margin + 5, currentY + 8);
+
+    doc.setFontSize(9);
+
+    const summaryData = [
+      ['Appointment Date:', new Date(appointment.date).toLocaleString()],
+      ['Doctor:', appointment.doctor],
+      ['Status:', consultation.status],
+      ['Duration:', this.formatDuration(consultation.durationSeconds)],
+      ['Total Messages:', String(messages.length)],
+      ['Files Shared:', String(messages.filter(m => m.isFile).length)],
+    ];
+
+    let summaryY = currentY + 14;
+
+    summaryData.forEach(([label, value]) => {
+      doc.setFont('helvetica', 'bold');
+      doc.text(label, margin + 5, summaryY);
+
+      doc.setFont('helvetica', 'normal');
+      doc.text(value, margin + 60, summaryY);
+
+      summaryY += 6;
+    });
+
+    currentY = summaryY + 5;
+
+    /* -------------------- TRANSCRIPT TITLE -------------------- */
+    checkNewPage(20);
+
+    doc.setFillColor(...colors.primary);
+    doc.roundedRect(margin, currentY, pageWidth - 2 * margin, 10, 2, 2, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('CONSULTATION TRANSCRIPT', margin + 5, currentY + 7);
+
+    currentY += 15;
+
+    /* -------------------- SORT MESSAGES -------------------- */
+    const sortedMessages = [...messages].sort(
+      (a, b) => new Date(a.sentAt) - new Date(b.sentAt),
+    );
+
+    /* -------------------- MESSAGES LOOP -------------------- */
+    sortedMessages.forEach((message, index) => {
+      checkNewPage(30);
+
+      // ✅ FIXED HEADER COLOR LOGIC
+      const headerColor =
+        message.senderType === 'patient'
+          ? colors.lightBlue
+          : colors.doctorHeader;
+
+      doc.setFillColor(...headerColor);
+
+      doc.roundedRect(
+        margin + 5,
+        currentY,
+        pageWidth - 2 * margin - 10,
+        7,
+        2,
+        2,
+        'F',
+      );
+
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...colors.secondary);
+
+      doc.text(
+        `${message.senderName} (${message.senderType})`,
+        margin + 8,
+        currentY + 4.5,
+      );
+
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...colors.darkGray);
+
+      doc.text(
+        new Date(message.sentAt).toLocaleString(),
+        pageWidth - margin - 8,
+        currentY + 4.5,
+        { align: 'right' },
+      );
+
+      currentY += 10;
+
+      /* -------- MESSAGE CONTENT -------- */
+      doc.setFontSize(9);
+      doc.setTextColor(...colors.secondary);
+
+      if (message.isFile) {
+        doc.setFont('helvetica', 'italic');
+        doc.text(`📎 ${message.messageContent}`, margin + 10, currentY);
+        currentY += 5;
+
+        doc.setFontSize(7);
+        doc.setTextColor(...colors.darkGray);
+
+        doc.text(
+          `Size: ${this.formatFileSize(message.fileSize)} | Type: ${message.fileType}`,
+          margin + 10,
+          currentY,
+        );
+
+        currentY += 5;
+
+        if (message.fileUrl) {
+          doc.text(`URL: ${message.fileUrl}`, margin + 10, currentY);
+          currentY += 5;
+        }
+      } else {
+        const messageLines = doc.splitTextToSize(
+          message.messageContent,
+          pageWidth - 2 * margin - 20,
+        );
+
+        doc.setFont('helvetica', 'normal');
+        doc.text(messageLines, margin + 10, currentY);
+
+        currentY += messageLines.length * 4.5;
+      }
+
+      currentY += 6;
+
+      // separator
+      if (index < sortedMessages.length - 1) {
+        doc.setDrawColor(...colors.lightGray);
+        doc.line(margin + 10, currentY, pageWidth - margin - 10, currentY);
+        currentY += 4;
+      }
+    });
+
+    /* -------------------- FOOTER FINAL -------------------- */
+    addFooter();
+
+    doc.save(
+      `${filename}-${consultation.consultationId}-${
+        new Date().toISOString().split('T')[0]
+      }.pdf`,
+    );
+  }
+
+  formatFileSize(bytes) {
+    if (!bytes) return 'N/A';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  }
+
+  formatDuration(seconds) {
+    if (!seconds) return 'N/A';
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins} min ${secs} sec`;
+  }
 }
 
 export default new exportService();

@@ -57,6 +57,7 @@ const AppointmentDetailModal = ({
         'arrived',
       );
       toast.success('Appointment status changed.');
+      window.dispatchEvent(new Event('refresh-today-appointments'));
       onClose();
     } catch (error) {
       const errorMsg =

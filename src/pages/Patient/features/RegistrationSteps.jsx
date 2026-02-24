@@ -37,8 +37,6 @@ const RegistrationSteps = () => {
   };
 
   const handleFaceVerificationSuccess = async response => {
-    console.log('✅ Face verification successful:', response);
-
     // Show success message
     toast.success('Face verification completed! Redirecting to login...', {
       duration: 2000,

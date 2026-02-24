@@ -1,31 +1,69 @@
-import { useState, useEffect } from 'react';
+// components/Patients/cards/TimelineCard.jsx
+import { useState, useRef, useEffect } from 'react';
 import {
   Calendar,
   User,
   Activity,
-  Heart,
-  Droplet,
-  ChevronDown,
-  ChevronUp,
   Building2,
   FileText,
-  Pill,
   ClipboardList,
-  ThermometerSun,
-  Weight,
-  Ruler,
-  AlertTriangle,
   Clock,
-  Stethoscope,
   CheckCircle,
   XCircle,
   Circle,
   TrendingUp,
   CalendarCheck,
+  Video,
+  Eye,
+  Download,
+  ChevronDown,
+  ChevronUp,
+  FlaskConical,
+  Scan,
+  MessageSquare,
+  Paperclip,
+  Bed,
 } from 'lucide-react';
 import { COLORS } from '../../../configs/CONST';
-import { formatDate, formatDateTime } from '../../../utils/dateFormatter';
+import { formatDateTime } from '../../../utils/dateFormatter';
+import exportService from '../../../services/exportService';
+import RecordDetailsModal from '../../../pages/Patient/components/modals/RecordDetailsModal';
+import { normalizedWord } from '../../../utils/normalizedWord';
 
+// ─── Status config ────────────────────────────────────────────────────────────
+const STATUS_MAP = {
+  completed: { bg: '#dcfce7', text: '#166534', Icon: CheckCircle },
+  scheduled: { bg: '#dbeafe', text: '#1e40af', Icon: CalendarCheck },
+  in_progress: { bg: '#fef3c7', text: '#92400e', Icon: Clock },
+  cancelled: { bg: '#fee2e2', text: '#991b1b', Icon: XCircle },
+  active: { bg: '#dcfce7', text: '#166534', Icon: Activity },
+  admitted: { bg: '#fef9c3', text: '#854d0e', Icon: Bed },
+  discharged: { bg: '#f3f4f6', text: '#4b5563', Icon: TrendingUp },
+  reported: { bg: '#dcfce7', text: '#166534', Icon: CheckCircle },
+  completed_report: { bg: '#dcfce7', text: '#166534', Icon: CheckCircle },
+};
+
+// ─── Type config ──────────────────────────────────────────────────────────────
+const TYPE_MAP = {
+  appointment: { bg: '#f0f9ff', icon: '#0284c7', Icon: Calendar },
+  admission: { bg: '#fffbeb', icon: '#d97706', Icon: Building2 },
+  laboratory: { bg: '#f0fdf4', icon: '#16a34a', Icon: FlaskConical },
+  imaging: { bg: '#faf5ff', icon: '#9333ea', Icon: Scan },
+  medical_record: { bg: '#f3e8ff', icon: '#9333ea', Icon: ClipboardList },
+};
+
+// ─── Tiny Badge ───────────────────────────────────────────────────────────────
+const Badge = ({ bg, color, Icon: I, children }) => (
+  <span
+    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap"
+    style={{ backgroundColor: bg, color }}
+  >
+    {I && <I size={10} />}
+    {children}
+  </span>
+);
+
+// ─── TimelineCard ─────────────────────────────────────────────────────────────
 const TimelineCard = ({
   record,
   isDarkMode,
@@ -33,1111 +71,528 @@ const TimelineCard = ({
   onToggle,
   userRole = 'patient',
 }) => {
-  const [expandedSections, setExpandedSections] = useState({
-    vitals: false,
-    diagnosis: false,
-    admission: false,
-    prescriptions: false,
-    progressNotes: false,
-  });
+  const [showModal, setShowModal] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const exportRef = useRef(null);
 
+  // Close export menu on outside click
   useEffect(() => {
-    if (!isExpanded) {
-      setExpandedSections({
-        vitals: false,
-        diagnosis: false,
-        admission: false,
-        prescriptions: false,
-        progressNotes: false,
-      });
-    }
+    const handler = e => {
+      if (exportRef.current && !exportRef.current.contains(e.target))
+        setShowExportMenu(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // Collapse sections when card collapses
+  useEffect(() => {
+    if (!isExpanded) setShowExportMenu(false);
   }, [isExpanded]);
 
-  const toggleSection = (section, e) => {
-    e.stopPropagation();
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section],
-    }));
+  const statusConf = STATUS_MAP[record.status] ?? {
+    bg: '#f3f4f6',
+    text: '#6b7280',
+    Icon: Circle,
   };
-
-  const getStatusColor = status => {
-    const colors = {
-      completed: { bg: '#dcfce7', text: '#166534', Icon: CheckCircle },
-      scheduled: { bg: '#dbeafe', text: '#1e40af', Icon: CalendarCheck },
-      in_progress: { bg: '#fef3c7', text: '#92400e', Icon: Clock },
-      cancelled: { bg: '#fee2e2', text: '#991b1b', Icon: XCircle },
-      active: { bg: '#dcfce7', text: '#166534', Icon: Activity },
-      discharged: { bg: '#f3f4f6', text: '#4b5563', Icon: TrendingUp },
-    };
-    return colors[status] || { bg: '#f3f4f6', text: '#6b7280', Icon: Circle };
+  const typeConf = TYPE_MAP[record.type] ?? {
+    bg: '#f3f4f6',
+    icon: '#6b7280',
+    Icon: Activity,
   };
+  const StatusIcon = statusConf.Icon;
+  const TypeIcon = typeConf.Icon;
 
-  const getTypeIcon = () => {
+  // ── Title ────────────────────────────────────────────────────────────────
+  const getTitle = () => {
     switch (record.type) {
       case 'appointment':
-        return <Calendar size={20} />;
+        return record.isOnlineConsultation
+          ? 'Online Consultation'
+          : 'Appointment';
       case 'admission':
-        return <Building2 size={20} />;
+        return 'Hospital Admission';
+      case 'laboratory':
+        return record.testName || record.test?.name || 'Laboratory Test';
+      case 'imaging':
+        return record.service?.name || record.description || 'Imaging Study';
       case 'medical_record':
-        return <FileText size={20} />;
+        return record.title || 'Medical Record';
       default:
-        return <Activity size={20} />;
+        return 'Record';
     }
   };
 
-  const getTypeColor = () => {
-    switch (record.type) {
-      case 'appointment':
-        return { bg: '#f0f9ff', icon: '#0284c7' };
-      case 'admission':
-        return { bg: '#fef3c7', icon: '#d97706' };
-      case 'medical_record':
-        return { bg: '#f3e8ff', icon: '#9333ea' };
-      default:
-        return { bg: '#f3f4f6', icon: '#6b7280' };
-    }
-  };
+  // ── Meta chips shown in header ────────────────────────────────────────────
+  const renderMeta = () => {
+    const chips = [];
 
-  const renderVitals = vitals => {
-    if (!vitals) return null;
-
-    const vitalItems = [
-      {
-        icon: ThermometerSun,
-        label: 'Temperature',
-        value: vitals.temperature,
-        unit: '°C',
-        color: '#ef4444',
-      },
-      {
-        icon: Heart,
-        label: 'Blood Pressure',
-        value: vitals.bloodPressure,
-        unit: 'mmHg',
-        color: '#ec4899',
-      },
-      {
-        icon: Activity,
-        label: 'Heart Rate',
-        value: vitals.heartRate,
-        unit: 'bpm',
-        color: '#f59e0b',
-      },
-      {
-        icon: Droplet,
-        label: 'O₂ Saturation',
-        value: vitals.oxygenSaturation,
-        unit: '%',
-        color: '#3b82f6',
-      },
-      {
-        icon: Weight,
-        label: 'Weight',
-        value: vitals.weight,
-        unit: 'kg',
-        color: '#8b5cf6',
-      },
-      {
-        icon: Ruler,
-        label: 'Height',
-        value: vitals.height,
-        unit: 'cm',
-        color: '#06b6d4',
-      },
-      {
-        icon: Activity,
-        label: 'BMI',
-        value: vitals.bmi,
-        unit: '',
-        color: '#10b981',
-      },
-      {
-        icon: AlertTriangle,
-        label: 'Pain Level',
-        value: vitals.painLevel,
-        unit: '/10',
-        color: '#f97316',
-      },
-    ].filter(item => item.value !== null && item.value !== undefined);
-
-    return (
-      <div className="space-y-2">
-        <button
-          onClick={e => toggleSection('vitals', e)}
-          className="w-full flex items-center justify-between p-3 rounded-lg transition-all hover:shadow-sm"
-          style={{
-            backgroundColor: isDarkMode ? COLORS.surface.darkHover : '#f0f9ff',
-            border: `1px solid ${isDarkMode ? COLORS.border.dark : '#bfdbfe'}`,
-          }}
+    if (record.doctor)
+      chips.push(
+        <Badge
+          key="doc"
+          bg={isDarkMode ? '#1e3a5f' : '#dbeafe'}
+          color={isDarkMode ? '#93c5fd' : '#1e40af'}
+          Icon={User}
         >
-          <div className="flex items-center gap-2">
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: '#dbeafe' }}
-            >
-              <Activity size={16} style={{ color: '#0284c7' }} />
-            </div>
-            <span
-              className="font-semibold text-sm"
-              style={{
-                color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
-              }}
-            >
-              Vital Signs
-            </span>
-          </div>
-          {expandedSections.vitals ? (
-            <ChevronUp size={16} style={{ color: '#0284c7' }} />
-          ) : (
-            <ChevronDown size={16} style={{ color: '#0284c7' }} />
-          )}
-        </button>
+          {record.doctor}
+        </Badge>,
+      );
 
-        {expandedSections.vitals && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 animate-in fade-in slide-in-from-top-2 duration-200">
-            {vitalItems.map((item, idx) => {
-              const Icon = item.icon;
-              return (
-                <div
-                  key={idx}
-                  className="p-3 rounded-lg border"
-                  style={{
-                    backgroundColor: isDarkMode ? COLORS.surface.dark : 'white',
-                    borderColor: isDarkMode ? COLORS.border.dark : '#e5e7eb',
-                  }}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <Icon size={14} style={{ color: item.color }} />
-                    <div
-                      className="text-xs font-medium"
-                      style={{
-                        color: isDarkMode
-                          ? COLORS.text.light
-                          : COLORS.text.secondary,
-                      }}
-                    >
-                      {item.label}
-                    </div>
-                  </div>
-                  <div
-                    className="text-lg font-bold"
-                    style={{
-                      color: isDarkMode
-                        ? COLORS.text.white
-                        : COLORS.text.primary,
-                    }}
-                  >
-                    {item.value}
-                    <span className="text-xs font-normal ml-1 opacity-60">
-                      {item.unit}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const renderAdmission = admission => {
-    if (!admission) return null;
-
-    const statusConfig = getStatusColor(admission.status);
-    const StatusIcon = statusConfig.Icon;
-
-    return (
-      <div className="space-y-2 mt-3">
-        <button
-          onClick={e => toggleSection('admission', e)}
-          className="w-full flex items-center justify-between p-3 rounded-lg transition-all hover:shadow-sm"
-          style={{
-            backgroundColor: isDarkMode ? COLORS.surface.darkHover : '#fef3c7',
-            border: `1px solid ${isDarkMode ? COLORS.border.dark : '#fde68a'}`,
-          }}
-        >
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ backgroundColor: '#fde68a' }}
-            >
-              <Building2 size={16} style={{ color: '#d97706' }} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span
-                  className="font-semibold text-sm"
-                  style={{
-                    color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
-                  }}
-                >
-                  Related Admission
-                </span>
-                <span
-                  className="px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1"
-                  style={{
-                    backgroundColor: statusConfig.bg,
-                    color: statusConfig.text,
-                  }}
-                >
-                  <StatusIcon size={12} />
-                  {admission.status}
-                </span>
-              </div>
-              <div
-                className="text-xs mt-0.5 truncate"
-                style={{
-                  color: isDarkMode ? COLORS.text.light : COLORS.text.secondary,
-                }}
-              >
-                {admission.admissionNumber}
-              </div>
-            </div>
-          </div>
-          {expandedSections.admission ? (
-            <ChevronUp
-              size={16}
-              className="flex-shrink-0"
-              style={{ color: '#d97706' }}
-            />
-          ) : (
-            <ChevronDown
-              size={16}
-              className="flex-shrink-0"
-              style={{ color: '#d97706' }}
-            />
-          )}
-        </button>
-
-        {expandedSections.admission && (
-          <div
-            className="p-4 space-y-3 rounded-lg border animate-in fade-in slide-in-from-top-2 duration-200"
-            style={{
-              backgroundColor: isDarkMode ? COLORS.surface.dark : '#fffbeb',
-              borderColor: isDarkMode ? COLORS.border.dark : '#fde68a',
-            }}
+    if (record.type === 'laboratory') {
+      if (record.testName)
+        chips.push(
+          <Badge
+            key="test"
+            bg={isDarkMode ? '#14532d' : '#dcfce7'}
+            color={isDarkMode ? '#86efac' : '#166534'}
+            Icon={FlaskConical}
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <InfoItem
-                icon={Calendar}
-                label="Admission Date"
-                value={formatDateTime(admission.admissionDate)}
-                isDarkMode={isDarkMode}
-              />
-              <InfoItem
-                icon={FileText}
-                label="Type"
-                value={admission.admissionType}
-                isDarkMode={isDarkMode}
-                capitalize
-              />
-              <InfoItem
-                icon={User}
-                label="Attending Doctor"
-                value={admission.doctor}
-                isDarkMode={isDarkMode}
-              />
-              <InfoItem
-                icon={Clock}
-                label="Length of Stay"
-                value={
-                  admission.lengthOfStay
-                    ? `${admission.lengthOfStay} day(s)`
-                    : 'N/A'
-                }
-                isDarkMode={isDarkMode}
-              />
-            </div>
+            {record.testName}
+          </Badge>,
+        );
+      if (record.resultCount > 0)
+        chips.push(
+          <Badge key="res" bg="#dcfce7" color="#166534" Icon={CheckCircle}>
+            {record.resultCount} results
+          </Badge>,
+        );
+      if (!record.hasResults)
+        chips.push(
+          <Badge key="pend" bg="#fef3c7" color="#92400e" Icon={Clock}>
+            Pending
+          </Badge>,
+        );
+    }
 
-            {admission.diagnosis && (
+    if (record.type === 'imaging') {
+      if (record.modality)
+        chips.push(
+          <Badge
+            key="mod"
+            bg={isDarkMode ? '#3b1f6e' : '#f3e8ff'}
+            color={isDarkMode ? '#c4b5fd' : '#7c3aed'}
+            Icon={Scan}
+          >
+            {record.modality}
+          </Badge>,
+        );
+      if (record.hasReport)
+        chips.push(
+          <Badge key="rpt" bg="#dcfce7" color="#166534" Icon={FileText}>
+            Report ready
+          </Badge>,
+        );
+    }
+
+    if (record.isOnlineConsultation) {
+      chips.push(
+        <Badge key="tele" bg="#dbeafe" color="#0284c7" Icon={Video}>
+          Telehealth
+        </Badge>,
+      );
+      // Show message & file count if available
+      const msgCount = record.consultation?.messageCount || 0;
+      const fileCount = (record.consultationMessages || []).filter(
+        m => m.isFile,
+      ).length;
+      if (msgCount > 0)
+        chips.push(
+          <Badge
+            key="msg"
+            bg={isDarkMode ? '#0f2040' : '#eff6ff'}
+            color={isDarkMode ? '#93c5fd' : '#1e40af'}
+            Icon={MessageSquare}
+          >
+            {msgCount} messages
+          </Badge>,
+        );
+      if (fileCount > 0)
+        chips.push(
+          <Badge
+            key="file"
+            bg={isDarkMode ? '#0f2040' : '#eff6ff'}
+            color={isDarkMode ? '#93c5fd' : '#1e40af'}
+            Icon={Paperclip}
+          >
+            {fileCount} files
+          </Badge>,
+        );
+    }
+
+    if (record.type === 'admission') {
+      if (record.admissionNumber)
+        chips.push(
+          <Badge
+            key="adm"
+            bg={isDarkMode ? '#451a03' : '#fef3c7'}
+            color={isDarkMode ? '#fbbf24' : '#92400e'}
+            Icon={FileText}
+          >
+            {record.admissionNumber}
+          </Badge>,
+        );
+      if (record.lengthOfStay)
+        chips.push(
+          <Badge
+            key="los"
+            bg={isDarkMode ? '#1e293b' : '#f1f5f9'}
+            color={isDarkMode ? '#94a3b8' : '#475569'}
+            Icon={Clock}
+          >
+            {record.lengthOfStay}d stay
+          </Badge>,
+        );
+    }
+
+    return chips;
+  };
+
+  // ── Preview lines shown in dropdown ──────────────────────────────────────
+  const renderPreview = () => {
+    const labelColor = isDarkMode ? '#94a3b8' : '#64748b';
+    const valueColor = isDarkMode ? '#f1f5f9' : '#0f172a';
+
+    const Line = ({ label, value }) =>
+      value ? (
+        <div className="flex gap-2 text-xs">
+          <span className="shrink-0 font-medium" style={{ color: labelColor }}>
+            {label}:
+          </span>
+          <span className="truncate" style={{ color: valueColor }}>
+            {value}
+          </span>
+        </div>
+      ) : null;
+
+    switch (record.type) {
+      case 'appointment':
+      case 'medical_record':
+        return (
+          <div className="space-y-1.5">
+            <Line label="Chief complaint" value={record.chiefComplaint} />
+            <Line
+              label="Diagnosis"
+              value={
+                typeof record.diagnosis === 'string'
+                  ? record.diagnosis
+                  : record.diagnosis?.primary_diagnosis
+              }
+            />
+            <Line
+              label="Treatment"
+              value={record.treatmentPlan || record.treatment}
+            />
+            {/* Telehealth quick-glance */}
+            {record.isOnlineConsultation && record.consultation && (
               <div
-                className="p-3 rounded-lg"
+                className="mt-2 flex items-center gap-3 px-3 py-2 rounded-xl border"
                 style={{
-                  backgroundColor: isDarkMode
-                    ? COLORS.surface.darkHover
-                    : 'white',
+                  background: isDarkMode ? '#0f2040' : '#eff6ff',
+                  borderColor: isDarkMode ? '#1e3a5f' : '#bfdbfe',
                 }}
               >
-                <div
-                  className="text-xs font-medium mb-1 flex items-center gap-1"
-                  style={{
-                    color: isDarkMode
-                      ? COLORS.text.light
-                      : COLORS.text.secondary,
-                  }}
+                <Video size={14} style={{ color: '#0284c7' }} />
+                <span
+                  className="text-xs font-medium"
+                  style={{ color: isDarkMode ? '#93c5fd' : '#1e40af' }}
                 >
-                  <Stethoscope size={14} />
-                  Admission Diagnosis
-                </div>
-                <div
-                  className="text-sm font-medium"
-                  style={{
-                    color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
-                  }}
-                >
-                  {admission.diagnosis}
-                </div>
+                  {record.consultation.messageCount || 0} messages ·{' '}
+                  {Math.floor((record.consultation.durationSeconds || 0) / 60)}m
+                  session
+                </span>
               </div>
             )}
+          </div>
+        );
 
-            {admission.dischargeDate && (
-              <div className="space-y-2">
-                <InfoItem
-                  icon={Calendar}
-                  label="Discharge Date"
-                  value={formatDateTime(admission.dischargeDate)}
-                  isDarkMode={isDarkMode}
-                />
-                {admission.dischargeSummary && (
-                  <div
-                    className="p-3 rounded-lg"
-                    style={{
-                      backgroundColor: isDarkMode
-                        ? COLORS.surface.darkHover
-                        : 'white',
-                    }}
-                  >
-                    <div
-                      className="text-xs font-medium mb-1"
-                      style={{
-                        color: isDarkMode
-                          ? COLORS.text.light
-                          : COLORS.text.secondary,
-                      }}
-                    >
-                      Discharge Summary
-                    </div>
-                    <div
-                      className="text-sm"
-                      style={{
-                        color: isDarkMode
-                          ? COLORS.text.white
-                          : COLORS.text.primary,
-                      }}
-                    >
-                      {admission.dischargeSummary}
-                    </div>
-                  </div>
-                )}
-              </div>
+      case 'admission':
+        return (
+          <div className="space-y-1.5">
+            <Line label="Diagnosis" value={record.diagnosis} />
+            <Line label="Source" value={record.admissionSource} />
+            <Line label="Discharge type" value={record.dischargeType} />
+            {record.progressNotesCount > 0 && (
+              <Badge
+                bg={isDarkMode ? '#1e293b' : '#f1f5f9'}
+                color={isDarkMode ? '#94a3b8' : '#475569'}
+                Icon={ClipboardList}
+              >
+                {record.progressNotesCount} progress notes
+              </Badge>
             )}
+          </div>
+        );
 
-            {admission.prescriptions && admission.prescriptions.length > 0 && (
-              <div className="mt-3">
-                {renderPrescriptions(admission.prescriptions, true)}
-              </div>
+      case 'laboratory':
+        return (
+          <div className="space-y-1.5">
+            <Line label="Test" value={record.testName || record.test?.name} />
+            <Line
+              label="Department"
+              value={record.department || record.test?.department}
+            />
+            <Line label="Physician" value={record.orderingPhysician} />
+            <Line label="Indication" value={record.clinicalIndication} />
+          </div>
+        );
+
+      case 'imaging':
+        return (
+          <div className="space-y-1.5">
+            <Line label="Service" value={record.service?.name} />
+            <Line label="Body part" value={record.bodyPart} />
+            <Line label="Indication" value={record.clinicalIndication} />
+            {record.report?.impression && (
+              <Line
+                label="Impression"
+                value={
+                  record.report.impression.slice(0, 100) +
+                  (record.report.impression.length > 100 ? '…' : '')
+                }
+              />
             )}
-
-            {admission.recentProgressNotes &&
-              admission.recentProgressNotes.length > 0 && (
-                <div className="mt-3">
-                  {renderProgressNotes(admission.recentProgressNotes)}
-                </div>
-              )}
           </div>
-        )}
-      </div>
-    );
+        );
+
+      default:
+        return null;
+    }
   };
 
-  const renderPrescriptions = (prescriptions, isNested = false) => {
-    if (!prescriptions || prescriptions.length === 0) return null;
-
-    return (
-      <div className={isNested ? 'space-y-2' : 'space-y-2 mt-3'}>
-        <button
-          onClick={e => toggleSection('prescriptions', e)}
-          className="w-full flex items-center justify-between p-3 rounded-lg transition-all hover:shadow-sm"
-          style={{
-            backgroundColor: isDarkMode ? COLORS.surface.darkHover : '#f0fdf4',
-            border: `1px solid ${isDarkMode ? COLORS.border.dark : '#bbf7d0'}`,
-          }}
-        >
-          <div className="flex items-center gap-2">
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: '#bbf7d0' }}
-            >
-              <Pill size={16} style={{ color: '#16a34a' }} />
-            </div>
-            <span
-              className="font-semibold text-sm"
-              style={{
-                color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
-              }}
-            >
-              Prescriptions ({prescriptions.length})
-            </span>
-          </div>
-          {expandedSections.prescriptions ? (
-            <ChevronUp size={16} style={{ color: '#16a34a' }} />
-          ) : (
-            <ChevronDown size={16} style={{ color: '#16a34a' }} />
-          )}
-        </button>
-
-        {expandedSections.prescriptions && (
-          <div className="space-y-3 p-3 animate-in fade-in slide-in-from-top-2 duration-200">
-            {prescriptions.map((prescription, idx) => {
-              const statusConfig = getStatusColor(prescription.status);
-              const StatusIcon = statusConfig.Icon;
-              return (
-                <div
-                  key={prescription.prescriptionId || idx}
-                  className="p-4 rounded-lg border"
-                  style={{
-                    backgroundColor: isDarkMode ? COLORS.surface.dark : 'white',
-                    borderColor: isDarkMode ? COLORS.border.dark : '#e5e7eb',
-                  }}
-                >
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <div
-                        className="text-xs font-mono mb-1"
-                        style={{
-                          color: isDarkMode
-                            ? COLORS.text.light
-                            : COLORS.text.secondary,
-                        }}
-                      >
-                        {prescription.prescriptionNumber}
-                      </div>
-                      <div
-                        className="text-sm font-medium flex items-center gap-1"
-                        style={{
-                          color: isDarkMode
-                            ? COLORS.text.white
-                            : COLORS.text.primary,
-                        }}
-                      >
-                        <Calendar size={12} />
-                        {formatDate(prescription.prescriptionDate)}
-                      </div>
-                    </div>
-                    <span
-                      className="px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1"
-                      style={{
-                        backgroundColor: statusConfig.bg,
-                        color: statusConfig.text,
-                      }}
-                    >
-                      <StatusIcon size={12} />
-                      {prescription.status}
-                    </span>
-                  </div>
-
-                  {prescription.items && prescription.items.length > 0 && (
-                    <div className="space-y-2">
-                      {prescription.items.map((item, itemIdx) => (
-                        <div
-                          key={item.itemId || itemIdx}
-                          className="p-3 rounded-lg"
-                          style={{
-                            backgroundColor: isDarkMode
-                              ? COLORS.surface.darkHover
-                              : '#f9fafb',
-                          }}
-                        >
-                          <div
-                            className="font-semibold text-sm mb-2 flex items-center gap-2"
-                            style={{
-                              color: isDarkMode
-                                ? COLORS.text.white
-                                : COLORS.text.primary,
-                            }}
-                          >
-                            <Pill size={16} style={{ color: '#16a34a' }} />
-                            {item.medicationName}
-                          </div>
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            <div className="flex items-center gap-1">
-                              <span className="opacity-60">Dosage:</span>
-                              <span className="font-medium">{item.dosage}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <span className="opacity-60">Frequency:</span>
-                              <span className="font-medium">
-                                {item.frequency}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <span className="opacity-60">Route:</span>
-                              <span className="font-medium">{item.route}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <span className="opacity-60">Duration:</span>
-                              <span className="font-medium">
-                                {item.duration}
-                              </span>
-                            </div>
-                          </div>
-                          {item.instructions && (
-                            <div
-                              className="mt-2 p-2 rounded text-xs flex items-start gap-2"
-                              style={{
-                                backgroundColor: isDarkMode
-                                  ? COLORS.surface.dark
-                                  : '#eff6ff',
-                                color: isDarkMode
-                                  ? COLORS.text.light
-                                  : '#1e40af',
-                              }}
-                            >
-                              <FileText
-                                size={12}
-                                className="mt-0.5 flex-shrink-0"
-                              />
-                              <div>
-                                <span className="font-medium">
-                                  Instructions:
-                                </span>{' '}
-                                {item.instructions}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    );
+  // ── Export ────────────────────────────────────────────────────────────────
+  const handleExport = async (format, e) => {
+    e.stopPropagation();
+    setShowExportMenu(false);
+    setIsExporting(true);
+    try {
+      const data = { ...record, date: formatDateTime(record.date) };
+      if (format === 'CSV')
+        exportService.exportToCSV([data], `${record.type}-${record.id}`);
+      if (format === 'PDF')
+        exportService.exportToPDF(
+          [data],
+          { name: getTitle(), date: formatDateTime(record.date) },
+          `${record.type}-${record.id}`,
+        );
+    } catch {
+    } finally {
+      setIsExporting(false);
+    }
   };
 
-  const renderProgressNotes = notes => {
-    if (!notes || notes.length === 0) return null;
-
-    // For patients, we might want to show a simplified view
-    const isPatient = userRole === 'patient';
-
-    return (
-      <div className="space-y-2">
-        <button
-          onClick={e => toggleSection('progressNotes', e)}
-          className="w-full flex items-center justify-between p-3 rounded-lg transition-all hover:shadow-sm"
-          style={{
-            backgroundColor: isDarkMode ? COLORS.surface.darkHover : '#faf5ff',
-            border: `1px solid ${isDarkMode ? COLORS.border.dark : '#e9d5ff'}`,
-          }}
-        >
-          <div className="flex items-center gap-2">
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: '#e9d5ff' }}
-            >
-              <ClipboardList size={16} style={{ color: '#9333ea' }} />
-            </div>
-            <span
-              className="font-semibold text-sm"
-              style={{
-                color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
-              }}
-            >
-              Progress Notes ({notes.length})
-            </span>
-          </div>
-          {expandedSections.progressNotes ? (
-            <ChevronUp size={16} style={{ color: '#9333ea' }} />
-          ) : (
-            <ChevronDown size={16} style={{ color: '#9333ea' }} />
-          )}
-        </button>
-
-        {expandedSections.progressNotes && (
-          <div className="space-y-2 p-3 animate-in fade-in slide-in-from-top-2 duration-200">
-            {notes.map((note, idx) => {
-              // For patients, show summary first
-              if (isPatient && note.summary) {
-                return (
-                  <div
-                    key={note.noteId || idx}
-                    className="p-4 rounded-lg border"
-                    style={{
-                      backgroundColor: isDarkMode
-                        ? COLORS.surface.dark
-                        : 'white',
-                      borderColor: isDarkMode ? COLORS.border.dark : '#e5e7eb',
-                    }}
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <div
-                          className="text-sm font-semibold capitalize flex items-center gap-2"
-                          style={{
-                            color: isDarkMode
-                              ? COLORS.text.white
-                              : COLORS.text.primary,
-                          }}
-                        >
-                          <ClipboardList size={16} />
-                          {note.noteType || 'Progress Note'}
-                        </div>
-                        <div
-                          className="text-xs mt-1 flex items-center gap-2"
-                          style={{
-                            color: isDarkMode
-                              ? COLORS.text.light
-                              : COLORS.text.secondary,
-                          }}
-                        >
-                          <Clock size={12} />
-                          {formatDateTime(note.noteDate)}
-                        </div>
-                      </div>
-                      {note.isCritical && (
-                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 flex items-center gap-1">
-                          <AlertTriangle size={12} />
-                          Critical
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Show summary for patients */}
-                    <div className="mb-3">
-                      <div
-                        className="text-sm"
-                        style={{
-                          color: isDarkMode
-                            ? COLORS.text.white
-                            : COLORS.text.primary,
-                        }}
-                      >
-                        {note.summary}
-                      </div>
-                    </div>
-
-                    {/* If patient can view details, show expandable sections */}
-                    {note.canViewDetails && (
-                      <div className="space-y-2">
-                        {note.subjective && (
-                          <NoteSection
-                            label="S - Subjective"
-                            content={note.subjective}
-                            isDarkMode={isDarkMode}
-                          />
-                        )}
-                        {note.objective && (
-                          <NoteSection
-                            label="O - Objective"
-                            content={note.objective}
-                            isDarkMode={isDarkMode}
-                          />
-                        )}
-                        {note.assessment && (
-                          <NoteSection
-                            label="A - Assessment"
-                            content={note.assessment}
-                            isDarkMode={isDarkMode}
-                          />
-                        )}
-                        {note.plan && (
-                          <NoteSection
-                            label="P - Plan"
-                            content={note.plan}
-                            isDarkMode={isDarkMode}
-                          />
-                        )}
-                      </div>
-                    )}
-
-                    {/* If patient cannot view full details, show message */}
-                    {!note.canViewDetails && note.is_sensitive && (
-                      <div
-                        className="p-3 rounded-lg text-center text-sm italic"
-                        style={{
-                          backgroundColor: isDarkMode
-                            ? COLORS.surface.darkHover
-                            : '#f3f4f6',
-                          color: isDarkMode
-                            ? COLORS.text.light
-                            : COLORS.text.secondary,
-                        }}
-                      >
-                        Detailed clinical notes are available to your healthcare
-                        team.
-                      </div>
-                    )}
-                  </div>
-                );
-              }
-
-              // For doctors/healthcare providers, show full details
-              return (
-                <div
-                  key={note.noteId || idx}
-                  className="p-4 rounded-lg border-l-4"
-                  style={{
-                    backgroundColor: isDarkMode ? COLORS.surface.dark : 'white',
-                    borderColor: note.isCritical ? '#ef4444' : '#9333ea',
-                  }}
-                >
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <div
-                        className="text-sm font-semibold capitalize flex items-center gap-2"
-                        style={{
-                          color: isDarkMode
-                            ? COLORS.text.white
-                            : COLORS.text.primary,
-                        }}
-                      >
-                        <ClipboardList size={16} />
-                        {note.noteType}
-                      </div>
-                      <div
-                        className="text-xs mt-1 flex items-center gap-2"
-                        style={{
-                          color: isDarkMode
-                            ? COLORS.text.light
-                            : COLORS.text.secondary,
-                        }}
-                      >
-                        <Clock size={12} />
-                        {formatDateTime(note.noteDate)}
-                        <span>•</span>
-                        <User size={12} />
-                        {note.recordedBy}
-                      </div>
-                    </div>
-                    {note.isCritical && (
-                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 flex items-center gap-1">
-                        <AlertTriangle size={12} />
-                        Critical
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="space-y-2 text-sm">
-                    {note.subjective && (
-                      <NoteSection
-                        label="S - Subjective"
-                        content={note.subjective}
-                        isDarkMode={isDarkMode}
-                      />
-                    )}
-                    {note.objective && (
-                      <NoteSection
-                        label="O - Objective"
-                        content={note.objective}
-                        isDarkMode={isDarkMode}
-                      />
-                    )}
-                    {note.assessment && (
-                      <NoteSection
-                        label="A - Assessment"
-                        content={note.assessment}
-                        isDarkMode={isDarkMode}
-                      />
-                    )}
-                    {note.plan && (
-                      <NoteSection
-                        label="P - Plan"
-                        content={note.plan}
-                        isDarkMode={isDarkMode}
-                      />
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const statusConfig = getStatusColor(record.status);
-  const typeColor = getTypeColor();
-  const StatusIcon = statusConfig.Icon;
+  const cardBg = isDarkMode ? '#0f172a' : 'white';
+  const cardBorder = isDarkMode ? '#1e293b' : '#e2e8f0';
+  const secondaryColor = isDarkMode ? '#94a3b8' : '#64748b';
 
   return (
-    <div
-      className="rounded-xl border overflow-hidden transition-all hover:shadow-md"
-      style={{
-        backgroundColor: isDarkMode ? COLORS.surface.dark : 'white',
-        borderColor: isDarkMode ? COLORS.border.dark : '#e5e7eb',
-      }}
-    >
-      {/* Header */}
+    <>
+      {/* Single modal for ALL record types including telehealth */}
+      {showModal && (
+        <RecordDetailsModal
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          record={record}
+          userRole={userRole}
+        />
+      )}
+
       <div
-        className="p-4 cursor-pointer transition-colors hover:bg-opacity-50"
-        onClick={onToggle}
+        className="rounded-2xl border overflow-hidden transition-all duration-200"
         style={{
-          backgroundColor: isExpanded
+          backgroundColor: cardBg,
+          borderColor: cardBorder,
+          boxShadow: isExpanded
             ? isDarkMode
-              ? COLORS.surface.darkHover
-              : '#f9fafb'
-            : 'transparent',
+              ? '0 4px 24px rgba(0,0,0,0.4)'
+              : '0 4px 20px rgba(0,0,0,0.08)'
+            : '0 1px 3px rgba(0,0,0,0.04)',
         }}
       >
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3 flex-1 min-w-0">
+        {/* ── Header row — click to expand ── */}
+        <div
+          className="p-4 cursor-pointer select-none transition-colors"
+          onClick={onToggle}
+          style={{
+            backgroundColor: isExpanded
+              ? isDarkMode
+                ? '#111827'
+                : '#f8fafc'
+              : 'transparent',
+          }}
+        >
+          <div className="flex items-start gap-3">
+            {/* Type icon badge */}
             <div
-              className="p-2.5 rounded-xl flex-shrink-0 shadow-sm"
-              style={{ backgroundColor: typeColor.bg }}
+              className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
+              style={{ backgroundColor: typeConf.bg }}
             >
-              <div style={{ color: typeColor.icon }}>{getTypeIcon()}</div>
+              <TypeIcon size={20} style={{ color: typeConf.icon }} />
             </div>
 
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                <h4
-                  className="font-bold text-base"
-                  style={{
-                    color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
-                  }}
-                >
-                  {record.title}
-                </h4>
-                {record.status && (
-                  <span
-                    className="px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap flex items-center gap-1"
-                    style={{
-                      backgroundColor: statusConfig.bg,
-                      color: statusConfig.text,
-                    }}
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  {/* Title + status */}
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <h4
+                      className="font-bold text-[15px] leading-tight"
+                      style={{ color: isDarkMode ? '#f1f5f9' : '#0f172a' }}
+                    >
+                      {getTitle()}
+                    </h4>
+                    {record.status && (
+                      <Badge
+                        bg={statusConf.bg}
+                        color={statusConf.text}
+                        Icon={StatusIcon}
+                      >
+                        {normalizedWord(record.status).replace(/_/g, ' ')}
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Date */}
+                  <div
+                    className="flex items-center gap-1.5 text-xs mb-2"
+                    style={{ color: secondaryColor }}
                   >
-                    <StatusIcon size={12} />
-                    {record.status}
-                  </span>
-                )}
-              </div>
+                    <Calendar size={12} />
+                    <span>{formatDateTime(record.date)}</span>
+                  </div>
 
-              <div
-                className="text-sm mb-2 flex items-center gap-1.5"
-                style={{
-                  color: isDarkMode ? COLORS.text.light : COLORS.text.secondary,
-                }}
-              >
-                <Calendar size={14} />
-                {formatDateTime(record.date)}
-              </div>
+                  {/* Meta chips */}
+                  <div className="flex flex-wrap gap-1.5">{renderMeta()}</div>
+                </div>
 
-              {record.doctor && (
-                <div
-                  className="flex items-center gap-1.5 text-sm px-2.5 py-1 rounded-lg inline-flex"
+                {/* Expand chevron */}
+                <button
+                  className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg transition-colors"
                   style={{
-                    backgroundColor: isDarkMode
-                      ? COLORS.surface.darkHover
-                      : '#f3f4f6',
-                    color: isDarkMode
-                      ? COLORS.text.light
-                      : COLORS.text.secondary,
+                    color: secondaryColor,
+                    backgroundColor: isExpanded
+                      ? isDarkMode
+                        ? '#1e293b'
+                        : '#e2e8f0'
+                      : 'transparent',
                   }}
                 >
-                  <User size={14} />
-                  <span className="font-medium">{record.doctor}</span>
-                </div>
-              )}
+                  {isExpanded ? (
+                    <ChevronUp size={18} />
+                  ) : (
+                    <ChevronDown size={18} />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
-
-          <button
-            className="flex-shrink-0 p-2 rounded-lg transition-colors hover:bg-opacity-50"
-            style={{
-              color: isDarkMode ? COLORS.text.light : COLORS.text.secondary,
-              backgroundColor: isExpanded
-                ? isDarkMode
-                  ? COLORS.surface.dark
-                  : '#e5e7eb'
-                : 'transparent',
-            }}
-          >
-            {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-          </button>
         </div>
-      </div>
 
-      {/* Expanded Content */}
-      {isExpanded && (
-        <div
-          className="p-4 border-t space-y-3 animate-in fade-in slide-in-from-top-2 duration-200"
-          style={{
-            borderColor: isDarkMode ? COLORS.border.dark : '#e5e7eb',
-          }}
-        >
-          {record.chiefComplaint && (
-            <div
-              className="p-3 rounded-lg"
-              style={{
-                backgroundColor: isDarkMode
-                  ? COLORS.surface.darkHover
-                  : '#eff6ff',
-              }}
-            >
-              <div
-                className="text-xs font-semibold mb-1 flex items-center gap-1"
-                style={{ color: isDarkMode ? COLORS.text.light : '#1e40af' }}
-              >
-                <AlertTriangle size={14} />
-                Chief Complaint
-              </div>
-              <div
-                className="text-sm font-medium"
-                style={{
-                  color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
-                }}
-              >
-                {record.chiefComplaint}
-              </div>
-            </div>
-          )}
+        {/* ── Expanded body ── */}
+        {isExpanded && (
+          <div
+            className="px-4 pb-4 border-t"
+            style={{ borderColor: isDarkMode ? '#1e293b' : '#e2e8f0' }}
+          >
+            {/* Preview data */}
+            {renderPreview() && (
+              <div className="pt-3 pb-3">{renderPreview()}</div>
+            )}
 
-          {record.diagnosis && (
+            {/* Action bar */}
             <div
-              className="p-3 rounded-lg"
-              style={{
-                backgroundColor: isDarkMode
-                  ? COLORS.surface.darkHover
-                  : '#fef3c7',
-              }}
+              className="flex items-center gap-2 pt-3 border-t"
+              style={{ borderColor: isDarkMode ? '#1e293b' : '#f1f5f9' }}
             >
-              <div
-                className="text-xs font-semibold mb-1 flex items-center gap-1"
-                style={{ color: isDarkMode ? COLORS.text.light : '#92400e' }}
-              >
-                <Stethoscope size={14} />
-                Diagnosis
-              </div>
-              <div
-                className="text-sm font-medium"
-                style={{
-                  color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
+              {/* View Details — opens RecordDetailsModal for all types */}
+              <button
+                onClick={e => {
+                  e.stopPropagation();
+                  setShowModal(true);
                 }}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm transition-all hover:opacity-90 active:scale-[0.98]"
+                style={{ backgroundColor: COLORS.primary, color: 'white' }}
               >
-                {record.diagnosis}
-              </div>
-              {record.secondaryDiagnoses && (
-                <div
-                  className="text-xs mt-1.5 pt-1.5 border-t"
+                <Eye size={15} />
+                View Details
+              </button>
+
+              {/* Export dropdown */}
+              <div className="relative" ref={exportRef}>
+                <button
+                  onClick={e => {
+                    e.stopPropagation();
+                    setShowExportMenu(v => !v);
+                  }}
+                  disabled={isExporting}
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-semibold text-sm border transition-all hover:opacity-90"
                   style={{
-                    color: isDarkMode
-                      ? COLORS.text.light
-                      : COLORS.text.secondary,
-                    borderColor: isDarkMode ? COLORS.border.dark : '#fde68a',
+                    backgroundColor: isDarkMode ? '#1e293b' : '#f8fafc',
+                    color: isDarkMode ? '#f1f5f9' : '#0f172a',
+                    borderColor: isDarkMode ? '#334155' : '#e2e8f0',
                   }}
                 >
-                  <span className="font-medium">Secondary:</span>{' '}
-                  {record.secondaryDiagnoses}
-                </div>
-              )}
-            </div>
-          )}
+                  {isExporting ? (
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Download size={15} />
+                  )}
+                  <span>Export</span>
+                  <ChevronDown size={13} />
+                </button>
 
-          {record.treatmentPlan && (
-            <div
-              className="p-3 rounded-lg"
-              style={{
-                backgroundColor: isDarkMode
-                  ? COLORS.surface.darkHover
-                  : '#f0fdf4',
-              }}
-            >
-              <div
-                className="text-xs font-semibold mb-1 flex items-center gap-1"
-                style={{ color: isDarkMode ? COLORS.text.light : '#166534' }}
-              >
-                <ClipboardList size={14} />
-                Treatment Plan
+                {showExportMenu && !isExporting && (
+                  <div
+                    className="absolute right-0 bottom-full mb-2 rounded-xl shadow-xl overflow-hidden z-50 min-w-[160px] border"
+                    style={{
+                      backgroundColor: isDarkMode ? '#1e293b' : 'white',
+                      borderColor: isDarkMode ? '#334155' : '#e2e8f0',
+                    }}
+                  >
+                    {['CSV', 'PDF'].map((fmt, i) => (
+                      <button
+                        key={fmt}
+                        onClick={e => handleExport(fmt, e)}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors"
+                        style={{
+                          color: isDarkMode ? '#f1f5f9' : '#0f172a',
+                          borderBottom:
+                            i === 0
+                              ? `1px solid ${isDarkMode ? '#334155' : '#f1f5f9'}`
+                              : 'none',
+                        }}
+                        onMouseEnter={e =>
+                          (e.currentTarget.style.backgroundColor = isDarkMode
+                            ? '#334155'
+                            : '#f8fafc')
+                        }
+                        onMouseLeave={e =>
+                          (e.currentTarget.style.backgroundColor =
+                            'transparent')
+                        }
+                      >
+                        <div
+                          className="w-6 h-6 rounded-full flex items-center justify-center"
+                          style={{
+                            backgroundColor:
+                              fmt === 'PDF' ? '#ef4444' : '#22c55e',
+                          }}
+                        >
+                          <FileText size={12} className="text-white" />
+                        </div>
+                        Export as {fmt}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div
-                className="text-sm"
-                style={{
-                  color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
-                }}
-              >
-                {record.treatmentPlan}
-              </div>
             </div>
-          )}
-
-          {record.vitals && renderVitals(record.vitals)}
-          {record.relatedAdmission && renderAdmission(record.relatedAdmission)}
-          {record.prescriptions &&
-            !record.relatedAdmission &&
-            renderPrescriptions(record.prescriptions)}
-
-          {record.type === 'admission' && (
-            <>
-              {record.admissionNumber && (
-                <InfoItem
-                  icon={FileText}
-                  label="Admission Number"
-                  value={record.admissionNumber}
-                  isDarkMode={isDarkMode}
-                />
-              )}
-              {record.hasPrescriptions &&
-                renderPrescriptions(record.prescriptions)}
-              {record.hasProgressNotes &&
-                renderProgressNotes(record.recentProgressNotes)}
-            </>
-          )}
-        </div>
-      )}
-    </div>
+          </div>
+        )}
+      </div>
+    </>
   );
 };
-
-// Helper Components
-const InfoItem = ({
-  icon: Icon,
-  label,
-  value,
-  isDarkMode,
-  capitalize = false,
-}) => (
-  <div className="flex items-start gap-2">
-    <Icon
-      size={16}
-      className="mt-0.5 flex-shrink-0"
-      style={{ color: COLORS.primary }}
-    />
-    <div className="flex-1 min-w-0">
-      <div
-        className="text-xs font-medium mb-0.5"
-        style={{
-          color: isDarkMode ? COLORS.text.light : COLORS.text.secondary,
-        }}
-      >
-        {label}
-      </div>
-      <div
-        className={`text-sm font-semibold ${capitalize ? 'capitalize' : ''}`}
-        style={{ color: isDarkMode ? COLORS.text.white : COLORS.text.primary }}
-      >
-        {value}
-      </div>
-    </div>
-  </div>
-);
-
-const NoteSection = ({ label, content, isDarkMode }) => (
-  <div
-    className="p-2 rounded-lg"
-    style={{
-      backgroundColor: isDarkMode ? COLORS.surface.darkHover : '#fafbfc',
-    }}
-  >
-    <div
-      className="text-xs font-semibold mb-1"
-      style={{ color: isDarkMode ? COLORS.text.light : '#6b7280' }}
-    >
-      {label}
-    </div>
-    <div
-      className="text-sm leading-relaxed"
-      style={{ color: isDarkMode ? COLORS.text.white : COLORS.text.primary }}
-    >
-      {content}
-    </div>
-  </div>
-);
 
 export default TimelineCard;

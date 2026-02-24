@@ -211,7 +211,7 @@ const BedDetailsModal = ({
         )}
 
         {/* Action Selection */}
-        {!actionType && (
+        {!actionType && (userRole === 'nurse' || userRole === 'admin') && (
           <div className="space-y-3">
             <h4
               className="font-semibold"
@@ -221,7 +221,6 @@ const BedDetailsModal = ({
             >
               Available Actions
             </h4>
-            {console.log(bed)}
             {/* Mark as Cleaned */}
             {bed.bed_status === 'cleaning' && canPerformAction('clean') && (
               <button

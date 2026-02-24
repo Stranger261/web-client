@@ -13,7 +13,6 @@ import PatientRecordsTab from '../Tabs/PatientRecordsTab';
 const PatientDetailsModal = ({ isOpen, onClose, patient, isLoading }) => {
   const { currentUser } = useAuth();
   const isDarkMode = document.documentElement.classList.contains('dark');
-  console.log(patient);
 
   const [activeTab, setActiveTab] = useState('overview');
   const [stats, setStats] = useState([]);
@@ -50,7 +49,7 @@ const PatientDetailsModal = ({ isOpen, onClose, patient, isLoading }) => {
 
   const formatPatientName = () => {
     if (!patient) return 'N/A';
-    return `${patient?.first_name} ${patient?.middle_name || ''} ${patient?.last_name}`.trim();
+    return `${patient?.first_name} ${patient?.last_name}`.trim();
   };
 
   return (

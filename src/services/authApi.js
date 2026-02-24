@@ -239,6 +239,19 @@ class authService {
       throw error;
     }
   }
+
+  async updatePassword(userUuid, passwordData) {
+    try {
+      const response = await this.authApi.patch(
+        `/auth/update/${userUuid}`,
+        passwordData,
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Update password error:', error);
+      throw error;
+    }
+  }
 }
 
 export default new authService();

@@ -113,7 +113,6 @@ export const AuthProvider = ({ children }) => {
           rememberMe,
           deviceFingerprint,
         });
-        console.log(response);
 
         setCurrentUser(response.data.user);
         setAuthState(AUTH_STATES.AUTHENTICATED);

@@ -1,4 +1,3 @@
-// components/MobileNotificationItem.jsx
 import { Video, ExternalLink } from 'lucide-react';
 import { Button } from './ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -10,16 +9,19 @@ const MobileNotificationItem = ({ notif, darkMode, markAsRead, COLORS }) => {
   const notificationData = notif.data ? JSON.parse(notif.data) : {};
   const hasJoinButton = notificationData.hasJoinButton === true;
   const roomId = notificationData.room_id;
-  const joinLink =
-    notificationData.join_link ||
-    (roomId ? `/patient/video-call/${roomId}` : null);
+  const joinLink = notificationData?.join_link
+    ? `${notificationData.join_link}`
+    : roomId
+      ? `/patient/video-call/${roomId}`
+      : null;
+
   const isFiveMinReminder = notificationData.type === '5_min_reminder';
 
   const handleJoinRoom = e => {
     e.stopPropagation();
     if (joinLink) {
       markAsRead(notif.notification_id);
-      navigate(joinLink);
+      navigate(joinLink, { replace: true });
     }
   };
 
@@ -53,7 +55,6 @@ const MobileNotificationItem = ({ notif, darkMode, markAsRead, COLORS }) => {
           <p className="text-sm mt-1" style={{ color: COLORS.text.secondary }}>
             {notif.message}
           </p>
-
           {roomId && (
             <p
               className="text-xs mt-1"

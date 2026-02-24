@@ -476,7 +476,10 @@ const ReceptionistDashboard = () => {
       {/* Appointment Detail Modal */}
       <Modal
         isOpen={isViewAppointModalOpen}
-        onClose={() => setIsViewAppointModalOpen(false)}
+        onClose={() => {
+          setIsViewAppointModalOpen(false);
+          window.dispatchEvent(new Event('refresh-today-appointments'));
+        }}
         title="Appointment Details"
       >
         <AppointmentDetailModal

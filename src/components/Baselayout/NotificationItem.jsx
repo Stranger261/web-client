@@ -6,6 +6,7 @@ import {
   Check,
   Clock,
   ExternalLink,
+  UserX, // Add this for no-show
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useNavigate } from 'react-router-dom';
@@ -27,12 +28,15 @@ const NotificationItem = ({
   const notificationData = notif.data ? JSON.parse(notif.data) : {};
   const hasJoinButton = notificationData.hasJoinButton === true;
   const roomId = notificationData.room_id;
-  const joinLink =
-    notificationData.join_link ||
-    (roomId ? `/patient/video-call/${roomId}` : null);
+  const joinLink = `/patient/video-call/${roomId}`;
+
   const appointmentTime = notificationData.appointment_time;
   const doctorName = notificationData.doctor_name;
+  const patientName = notificationData.patient_name;
+  const appointmentId = notificationData.appointment_id;
+
   const isFiveMinReminder = notificationData.type === '5_min_reminder';
+  const isNoShow = notif.type === 'appointment_no_show';
 
   const NotifIcon = getNotificationIcon(notif.type);
 
@@ -40,14 +44,22 @@ const NotificationItem = ({
     e.stopPropagation();
     if (joinLink) {
       markAsRead(notif.notification_id);
-      navigate(joinLink);
+      console.log(joinLink);
+      navigate(joinLink, { replace: true });
     }
   };
 
   const handleNotificationClick = () => {
     markAsRead(notif.notification_id);
+
+    // Navigate to appointment details if it's a no-show
+    if (isNoShow && appointmentId) {
+      navigate(`/appointments/${appointmentId}`);
+      return;
+    }
+
     if (hasJoinButton && joinLink && !isHovered) {
-      navigate(joinLink);
+      navigate(joinLink, { replace: true });
     }
   };
 
@@ -59,12 +71,20 @@ const NotificationItem = ({
         style={{
           backgroundColor: !notif.is_read
             ? darkMode
-              ? 'rgba(59, 130, 246, 0.1)'
-              : 'rgba(59, 130, 246, 0.05)'
+              ? isNoShow
+                ? 'rgba(239, 68, 68, 0.15)' // Red tint for no-show
+                : 'rgba(59, 130, 246, 0.1)'
+              : isNoShow
+                ? 'rgba(239, 68, 68, 0.08)'
+                : 'rgba(59, 130, 246, 0.05)'
             : 'transparent',
           borderColor: darkMode ? '#374151' : '#e5e7eb',
-          borderLeftWidth: isFiveMinReminder ? '4px' : '0',
-          borderLeftColor: isFiveMinReminder ? COLORS.primary : 'transparent',
+          borderLeftWidth: isNoShow || isFiveMinReminder ? '4px' : '0',
+          borderLeftColor: isNoShow
+            ? COLORS.status.red
+            : isFiveMinReminder
+              ? COLORS.primary
+              : 'transparent',
         }}
         onClick={() => markAsRead(notif.notification_id)}
       >
@@ -72,12 +92,19 @@ const NotificationItem = ({
           <div
             className="p-2 rounded-full flex-shrink-0"
             style={{
-              backgroundColor: darkMode
-                ? 'rgba(59, 130, 246, 0.2)'
-                : 'rgba(59, 130, 246, 0.1)',
+              backgroundColor: isNoShow
+                ? darkMode
+                  ? 'rgba(239, 68, 68, 0.2)'
+                  : 'rgba(239, 68, 68, 0.1)'
+                : darkMode
+                  ? 'rgba(59, 130, 246, 0.2)'
+                  : 'rgba(59, 130, 246, 0.1)',
             }}
           >
-            <NotifIcon className="h-5 w-5" style={{ color: COLORS.primary }} />
+            <NotifIcon
+              className="h-5 w-5"
+              style={{ color: isNoShow ? COLORS.status.red : COLORS.primary }}
+            />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
@@ -85,7 +112,11 @@ const NotificationItem = ({
               {!notif.is_read && (
                 <div
                   className="w-2 h-2 rounded-full mt-1 flex-shrink-0"
-                  style={{ backgroundColor: COLORS.primary }}
+                  style={{
+                    backgroundColor: isNoShow
+                      ? COLORS.status.red
+                      : COLORS.primary,
+                  }}
                 />
               )}
             </div>
@@ -95,6 +126,16 @@ const NotificationItem = ({
             >
               {notif.message}
             </p>
+
+            {/* Show patient name for no-show notifications */}
+            {isNoShow && patientName && (
+              <p
+                className="text-sm mt-1 font-medium"
+                style={{ color: COLORS.status.red }}
+              >
+                Patient: {patientName}
+              </p>
+            )}
 
             {roomId && (
               <p
@@ -123,6 +164,21 @@ const NotificationItem = ({
               </div>
             )}
 
+            {/* View appointment button for no-shows */}
+            {isNoShow && appointmentId && (
+              <div className="mt-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  icon={Calendar}
+                  onClick={() => navigate(`/appointments/${appointmentId}`)}
+                  className="gap-2 w-full justify-center"
+                >
+                  View Appointment
+                </Button>
+              </div>
+            )}
+
             <p
               className="text-xs mt-2"
               style={{ color: COLORS.text.secondary }}
@@ -140,24 +196,30 @@ const NotificationItem = ({
     <div
       key={notif.notification_id}
       className={`px-4 py-3 border-b cursor-pointer transition-all duration-200 ${
-        notif.type === 'appointment_reminder' ? 'border-l-4' : ''
+        notif.type === 'appointment_reminder' || isNoShow ? 'border-l-4' : ''
       }`}
       style={{
         backgroundColor: !notif.is_read
           ? darkMode
-            ? isFiveMinReminder
-              ? 'rgba(59, 130, 246, 0.15)'
-              : 'rgba(59, 130, 246, 0.1)'
-            : isFiveMinReminder
-              ? 'rgba(59, 130, 246, 0.08)'
-              : 'rgba(59, 130, 246, 0.05)'
+            ? isNoShow
+              ? 'rgba(239, 68, 68, 0.15)'
+              : isFiveMinReminder
+                ? 'rgba(59, 130, 246, 0.15)'
+                : 'rgba(59, 130, 246, 0.1)'
+            : isNoShow
+              ? 'rgba(239, 68, 68, 0.08)'
+              : isFiveMinReminder
+                ? 'rgba(59, 130, 246, 0.08)'
+                : 'rgba(59, 130, 246, 0.05)'
           : 'transparent',
         borderColor: darkMode ? '#374151' : '#e5e7eb',
-        borderLeftColor: isFiveMinReminder
-          ? COLORS.primary
-          : notif.type === 'appointment_reminder'
-            ? COLORS.accent
-            : 'transparent',
+        borderLeftColor: isNoShow
+          ? COLORS.status.red
+          : isFiveMinReminder
+            ? COLORS.primary
+            : notif.type === 'appointment_reminder'
+              ? COLORS.accent
+              : 'transparent',
       }}
       onClick={handleNotificationClick}
       onMouseEnter={() => setIsHovered(true)}
@@ -167,19 +229,27 @@ const NotificationItem = ({
         <div
           className="p-2 rounded-full flex-shrink-0 mt-1"
           style={{
-            backgroundColor: isFiveMinReminder
+            backgroundColor: isNoShow
               ? darkMode
-                ? 'rgba(59, 130, 246, 0.3)'
-                : 'rgba(59, 130, 246, 0.2)'
-              : darkMode
-                ? 'rgba(59, 130, 246, 0.2)'
-                : 'rgba(59, 130, 246, 0.1)',
+                ? 'rgba(239, 68, 68, 0.3)'
+                : 'rgba(239, 68, 68, 0.2)'
+              : isFiveMinReminder
+                ? darkMode
+                  ? 'rgba(59, 130, 246, 0.3)'
+                  : 'rgba(59, 130, 246, 0.2)'
+                : darkMode
+                  ? 'rgba(59, 130, 246, 0.2)'
+                  : 'rgba(59, 130, 246, 0.1)',
           }}
         >
           <NotifIcon
             className="h-4 w-4"
             style={{
-              color: isFiveMinReminder ? COLORS.primary : COLORS.primary,
+              color: isNoShow
+                ? COLORS.status.red
+                : isFiveMinReminder
+                  ? COLORS.primary
+                  : COLORS.primary,
             }}
           />
         </div>
@@ -199,13 +269,24 @@ const NotificationItem = ({
                     Live
                   </span>
                 )}
+                {isNoShow && (
+                  <span
+                    className="text-xs px-1 py-1 rounded-full"
+                    style={{
+                      backgroundColor: COLORS.status.red + '20',
+                      color: COLORS.status.red,
+                    }}
+                  >
+                    No-Show
+                  </span>
+                )}
               </p>
-              {doctorName && (
+              {(doctorName || patientName) && (
                 <p
                   className="text-xs mt-0.5"
                   style={{ color: COLORS.text.secondary }}
                 >
-                  Dr. {doctorName}
+                  {isNoShow ? `Patient: ${patientName}` : `Dr. ${doctorName}`}
                 </p>
               )}
             </div>
@@ -213,9 +294,11 @@ const NotificationItem = ({
               <div
                 className="w-2 h-2 rounded-full mt-1 flex-shrink-0"
                 style={{
-                  backgroundColor: isFiveMinReminder
-                    ? COLORS.status.green
-                    : COLORS.primary,
+                  backgroundColor: isNoShow
+                    ? COLORS.status.red
+                    : isFiveMinReminder
+                      ? COLORS.status.green
+                      : COLORS.primary,
                 }}
               />
             )}

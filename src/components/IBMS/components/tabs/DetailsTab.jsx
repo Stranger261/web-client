@@ -309,7 +309,7 @@ const DetailsTab = ({
       )}
 
       {/* Discharge Button */}
-      {/* {['nurse', 'admin'].includes(userRole) &&
+      {['nurse', 'admin'].includes(userRole) &&
         (admission.admission_status === 'active' ||
           admission.admission_status === 'pending_discharge') && (
           <button
@@ -323,7 +323,7 @@ const DetailsTab = ({
             <LogOut className="w-5 h-5" />
             Discharge Patient
           </button>
-        )} */}
+        )}
     </div>
   );
 };

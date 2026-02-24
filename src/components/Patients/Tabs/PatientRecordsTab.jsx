@@ -20,7 +20,6 @@ import { FilterPanel } from '../../ui/filter-panel';
 import Pagination from '../../ui/pagination';
 
 import { COLORS } from '../../../configs/CONST';
-import { patientRecordConfig } from '../../../configs/patientRecordFilterConfig';
 import { getDateRangeText } from '../utils/getDateRangeText';
 import { useAuth } from '../../../contexts/AuthContext';
 
@@ -36,21 +35,26 @@ const PatientRecordsTab = ({ patientId, isDarkMode, patientInfo = {} }) => {
   const [isExporting, setIsExporting] = useState(false);
   const exportMenuRef = useRef(null);
 
+  // FIX: Changed visitType to recordType to match backend expectations
   const [filters, setFilters] = useState({
     page: 1,
     limit: 10,
     search: '',
     startDate: '',
     endDate: '',
-    visitType: '',
+    recordType: '', // Changed from visitType
     status: '',
   });
+
   const [summary, setSummary] = useState({
     totalRecords: 0,
     totalMedicalRecords: 0,
     totalAppointments: 0,
     totalAdmissions: 0,
+    totalLabOrders: 0,
+    totalImagingStudies: 0,
   });
+
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -58,16 +62,9 @@ const PatientRecordsTab = ({ patientId, isDarkMode, patientInfo = {} }) => {
     totalPages: 1,
   });
 
-  // Debounce filters to avoid too many API calls
-  const [debouncedFilters, setDebouncedFilters] = useState(filters);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedFilters(filters);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [filters]);
+  // FIX: Single debounce with ref-based timer (same as PatientMedicalHistory)
+  const fetchTimerRef = useRef(null);
+  const lastFetchedFilters = useRef(null);
 
   // Close export menu when clicking outside
   useEffect(() => {
@@ -89,7 +86,6 @@ const PatientRecordsTab = ({ patientId, isDarkMode, patientInfo = {} }) => {
       setIsExporting(true);
       setShowExportMenu(false);
 
-      // Fetch ALL records
       const exportFilters = {
         ...filters,
         page: 1,
@@ -108,7 +104,6 @@ const PatientRecordsTab = ({ patientId, isDarkMode, patientInfo = {} }) => {
         return;
       }
 
-      // Prepare comprehensive data
       const exportData = exportService.prepareMedicalRecordsForExport(
         allRecords,
         {
@@ -120,11 +115,10 @@ const PatientRecordsTab = ({ patientId, isDarkMode, patientInfo = {} }) => {
         },
       );
 
-      // Export with enhanced service
       switch (format) {
         case 'CSV':
           exportService.exportToCSV(
-            allRecords, // Pass original records with nested data
+            allRecords,
             `patient-${patientId}-medical-records`,
           );
           toast.success('✅ CSV exported successfully!');
@@ -132,7 +126,7 @@ const PatientRecordsTab = ({ patientId, isDarkMode, patientInfo = {} }) => {
 
         case 'JSON':
           exportService.exportToJSON(
-            exportData, // Pass prepared data
+            exportData,
             `patient-${patientId}-medical-records`,
           );
           toast.success('✅ JSON exported successfully!');
@@ -140,7 +134,7 @@ const PatientRecordsTab = ({ patientId, isDarkMode, patientInfo = {} }) => {
 
         case 'PDF':
           exportService.exportToPDF(
-            allRecords, // Pass original records for comprehensive PDF
+            allRecords,
             {
               name: patientInfo?.name || `Patient ${patientId}`,
               mrn: patientInfo?.mrn || patientId,
@@ -152,6 +146,8 @@ const PatientRecordsTab = ({ patientId, isDarkMode, patientInfo = {} }) => {
           );
           toast.success('✅ PDF exported successfully!');
           break;
+        default:
+          break;
       }
     } catch (error) {
       console.error('Export failed:', error);
@@ -161,55 +157,88 @@ const PatientRecordsTab = ({ patientId, isDarkMode, patientInfo = {} }) => {
     }
   };
 
-  // Fetch medical records
-  const fetchMedicalRecords = useCallback(async () => {
-    if (!patientId) return;
+  // Fetch medical records with single debounce
+  const fetchMedicalRecords = useCallback(
+    async currentFilters => {
+      if (!patientId) return;
 
-    try {
-      setIsLoading(true);
+      try {
+        setIsLoading(true);
 
-      // Clean filters - only send non-empty values
-      const cleanFilters = Object.entries(debouncedFilters).reduce(
-        (acc, [key, value]) => {
-          if (value !== '' && value !== null && value !== undefined) {
-            acc[key] = value;
-          }
-          return acc;
-        },
-        {},
-      );
+        // Clean filters - only send non-empty values
+        const cleanFilters = Object.entries(currentFilters).reduce(
+          (acc, [key, value]) => {
+            if (value !== '' && value !== null && value !== undefined) {
+              acc[key] = value;
+            }
+            return acc;
+          },
+          {},
+        );
 
-      const response = await MedicalRecordsService.getPatientMedicalRecords(
-        patientId,
-        cleanFilters,
-      );
+        lastFetchedFilters.current = currentFilters;
+        console.log('calling get patient medical record');
 
-      setRecords(response.timeline || []);
-      setSummary(response.summary || {});
+        const response = await MedicalRecordsService.getPatientMedicalRecords(
+          patientId,
+          cleanFilters,
+        );
 
-      // Update pagination from API response
-      if (response.pagination) {
-        setPagination({
-          page: response.pagination.page,
-          limit: response.pagination.limit,
-          total: response.pagination.total,
-          totalPages: response.pagination.totalPages,
-        });
+        setRecords(response.timeline || []);
+        setSummary(response.summary || {});
+
+        if (response.pagination) {
+          setPagination({
+            page: response.pagination.page,
+            limit: response.pagination.limit,
+            total: response.pagination.total,
+            totalPages: response.pagination.totalPages,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching medical records:', error);
+        toast.error(error?.message || 'Failed to load medical records');
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Error fetching medical records:', error);
-      toast.error(error?.message || 'Failed to load medical records');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [patientId, debouncedFilters]);
+    },
+    [patientId],
+  );
 
+  // FIX: Single debounce effect (same pattern as PatientMedicalHistory)
   useEffect(() => {
-    fetchMedicalRecords();
-  }, [fetchMedicalRecords]);
+    const isSearchChange =
+      lastFetchedFilters.current !== null &&
+      filters.search !== lastFetchedFilters.current?.search &&
+      JSON.stringify({ ...filters, search: '' }) ===
+        JSON.stringify({ ...lastFetchedFilters.current, search: '' });
 
+    const delay = isSearchChange ? 500 : 0;
+
+    clearTimeout(fetchTimerRef.current);
+    fetchTimerRef.current = setTimeout(() => {
+      fetchMedicalRecords(filters);
+    }, delay);
+
+    return () => clearTimeout(fetchTimerRef.current);
+  }, [filters, fetchMedicalRecords]);
+
+  // FIX: Auto-clear status when recordType changes
   const handleFilterChange = newFilters => {
-    setFilters(prev => ({ ...prev, ...newFilters, page: 1 }));
+    let adjustedFilters = { ...newFilters };
+
+    if (
+      'recordType' in newFilters &&
+      newFilters.recordType !== filters.recordType
+    ) {
+      adjustedFilters.status = '';
+    }
+
+    setFilters(prev => ({
+      ...prev,
+      ...adjustedFilters,
+      page: 1,
+    }));
   };
 
   const clearFilters = () => {
@@ -219,7 +248,7 @@ const PatientRecordsTab = ({ patientId, isDarkMode, patientInfo = {} }) => {
       search: '',
       startDate: '',
       endDate: '',
-      visitType: '',
+      recordType: '',
       status: '',
     });
   };
@@ -227,7 +256,6 @@ const PatientRecordsTab = ({ patientId, isDarkMode, patientInfo = {} }) => {
   const handlePageChange = newPage => {
     setFilters(prev => ({ ...prev, page: newPage }));
 
-    // Scroll to top of the records container
     setTimeout(() => {
       const container = document.querySelector('.space-y-3');
       if (container) {
@@ -245,17 +273,137 @@ const PatientRecordsTab = ({ patientId, isDarkMode, patientInfo = {} }) => {
   };
 
   const getActiveFiltersCount = () => {
-    let count = 0;
-    if (filters.search) count++;
-    if (filters.startDate) count++;
-    if (filters.endDate) count++;
-    if (filters.visitType) count++;
-    if (filters.status) count++;
-    return count;
+    const filterKeys = [
+      'search',
+      'startDate',
+      'endDate',
+      'recordType',
+      'status',
+    ];
+    return filterKeys.filter(key => filters[key] && filters[key] !== '').length;
   };
 
   const handleToggleRecord = recordId => {
     setExpandedRecordId(prev => (prev === recordId ? null : recordId));
+  };
+
+  // FIX: Dynamic status options based on recordType
+  const getStatusOptions = () => {
+    const recordType = filters.recordType;
+
+    if (!recordType) {
+      return [
+        { value: '', label: 'All Status' },
+        { value: 'completed', label: 'Completed' },
+        { value: 'scheduled', label: 'Scheduled' },
+        { value: 'in_progress', label: 'In Progress' },
+        { value: 'active', label: 'Active' },
+        { value: 'discharged', label: 'Discharged' },
+        { value: 'cancelled', label: 'Cancelled' },
+        { value: 'reported', label: 'Reported' },
+      ];
+    }
+
+    if (recordType === 'appointment') {
+      return [
+        { value: '', label: 'All Status' },
+        { value: 'scheduled', label: 'Scheduled' },
+        { value: 'completed', label: 'Completed' },
+        { value: 'in_progress', label: 'In Progress' },
+        { value: 'cancelled', label: 'Cancelled' },
+        { value: 'no_show', label: 'No Show' },
+      ];
+    }
+
+    if (recordType === 'admission') {
+      return [
+        { value: '', label: 'All Status' },
+        { value: 'active', label: 'Active' },
+        { value: 'discharged', label: 'Discharged' },
+        { value: 'cancelled', label: 'Cancelled' },
+      ];
+    }
+
+    if (recordType === 'laboratory') {
+      return [
+        { value: '', label: 'All Status' },
+        { value: 'pending', label: 'Pending' },
+        { value: 'in_progress', label: 'In Progress' },
+        { value: 'completed', label: 'Completed' },
+        { value: 'cancelled', label: 'Cancelled' },
+      ];
+    }
+
+    if (recordType === 'imaging') {
+      return [
+        { value: '', label: 'All Status' },
+        { value: 'scheduled', label: 'Scheduled' },
+        { value: 'in_progress', label: 'In Progress' },
+        { value: 'completed', label: 'Completed' },
+        { value: 'reported', label: 'Reported' },
+        { value: 'cancelled', label: 'Cancelled' },
+      ];
+    }
+
+    if (recordType === 'medical_record') {
+      return [
+        { value: '', label: 'All Status' },
+        { value: 'completed', label: 'Completed' },
+        { value: 'in_progress', label: 'In Progress' },
+      ];
+    }
+
+    return [{ value: '', label: 'All Status' }];
+  };
+
+  // FIX: Updated filter config with recordType and dynamic status
+  const filterConfig = [
+    {
+      type: 'search',
+      name: 'search',
+      label: 'Search',
+      placeholder: 'Search in diagnosis, treatment, notes...',
+    },
+    {
+      type: 'date',
+      name: 'startDate',
+      label: 'Start Date',
+    },
+    {
+      type: 'date',
+      name: 'endDate',
+      label: 'End Date',
+    },
+    {
+      type: 'select',
+      name: 'recordType',
+      label: 'Record Type',
+      options: [
+        { value: '', label: 'All Types' },
+        { value: 'appointment', label: 'Appointments' },
+        { value: 'admission', label: 'Admissions' },
+        { value: 'medical_record', label: 'Medical Records' },
+        { value: 'laboratory', label: 'Laboratory Tests' },
+        { value: 'imaging', label: 'Imaging Studies' },
+      ],
+    },
+    {
+      type: 'select',
+      name: 'status',
+      label: 'Status',
+      options: getStatusOptions(),
+      hidden: !filters.recordType,
+      helperText: 'Select a record type first to filter by status',
+    },
+  ];
+
+  // Filter-only values for FilterPanel (no page/limit)
+  const filterPanelValues = {
+    search: filters.search,
+    startDate: filters.startDate,
+    endDate: filters.endDate,
+    recordType: filters.recordType,
+    status: filters.status,
   };
 
   if (isLoading && records.length === 0) {
@@ -279,7 +427,7 @@ const PatientRecordsTab = ({ patientId, isDarkMode, patientInfo = {} }) => {
   return (
     <div className="space-y-4">
       {/* Header Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         <div
           className="relative overflow-hidden rounded-xl p-4 shadow-sm"
           style={{
@@ -290,7 +438,7 @@ const PatientRecordsTab = ({ patientId, isDarkMode, patientInfo = {} }) => {
             <div className="flex items-center justify-between mb-2">
               <FileText size={24} className="text-white opacity-80" />
               <div className="text-3xl font-bold text-white">
-                {summary.totalRecords}
+                {summary.totalRecords || 0}
               </div>
             </div>
             <div className="text-sm font-medium text-white opacity-90">
@@ -312,7 +460,7 @@ const PatientRecordsTab = ({ patientId, isDarkMode, patientInfo = {} }) => {
             <div className="flex items-center justify-between mb-2">
               <Calendar size={24} className="text-white opacity-80" />
               <div className="text-3xl font-bold text-white">
-                {summary.totalAppointments}
+                {summary.totalAppointments || 0}
               </div>
             </div>
             <div className="text-sm font-medium text-white opacity-90">
@@ -334,7 +482,7 @@ const PatientRecordsTab = ({ patientId, isDarkMode, patientInfo = {} }) => {
             <div className="flex items-center justify-between mb-2">
               <Building2 size={24} className="text-white opacity-80" />
               <div className="text-3xl font-bold text-white">
-                {summary.totalAdmissions}
+                {summary.totalAdmissions || 0}
               </div>
             </div>
             <div className="text-sm font-medium text-white opacity-90">
@@ -349,6 +497,28 @@ const PatientRecordsTab = ({ patientId, isDarkMode, patientInfo = {} }) => {
         <div
           className="relative overflow-hidden rounded-xl p-4 shadow-sm"
           style={{
+            background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+          }}
+        >
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-2">
+              <FileText size={24} className="text-white opacity-80" />
+              <div className="text-3xl font-bold text-white">
+                {summary.totalMedicalRecords || 0}
+              </div>
+            </div>
+            <div className="text-sm font-medium text-white opacity-90">
+              Medical Records
+            </div>
+          </div>
+          <div className="absolute -right-4 -bottom-4 opacity-10 text-6xl">
+            📝
+          </div>
+        </div>
+
+        <div
+          className="relative overflow-hidden rounded-xl p-4 shadow-sm"
+          style={{
             background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
           }}
         >
@@ -356,15 +526,16 @@ const PatientRecordsTab = ({ patientId, isDarkMode, patientInfo = {} }) => {
             <div className="flex items-center justify-between mb-2">
               <TrendingUp size={24} className="text-white opacity-80" />
               <div className="text-3xl font-bold text-white">
-                {records.length}
+                {(summary.totalLabOrders || 0) +
+                  (summary.totalImagingStudies || 0)}
               </div>
             </div>
             <div className="text-sm font-medium text-white opacity-90">
-              Current Page
+              Labs & Imaging
             </div>
           </div>
           <div className="absolute -right-4 -bottom-4 opacity-10 text-6xl">
-            🔍
+            🔬
           </div>
         </div>
       </div>
@@ -481,10 +652,10 @@ const PatientRecordsTab = ({ patientId, isDarkMode, patientInfo = {} }) => {
         {/* Filter Panel */}
         {showFilters && (
           <FilterPanel
-            filters={filters}
+            filters={filterPanelValues}
             onFilterChange={handleFilterChange}
             onClearFilters={clearFilters}
-            filterConfig={patientRecordConfig}
+            filterConfig={filterConfig}
             showFilters={showFilters}
             onToggleFilters={() => setShowFilters(!showFilters)}
             searchPlaceholder="Search in diagnosis, treatment, notes..."

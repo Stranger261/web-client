@@ -1,7 +1,10 @@
-import { Search, X, Calendar } from 'lucide-react';
-import { Select } from './select';
+import { Search, X } from 'lucide-react';
+import { Select } from '../../../../components/ui/select';
 
-// Reusable Filter Component
+/**
+ * FilterPanel — receives ONLY filter-scoped values (no page/limit).
+ * The parent is responsible for merging with pagination state.
+ */
 export const FilterPanel = ({
   filters,
   onFilterChange,
@@ -11,18 +14,21 @@ export const FilterPanel = ({
   onToggleFilters,
   searchPlaceholder = 'Search...',
   title = 'Filter Items',
-  pageOnChangeFilter,
 }) => {
+  // FIX 4: Count only keys that are user-facing filters (not page/limit).
+  // Since the parent now passes only filter fields, every non-empty value counts.
   const activeFiltersCount = Object.entries(filters).filter(
     ([key, v]) => v !== '' && v !== null && v !== undefined,
   ).length;
 
+  // FIX 2: Don't spread the full filters object — only pass the changed field.
+  // This prevents stale page/limit values from leaking back into the parent.
   const handleFilterChange = e => {
     const { name, value } = e.target;
-    !!pageOnChangeFilter && pageOnChangeFilter(1);
-    onFilterChange({ ...filters, [name]: value });
+    onFilterChange({ [name]: value });
   };
 
+  // FIX 5: Clear only the fields present in filters; don't manufacture new keys.
   const handleClearFilters = () => {
     onClearFilters();
   };
@@ -67,29 +73,35 @@ export const FilterPanel = ({
       )}
 
       <div className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
-        {/* DYNAMIC FILTER GRID */}
         {filterConfig.map(field => {
           if (field.type === 'search') return null;
+          if (field.hidden) return null; // Skip hidden fields
 
           if (field.type === 'select') {
             return (
-              <Select
-                key={field.name}
-                label={field.label}
-                name={field.name}
-                value={filters[field.name] || ''}
-                onChange={handleFilterChange}
-                options={field.options}
-                loading={field.loading}
-                disabled={field.disabled}
-              />
+              <div key={field.name}>
+                <Select
+                  label={field.label}
+                  name={field.name}
+                  value={filters[field.name] || ''}
+                  onChange={handleFilterChange}
+                  options={field.options}
+                  loading={field.loading}
+                  disabled={field.disabled}
+                />
+                {field.helperText && (
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    {field.helperText}
+                  </p>
+                )}
+              </div>
             );
           }
 
           if (field.type === 'date') {
             return (
               <div key={field.name} className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   {field.label}
                 </label>
                 <input
@@ -97,7 +109,7 @@ export const FilterPanel = ({
                   name={field.name}
                   value={filters[field.name] || ''}
                   onChange={handleFilterChange}
-                  className="w-full px-3 py-2 border rounded-lg text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 />
               </div>
             );
@@ -132,12 +144,10 @@ export const FilterPanel = ({
                 key={key}
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md text-xs font-medium border border-blue-200 dark:border-blue-800"
               >
-                {key.replace(/_/g, ' ')}: {value}
+                {key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ')}: {value}
                 <button
                   onClick={() =>
-                    handleFilterChange({
-                      target: { name: key, value: '' },
-                    })
+                    handleFilterChange({ target: { name: key, value: '' } })
                   }
                   className="hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-sm p-0.5"
                 >

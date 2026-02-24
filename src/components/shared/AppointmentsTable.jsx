@@ -60,9 +60,7 @@ const AppointmentsTable = ({
     const { patient, createdBy } = appointment;
     const { person } = patient;
     const { user } = person;
-    const fullName = `${person?.first_name} ${person?.middle_name || ''} ${
-      person?.last_name
-    }`;
+    const fullName = `${person?.first_name} ${person?.last_name}`;
 
     if (patient && typeof patient === 'object' && fullName) {
       return {

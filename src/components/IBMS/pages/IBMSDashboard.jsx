@@ -48,9 +48,10 @@ const IBMSDashboard = () => {
   ].filter(tab => tab.roles.includes(userRole));
 
   useEffect(() => {
-    if (currentUser?.role === 'doctor');
-    {
+    if (currentUser?.role === 'doctor') {
       setActiveView('admissions');
+    } else if (currentUser?.role === 'receptionist') {
+      setActiveView('floors');
     }
   }, [currentUser?.role]);
 

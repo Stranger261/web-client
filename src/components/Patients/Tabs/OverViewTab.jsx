@@ -30,6 +30,22 @@ import { calculateAge } from '../utils/patientHelpers';
 const OverViewTab = ({ isDarkMode, patient, stats }) => {
   const age = calculateAge(patient?.date_of_birth);
 
+  // Helper function to get severity color
+  const getSeverityColor = severity => {
+    switch (severity?.toLowerCase()) {
+      case 'mild':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'moderate':
+        return 'bg-orange-100 text-orange-800';
+      case 'severe':
+        return 'bg-red-100 text-red-800';
+      default:
+        return isDarkMode
+          ? 'bg-gray-700 text-gray-300'
+          : 'bg-gray-100 text-gray-700';
+    }
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Hero Section with Quick Stats */}
@@ -58,9 +74,7 @@ const OverViewTab = ({ isDarkMode, patient, stats }) => {
                     color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
                   }}
                 >
-                  {patient?.first_name}{' '}
-                  {patient?.middle_name && `${patient?.middle_name} `}
-                  {patient?.last_name}
+                  {patient?.first_name} {patient?.last_name}
                 </h1>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
                   <span
@@ -412,129 +426,253 @@ const OverViewTab = ({ isDarkMode, patient, stats }) => {
           </h3>
         </div>
 
-        <div className="space-y-3 sm:space-y-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Droplet
-                size={12}
-                className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}
-              />
+        <div className="space-y-4">
+          {/* Basic Medical Info Grid */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Droplet
+                  size={12}
+                  className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}
+                />
+                <p
+                  className="text-xs uppercase tracking-wider"
+                  style={{
+                    color: isDarkMode
+                      ? COLORS.text.light
+                      : COLORS.text.secondary,
+                  }}
+                >
+                  Blood Type
+                </p>
+              </div>
               <p
-                className="text-xs uppercase tracking-wider"
+                className={`font-medium text-sm ${patient?.blood_type ? '' : 'italic'}`}
                 style={{
-                  color: isDarkMode ? COLORS.text.light : COLORS.text.secondary,
+                  color: patient?.blood_type
+                    ? isDarkMode
+                      ? COLORS.text.white
+                      : COLORS.text.primary
+                    : isDarkMode
+                      ? COLORS.text.light
+                      : COLORS.text.secondary,
                 }}
               >
-                Blood Type
+                {patient?.blood_type || 'Not specified'}
               </p>
             </div>
-            <p
-              className={`font-medium text-sm ${patient?.blood_type ? '' : 'italic'}`}
-              style={{
-                color: patient?.blood_type
-                  ? isDarkMode
-                    ? COLORS.text.white
-                    : COLORS.text.primary
-                  : isDarkMode
-                    ? COLORS.text.light
-                    : COLORS.text.secondary,
-              }}
-            >
-              {patient?.blood_type || 'Not specified'}
-            </p>
+
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Scale
+                  size={12}
+                  className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}
+                />
+                <p
+                  className="text-xs uppercase tracking-wider"
+                  style={{
+                    color: isDarkMode
+                      ? COLORS.text.light
+                      : COLORS.text.secondary,
+                  }}
+                >
+                  Weight
+                </p>
+              </div>
+              <p
+                className={`font-medium text-sm ${patient?.weight ? '' : 'italic'}`}
+                style={{
+                  color: patient?.weight
+                    ? isDarkMode
+                      ? COLORS.text.white
+                      : COLORS.text.primary
+                    : isDarkMode
+                      ? COLORS.text.light
+                      : COLORS.text.secondary,
+                }}
+              >
+                {patient?.weight ? `${patient?.weight} kg` : 'Not specified'}
+              </p>
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Ruler
+                  size={12}
+                  className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}
+                />
+                <p
+                  className="text-xs uppercase tracking-wider"
+                  style={{
+                    color: isDarkMode
+                      ? COLORS.text.light
+                      : COLORS.text.secondary,
+                  }}
+                >
+                  Height
+                </p>
+              </div>
+              <p
+                className={`font-medium text-sm ${patient?.height ? '' : 'italic'}`}
+                style={{
+                  color: patient?.height
+                    ? isDarkMode
+                      ? COLORS.text.white
+                      : COLORS.text.primary
+                    : isDarkMode
+                      ? COLORS.text.light
+                      : COLORS.text.secondary,
+                }}
+              >
+                {patient?.height ? `${patient?.height} cm` : 'Not specified'}
+              </p>
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Pill
+                  size={12}
+                  className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}
+                />
+                <p
+                  className="text-xs uppercase tracking-wider"
+                  style={{
+                    color: isDarkMode
+                      ? COLORS.text.light
+                      : COLORS.text.secondary,
+                  }}
+                >
+                  Current Meds
+                </p>
+              </div>
+              <p
+                className={`font-medium text-sm break-words ${patient?.current_medications ? '' : 'italic'}`}
+                style={{
+                  color: patient?.current_medications
+                    ? isDarkMode
+                      ? COLORS.text.white
+                      : COLORS.text.primary
+                    : isDarkMode
+                      ? COLORS.text.light
+                      : COLORS.text.secondary,
+                }}
+              >
+                {patient?.current_medications || 'None recorded'}
+              </p>
+            </div>
           </div>
 
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Scale
-                size={12}
-                className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}
+          {/* Allergies Section */}
+          <div
+            className="border-t pt-4"
+            style={{
+              borderColor: isDarkMode
+                ? COLORS.border.dark
+                : COLORS.border.light,
+            }}
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <AlertCircle
+                size={16}
+                className={isDarkMode ? 'text-red-400' : 'text-red-600'}
               />
-              <p
-                className="text-xs uppercase tracking-wider"
+              <h4
+                className="font-semibold text-sm"
                 style={{
-                  color: isDarkMode ? COLORS.text.light : COLORS.text.secondary,
+                  color: isDarkMode ? COLORS.text.white : COLORS.text.primary,
                 }}
               >
-                Weight
-              </p>
+                Allergies
+              </h4>
+              {patient?.allergies?.length > 0 && (
+                <span
+                  className={`text-xs px-2 py-0.5 rounded-full ${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'}`}
+                >
+                  {patient.allergies.length}{' '}
+                  {patient.allergies.length === 1 ? 'allergy' : 'allergies'}
+                </span>
+              )}
             </div>
-            <p
-              className={`font-medium text-sm ${patient?.weight ? '' : 'italic'}`}
-              style={{
-                color: patient?.weight
-                  ? isDarkMode
-                    ? COLORS.text.white
-                    : COLORS.text.primary
-                  : isDarkMode
-                    ? COLORS.text.light
-                    : COLORS.text.secondary,
-              }}
-            >
-              {patient?.weight ? `${patient?.weight} kg` : 'Not specified'}
-            </p>
-          </div>
 
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Ruler
-                size={12}
-                className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}
-              />
+            {patient?.allergies?.length > 0 ? (
+              <div className="space-y-2">
+                {patient.allergies.map(allergy => (
+                  <div
+                    key={allergy.allergy_id}
+                    className={`p-3 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span
+                            className="font-medium text-sm"
+                            style={{
+                              color: isDarkMode
+                                ? COLORS.text.white
+                                : COLORS.text.primary,
+                            }}
+                          >
+                            {allergy.allergen}
+                          </span>
+                          <span
+                            className={`text-xs px-2 py-0.5 rounded-full capitalize ${getSeverityColor(allergy.severity)}`}
+                          >
+                            {allergy.severity || 'Not specified'}
+                          </span>
+                          {!allergy.verified && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800">
+                              Unverified
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                          <span
+                            className="text-xs capitalize"
+                            style={{
+                              color: isDarkMode
+                                ? COLORS.text.light
+                                : COLORS.text.secondary,
+                            }}
+                          >
+                            Type: {allergy.allergy_type || 'Not specified'}
+                          </span>
+                          <span
+                            className="text-xs"
+                            style={{
+                              color: isDarkMode
+                                ? COLORS.text.light
+                                : COLORS.text.secondary,
+                            }}
+                          >
+                            Reaction: {allergy.reaction || 'Not specified'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+                      <span
+                        style={{
+                          color: isDarkMode
+                            ? COLORS.text.light
+                            : COLORS.text.secondary,
+                        }}
+                      >
+                        Reported: {formatDate(allergy.reported_date)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
               <p
-                className="text-xs uppercase tracking-wider"
+                className="text-sm italic"
                 style={{
                   color: isDarkMode ? COLORS.text.light : COLORS.text.secondary,
                 }}
               >
-                Height
+                No known allergies recorded
               </p>
-            </div>
-            <p
-              className={`font-medium text-sm ${patient?.height ? '' : 'italic'}`}
-              style={{
-                color: patient?.height
-                  ? isDarkMode
-                    ? COLORS.text.white
-                    : COLORS.text.primary
-                  : isDarkMode
-                    ? COLORS.text.light
-                    : COLORS.text.secondary,
-              }}
-            >
-              {patient?.height ? `${patient?.height} cm` : 'Not specified'}
-            </p>
-          </div>
-
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Pill
-                size={12}
-                className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}
-              />
-              <p
-                className="text-xs uppercase tracking-wider"
-                style={{
-                  color: isDarkMode ? COLORS.text.light : COLORS.text.secondary,
-                }}
-              >
-                Current Meds
-              </p>
-            </div>
-            <p
-              className={`font-medium text-sm break-words ${patient?.current_medications ? '' : 'italic'}`}
-              style={{
-                color: patient?.current_medications
-                  ? isDarkMode
-                    ? COLORS.text.white
-                    : COLORS.text.primary
-                  : isDarkMode
-                    ? COLORS.text.light
-                    : COLORS.text.secondary,
-              }}
-            >
-              {patient?.current_medications || 'None recorded'}
-            </p>
+            )}
           </div>
         </div>
       </div>
@@ -564,7 +702,7 @@ const OverViewTab = ({ isDarkMode, patient, stats }) => {
           </div>
 
           <div className="space-y-3">
-            {patient?.contacts.length > 0 ? (
+            {patient?.contacts?.length > 0 ? (
               patient?.contacts.map((contact, index) => (
                 <div
                   key={index}

@@ -465,7 +465,7 @@ const DoctorAdmissionsList = ({ isDarkMode }) => {
       <Tabs
         tabs={[
           { id: 'all', label: 'All Patients', icon: Users },
-          { id: 'rounds', label: "Today's Rounds", icon: Calendar },
+          // { id: 'rounds', label: "Today's Rounds", icon: Calendar },
           { id: 'pending', label: 'Pending Discharge', icon: Target },
           { id: 'discharged', label: 'Discharged', icon: CheckCircle },
         ]}

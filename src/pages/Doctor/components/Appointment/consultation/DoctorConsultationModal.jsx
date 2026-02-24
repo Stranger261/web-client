@@ -36,6 +36,7 @@ const DoctorConsultationModal = ({ isOpen, onClose, appointment }) => {
     prescriptionData,
     errors,
     isSaving,
+    isSavingOrder,
     saveSuccess,
     handleDiagnosisChange,
     handlePrescriptionChange,

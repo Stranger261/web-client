@@ -11,6 +11,7 @@ import {
   RefreshCw,
   Calendar,
   Video,
+  UserX, // Add this for no-show icon
 } from 'lucide-react';
 
 import { useAuth } from '../contexts/AuthContext';
@@ -40,7 +41,7 @@ const BaseLayout = () => {
     readAllNotification,
     notifPagination,
   } = useNotification();
-  const { isConnected, socket } = useSocket();
+  const { isConnected, socket, joinRoom } = useSocket();
 
   const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -80,6 +81,52 @@ const BaseLayout = () => {
     };
   }, [isNotifOpen]);
 
+  // Join appropriate socket rooms based on user role
+  useEffect(() => {
+    if (!socket || !isConnected || !currentUser) return;
+
+    const userRole = currentUser.role;
+    const userUuid = currentUser.user_uuid;
+
+    // Join user-specific room
+    joinRoom(`user:${userUuid}`);
+
+    // Join role-based rooms
+    if (['doctor', 'nurse', 'receptionist', 'admin'].includes(userRole)) {
+      joinRoom('staff');
+      console.log('✅ Joined staff room');
+    }
+
+    if (userRole === 'doctor') {
+      joinRoom('doctors');
+
+      // Also join the existing doctor room format for backward compatibility
+      const doctor_uuid = currentUser?.person?.staff?.staff_uuid;
+      const lastname = currentUser?.person?.last_name;
+
+      if (doctor_uuid && lastname) {
+        socket.emit('doctor-room', {
+          doctor_uuid,
+          lastname,
+        });
+      }
+    }
+
+    // Join appointments room if user deals with appointments
+    if (['doctor', 'nurse', 'receptionist', 'admin'].includes(userRole)) {
+      joinRoom('appointments');
+    }
+
+    // Patient rooms
+    if (userRole === 'patient') {
+      const roomName = `${userUuid}_${currentUser?.person?.last_name}`;
+      socket.emit('room:user', { roomName });
+    }
+
+    console.log(`✅ Socket rooms joined for ${userRole}`);
+  }, [socket, isConnected, currentUser, joinRoom]);
+
+  // Handle appointment reminder notifications
   useEffect(() => {
     if (!socket || !isConnected) return;
 
@@ -110,6 +157,77 @@ const BaseLayout = () => {
       socket.off('appointment_reminder', handleNewAppointmentReminder);
     };
   }, [socket, isConnected, getUserNotifications, isNotifOpen]);
+
+  // Handle no-show events
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    const handleNoShowEvent = data => {
+      console.log('🔔 No-show event received:', data);
+
+      // Show toast notification immediately
+      toast.error(
+        `Patient No-Show: ${data.patient_name} did not show up for ${data.appointment_time}`,
+        {
+          duration: 6000,
+          icon: '⚠️',
+        },
+      );
+
+      // Play alert sound
+      try {
+        const audio = new Audio('/sounds/alert.mp3'); // Use a different sound for alerts
+        audio.volume = 0.5;
+        audio.play();
+      } catch (err) {
+        console.log('Could not play alert sound');
+      }
+
+      // Refresh notifications to show the new no-show notification
+      getUserNotifications();
+
+      // If on today's appointments page, trigger refresh
+      const todayStr = getLocalDateString();
+      if (data.appointment_date === todayStr) {
+        window.dispatchEvent(new Event('refresh-today-appointments'));
+      }
+
+      // Trigger refresh of appointments list
+      window.dispatchEvent(new Event('refresh-appointments'));
+
+      // Auto-open notification panel to ensure staff sees it
+      if (!isNotifOpen) {
+        setIsNotifOpen(true);
+      }
+    };
+
+    socket.on('appointment:no_show', handleNoShowEvent);
+
+    return () => {
+      socket.off('appointment:no_show', handleNoShowEvent);
+    };
+  }, [socket, isConnected, getUserNotifications, isNotifOpen]);
+
+  // Handle general appointment status changes
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    const handleAppointmentUpdate = data => {
+      console.log('📝 Appointment updated:', data);
+
+      // Refresh notifications
+      getUserNotifications();
+
+      // Trigger appointment list refresh
+      window.dispatchEvent(new Event('refresh-appointments'));
+    };
+
+    socket.on('appointment:updated', handleAppointmentUpdate);
+
+    return () => {
+      socket.off('appointment:updated', handleAppointmentUpdate);
+    };
+  }, [socket, isConnected, getUserNotifications]);
 
   const hasMore = notifPagination.currentPage < notifPagination.totalPages;
 
@@ -200,6 +318,8 @@ const BaseLayout = () => {
     notifPagination.currentPage,
     getUserNotifications,
     notifPagination.limit,
+    notifications,
+    setNotifications,
   ]);
 
   const handleScroll = useCallback(
@@ -221,6 +341,8 @@ const BaseLayout = () => {
     switch (type) {
       case 'new_appointment':
         return Calendar;
+      case 'appointment_no_show':
+        return UserX; // Add this for no-show notifications
       case 'room_created':
         return Video;
       case 'alert':
@@ -274,36 +396,7 @@ const BaseLayout = () => {
   useEffect(() => {
     if (!socket || !isConnected) return;
 
-    const doctor_uuid = currentUser?.person?.staff?.staff_uuid;
-    const lastname = currentUser?.person?.last_name;
-
-    const newAppointmentHandler = data => {
-      const todayStr = getLocalDateString();
-
-      if (data.appointment_date === todayStr) {
-        window.dispatchEvent(new Event('refresh-today-appointments'));
-      }
-
-      // Clear notifications and reload from page 1 to get the new one
-      setNotifications([]);
-      getUserNotifications();
-    };
-
-    if (doctor_uuid && lastname && currentUser.role === 'doctor') {
-      socket.emit('doctor-room', {
-        doctor_uuid,
-        lastname,
-      });
-
-      socket.on('new-appointment-booked', newAppointmentHandler);
-    }
-
     if (currentUser?.role === 'patient') {
-      const roomName = `${currentUser?.user_uuid}_${currentUser?.person?.last_name}`;
-      socket.emit('room:user', {
-        roomName,
-      });
-
       socket.on('video:room-created', () => {
         getUserNotifications();
       });
@@ -311,16 +404,10 @@ const BaseLayout = () => {
 
     return () => {
       if (socket) {
-        socket.off('new-appointment-booked', newAppointmentHandler);
+        socket.off('video:room-created');
       }
     };
-  }, [
-    isConnected,
-    socket,
-    currentUser,
-    getUserNotifications,
-    setNotifications,
-  ]);
+  }, [isConnected, socket, currentUser, getUserNotifications]);
 
   if (isLoading || loggingOut) {
     return <LoadingOverlay />;
@@ -504,7 +591,7 @@ const BaseLayout = () => {
                   </div>
                 ) : (
                   <>
-                    {notifications.map(notif => {
+                    {notifications.map(notif => (
                       <NotificationItem
                         key={notif.notification_id}
                         notif={notif}
@@ -514,8 +601,8 @@ const BaseLayout = () => {
                         formatNotificationTime={formatNotificationTime}
                         COLORS={COLORS}
                         isMobile={true} // Mobile version
-                      />;
-                    })}
+                      />
+                    ))}
                     {isLoadingMore && (
                       <div className="px-4 py-4 text-center">
                         <RefreshCw
