@@ -11,6 +11,7 @@ export const GOOGLEMAPSURL = `https://google.com/maps/dir/?api=1&destination=${e
 // URLs
 // export const DEVELOPMENT_BASE_URL = 'http://localhost:56741/api/v1';
 // export const SOCKET_URL = 'http://localhost:56741';
+// hello
 
 export const DEVELOPMENT_BASE_URL =
   'https://auth.health-ease-hospital.com/api/v1';
