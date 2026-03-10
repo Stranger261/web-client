@@ -51,7 +51,7 @@ export const sidebarConfig = {
     { name: 'My Patients', path: '/doctor/my-patients', icon: UsersIcon },
 
     { name: 'Video conference', path: '/doctor/video-call', icon: Video },
-    { name: 'Admitted Patients', path: '/doctor/admission', icon: BedIcon },
+    // { name: 'Admitted Patients', path: '/doctor/admission', icon: BedIcon },
     // { name: 'Reports', path: '/doctor/reports', icon: BarChartIcon },
     // { name: 'Settings', path: '/doctor/settings', icon: SettingsIcon },
   ],

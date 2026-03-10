@@ -18,10 +18,13 @@ import { Button } from '../../../components/ui/button';
 import AppointmentDetailModal from '../../../components/Modals/AppointmentDetailModal';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useSchedule } from '../../../contexts/ScheduleContext';
+import { useSocket } from '../../../contexts/SocketContext'; // Add this import
 import { formatTime } from '../../../utils/FormatTime';
+import toast from 'react-hot-toast'; // Add toast for notifications
 
 const AppointmentsPage = () => {
   const { currentUser } = useAuth();
+  const { socket } = useSocket(); // Get socket from context
   const {
     allDoctors,
     getAllDoctors,
@@ -65,6 +68,9 @@ const AppointmentsPage = () => {
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [detailsError, setDetailsError] = useState(null);
 
+  // Get current user's doctor ID if they are a doctor
+  const currentDoctorId = currentUser?.staff?.staff_uuid;
+
   useEffect(() => {
     getAllDoctors();
     getDepartments();
@@ -98,6 +104,175 @@ const AppointmentsPage = () => {
       fetchAppointments();
     }
   }, [selectedDate, filters, currentPage, itemsPerPage]);
+
+  // Socket event listeners for real-time updates
+  useEffect(() => {
+    if (!socket || !selectedDate) return;
+
+    console.log('Setting up socket listeners for appointments');
+
+    // Handle appointment transferred to current doctor
+    const handleAppointmentTransferred = updatedAppointment => {
+      console.log('Appointment transferred to you:', updatedAppointment);
+
+      // Check if this appointment belongs to the selected date
+      const appointmentDate = new Date(updatedAppointment.appointment_date);
+      if (appointmentDate.toDateString() === selectedDate.toDateString()) {
+        setAppointments(prev => {
+          // Check if appointment already exists in the list
+          const exists = prev.some(
+            apt => apt.appointment_id === updatedAppointment.appointment_id,
+          );
+
+          if (exists) {
+            // Update existing appointment
+            return prev.map(apt =>
+              apt.appointment_id === updatedAppointment.appointment_id
+                ? updatedAppointment
+                : apt,
+            );
+          } else {
+            // Add new appointment
+            return [...prev, updatedAppointment];
+          }
+        });
+
+        // Update pagination total
+        setPagination(prev => ({
+          ...prev,
+          total: prev.total + 1,
+          totalPages: Math.ceil((prev.total + 1) / itemsPerPage),
+        }));
+
+        toast.success('New appointment transferred to this date');
+      }
+    };
+
+    // Handle appointment removed from original doctor
+    const handleAppointmentRemoved = data => {
+      console.log('Appointment removed:', data);
+
+      // Remove the appointment from the list
+      setAppointments(prev => {
+        const filtered = prev.filter(
+          apt => apt.appointment_id !== data.appointment_id,
+        );
+
+        // Update pagination total if appointment was removed
+        if (filtered.length !== prev.length) {
+          setPagination(prevPagination => ({
+            ...prevPagination,
+            total: prevPagination.total - 1,
+            totalPages: Math.ceil((prevPagination.total - 1) / itemsPerPage),
+          }));
+        }
+
+        return filtered;
+      });
+
+      toast.info('An appointment has been transferred to another doctor');
+    };
+
+    // Handle appointment updates (status changes, etc.)
+    const handleAppointmentUpdated = updatedAppointment => {
+      console.log('Appointment updated:', updatedAppointment);
+
+      // Check if this appointment belongs to the selected date
+      const appointmentDate = new Date(updatedAppointment.appointment_date);
+      if (appointmentDate.toDateString() === selectedDate.toDateString()) {
+        setAppointments(prev =>
+          prev.map(apt =>
+            apt.appointment_id === updatedAppointment.appointment_id
+              ? updatedAppointment
+              : apt,
+          ),
+        );
+      }
+    };
+
+    // Handle new appointment booked
+    const handleNewAppointment = newAppointment => {
+      console.log('New appointment booked:', newAppointment);
+
+      // Check if this appointment belongs to the selected date
+      const appointmentDate = new Date(newAppointment.appointment_date);
+      if (appointmentDate.toDateString() === selectedDate.toDateString()) {
+        setAppointments(prev => {
+          // Check if already exists (avoid duplicates)
+          const exists = prev.some(
+            apt => apt.appointment_id === newAppointment.appointment_id,
+          );
+          if (!exists) {
+            setPagination(prevPagination => ({
+              ...prevPagination,
+              total: prevPagination.total + 1,
+              totalPages: Math.ceil((prevPagination.total + 1) / itemsPerPage),
+            }));
+            return [...prev, newAppointment];
+          }
+          return prev;
+        });
+      }
+    };
+
+    // Handle appointment cancelled
+    const handleAppointmentCancelled = data => {
+      console.log('Appointment cancelled:', data);
+
+      setAppointments(prev => {
+        const filtered = prev.filter(
+          apt => apt.appointment_id !== data.appointment_id,
+        );
+
+        if (filtered.length !== prev.length) {
+          setPagination(prevPagination => ({
+            ...prevPagination,
+            total: prevPagination.total - 1,
+            totalPages: Math.ceil((prevPagination.total - 1) / itemsPerPage),
+          }));
+          toast.info('An appointment has been cancelled');
+        }
+
+        return filtered;
+      });
+    };
+
+    // Register socket listeners
+    socket.on('appointment-transferred-to-you', handleAppointmentTransferred);
+    socket.on('appointment-removed', handleAppointmentRemoved);
+    socket.on('appointment-updated', handleAppointmentUpdated);
+    socket.on('new-appointment-booked', handleNewAppointment);
+    socket.on('appointment-cancelled', handleAppointmentCancelled);
+
+    // Cleanup listeners
+    return () => {
+      socket.off(
+        'appointment-transferred-to-you',
+        handleAppointmentTransferred,
+      );
+      socket.off('appointment-removed', handleAppointmentRemoved);
+      socket.off('appointment-updated', handleAppointmentUpdated);
+      socket.off('new-appointment-booked', handleNewAppointment);
+      socket.off('appointment-cancelled', handleAppointmentCancelled);
+    };
+  }, [socket, selectedDate, itemsPerPage]);
+
+  // Listen for refresh events
+  useEffect(() => {
+    const handleRefresh = () => {
+      if (selectedDate) {
+        fetchAppointments();
+      }
+    };
+
+    window.addEventListener('refresh-today-appointments', handleRefresh);
+    window.addEventListener('appointment-transferred', handleRefresh);
+
+    return () => {
+      window.removeEventListener('refresh-today-appointments', handleRefresh);
+      window.removeEventListener('appointment-transferred', handleRefresh);
+    };
+  }, [selectedDate]);
 
   const fetchAppointments = async () => {
     setLoading(true);
@@ -387,7 +562,7 @@ const AppointmentsPage = () => {
   );
 };
 
-// Calendar Widget Component
+// Calendar Widget Component (unchanged)
 const CalendarWidget = ({
   currentMonth,
   setCurrentMonth,
@@ -556,7 +731,7 @@ const CalendarWidget = ({
   );
 };
 
-// Appointments List Component
+// Appointments List Component (unchanged)
 const AppointmentsList = ({
   selectedDate,
   appointments,
@@ -720,7 +895,7 @@ const AppointmentsList = ({
   );
 };
 
-// Appointment Card Component
+// Appointment Card Component (unchanged)
 const AppointmentCard = ({ appointment, getStatusColor, onClick }) => {
   return (
     <div

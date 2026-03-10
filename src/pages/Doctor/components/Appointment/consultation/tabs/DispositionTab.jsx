@@ -40,32 +40,11 @@ const DispositionTab = ({
       description: 'Patient discharged home',
     },
     {
-      value: 'admit',
-      label: 'Admit',
-      icon: Building2,
-      color: COLORS.danger,
-      description: 'Admission required',
-    },
-    {
       value: 'followup',
       label: 'Follow-up',
       icon: Calendar,
       color: COLORS.info,
       description: 'Schedule follow-up',
-    },
-    {
-      value: 'refer',
-      label: 'Refer',
-      icon: AlertTriangle,
-      color: COLORS.warning,
-      description: 'Refer to specialist',
-    },
-    {
-      value: 'er',
-      label: 'ER',
-      icon: AlertTriangle,
-      color: COLORS.danger,
-      description: 'Transfer to ER',
     },
   ];
 

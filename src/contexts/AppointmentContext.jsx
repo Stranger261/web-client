@@ -230,6 +230,20 @@ export const AppointmentProvider = ({ children }) => {
     [getPatientAppointments],
   );
 
+  // Add to your AppointmentContext provider
+  const transferAppointment = useCallback(async transferData => {
+    try {
+      setIsLoading(true);
+      const res = await appointmentApi.transferAppointment(transferData);
+      return res;
+    } catch (error) {
+      console.error('Transfer appointment error:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   const value = {
     appointments,
     currentAppointment,
@@ -251,6 +265,7 @@ export const AppointmentProvider = ({ children }) => {
     refreshAppointments,
     getAppointmentsToday,
     updateAppointmentStatus,
+    transferAppointment,
   };
 
   return (

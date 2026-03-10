@@ -12,6 +12,7 @@ import {
   Hash,
   DollarSign,
   Activity,
+  ArrowRight,
 } from 'lucide-react';
 import { COLORS } from '../../configs/CONST';
 import Badge from '../ui/badge';
@@ -20,6 +21,7 @@ import { formatTime } from '../../utils/FormatTime';
 import appointmentApi from '../../services/appointmentApi';
 import toast from 'react-hot-toast';
 import AppointmentEditModal from './AppointmentEditModal';
+import TransferDoctorModal from './TransferDoctorModal'; // ← new
 
 const AppointmentDetailModal = ({
   isOpen,
@@ -30,13 +32,13 @@ const AppointmentDetailModal = ({
 }) => {
   const isDarkMode = document.documentElement.classList.contains('dark');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false); // ← new
 
   if (!appointment) return null;
 
   const isToday =
     new Date().toLocaleDateString('en-CA') === appointment.appointment_date;
 
-  // Get status color
   const getStatusVariant = status => {
     const statusMap = {
       confirmed: 'success',
@@ -66,7 +68,6 @@ const AppointmentDetailModal = ({
     }
   };
 
-  // Get payment status color
   const getPaymentStatusColor = status => {
     const colorMap = {
       paid: 'bg-green-100 text-green-800 border-green-200',
@@ -79,7 +80,6 @@ const AppointmentDetailModal = ({
 
   const DetailRow = ({ icon: Icon, label, value, valueClassName = '' }) => {
     if (!value) return null;
-
     return (
       <div className="flex items-start gap-3 py-2">
         <div
@@ -129,17 +129,20 @@ const AppointmentDetailModal = ({
     </h3>
   );
 
-  // Format doctor name
   const doctorName = appointment.doctor?.person
     ? `Dr. ${appointment.doctor.person.first_name} ${appointment.doctor.person.last_name}`
     : 'N/A';
 
-  // Format patient name (for receptionist/doctor view)
   const patientName = appointment.patient?.person
     ? `${appointment.patient.person.first_name} ${
         appointment.patient.person.middle_name || ''
       } ${appointment.patient.person.last_name}`.trim()
     : 'N/A';
+
+  // Receptionist can transfer if appointment is not already cancelled/completed/no_show
+  const canTransfer =
+    currentUser?.role === 'receptionist' &&
+    !['completed', 'no_show'].includes(appointment.status);
 
   return (
     <>
@@ -205,16 +208,6 @@ const AppointmentDetailModal = ({
                     border: 'none',
                     background: 'none',
                     cursor: 'pointer',
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.color = isDarkMode
-                      ? COLORS.text.white
-                      : COLORS.text.primary;
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.color = isDarkMode
-                      ? COLORS.text.light
-                      : COLORS.text.secondary;
                   }}
                 >
                   ×
@@ -301,7 +294,6 @@ const AppointmentDetailModal = ({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Left Column */}
                     <div className="space-y-6">
-                      {/* Doctor Information */}
                       {currentUser.role !== 'doctor' && (
                         <div>
                           <SectionTitle>Doctor Information</SectionTitle>
@@ -339,7 +331,6 @@ const AppointmentDetailModal = ({
                           </div>
                         </div>
                       )}
-                      {/* Patient Information - Only show for non-patient users */}
                       {currentUser?.role !== 'patient' && (
                         <div>
                           <SectionTitle>Patient Information</SectionTitle>
@@ -367,8 +358,6 @@ const AppointmentDetailModal = ({
                           </div>
                         </div>
                       )}
-
-                      {/* Appointment Details */}
                       <div>
                         <SectionTitle>Appointment Details</SectionTitle>
                         <div
@@ -403,9 +392,9 @@ const AppointmentDetailModal = ({
                         </div>
                       </div>
                     </div>
+
                     {/* Right Column */}
                     <div className="space-y-6">
-                      {/* Schedule Information */}
                       <div>
                         <SectionTitle>Schedule</SectionTitle>
                         <div
@@ -447,7 +436,6 @@ const AppointmentDetailModal = ({
                         </div>
                       </div>
 
-                      {/* Payment Information */}
                       <div>
                         <SectionTitle>Payment Information</SectionTitle>
                         <div
@@ -500,7 +488,6 @@ const AppointmentDetailModal = ({
                         </div>
                       </div>
 
-                      {/* Location Information */}
                       {appointment.department?.location && (
                         <div>
                           <SectionTitle>Location</SectionTitle>
@@ -583,7 +570,7 @@ const AppointmentDetailModal = ({
 
                   {/* Action Buttons */}
                   <div
-                    className="flex gap-3 pt-4"
+                    className="flex flex-wrap gap-3 pt-4"
                     style={{
                       borderTop: `1px solid ${
                         isDarkMode ? COLORS.border.dark : COLORS.border.light
@@ -592,7 +579,7 @@ const AppointmentDetailModal = ({
                   >
                     <button
                       onClick={onClose}
-                      className="flex-1 px-4 py-2.5 font-medium rounded-lg transition-colors"
+                      className="px-4 py-2.5 font-medium rounded-lg transition-colors"
                       style={{
                         backgroundColor: isDarkMode
                           ? COLORS.surface.darkHover
@@ -601,22 +588,14 @@ const AppointmentDetailModal = ({
                           ? COLORS.text.white
                           : COLORS.text.primary,
                       }}
-                      onMouseEnter={e => {
-                        e.currentTarget.style.backgroundColor = isDarkMode
-                          ? 'rgb(55 65 81)'
-                          : 'rgb(229 231 235)';
-                      }}
-                      onMouseLeave={e => {
-                        e.currentTarget.style.backgroundColor = isDarkMode
-                          ? COLORS.surface.darkHover
-                          : 'rgb(243 244 246)';
-                      }}
                     >
                       Close
                     </button>
+
                     {currentUser?.role === 'receptionist' &&
-                      appointment.status !== 'cancelled' && (
+                      appointment.status !== 'no_show' && (
                         <>
+                          {/* Reschedule */}
                           <button
                             onClick={() => setIsEditModalOpen(true)}
                             className="flex-1 px-4 py-2.5 font-medium rounded-lg transition-colors"
@@ -624,31 +603,32 @@ const AppointmentDetailModal = ({
                               backgroundColor: COLORS.info,
                               color: 'white',
                             }}
-                            onMouseEnter={e => {
-                              e.currentTarget.style.backgroundColor =
-                                'rgb(29 78 216)';
-                            }}
-                            onMouseLeave={e => {
-                              e.currentTarget.style.backgroundColor =
-                                COLORS.info;
-                            }}
                           >
-                            Edit Appointment
+                            Reschedule
                           </button>
+
+                          {/* ── Transfer Doctor button ── */}
+                          {canTransfer && (
+                            <button
+                              onClick={() => setIsTransferModalOpen(true)}
+                              className="flex items-center gap-2 px-4 py-2.5 font-medium rounded-lg transition-colors"
+                              style={{
+                                backgroundColor: 'rgb(234 179 8)',
+                                color: 'white',
+                              }}
+                            >
+                              <ArrowRight size={16} />
+                              Transfer Doctor
+                            </button>
+                          )}
+
+                          {/* Mark as arrived */}
                           {appointment.status === 'scheduled' && isToday && (
                             <button
                               className="px-4 py-2.5 font-medium rounded-lg transition-colors"
                               style={{
                                 backgroundColor: COLORS.success,
                                 color: 'white',
-                              }}
-                              onMouseEnter={e => {
-                                e.currentTarget.style.backgroundColor =
-                                  'rgb(21 128 61)';
-                              }}
-                              onMouseLeave={e => {
-                                e.currentTarget.style.backgroundColor =
-                                  COLORS.success;
                               }}
                               onClick={() =>
                                 markAppointmentAsArrived(appointment)
@@ -667,13 +647,23 @@ const AppointmentDetailModal = ({
         )}
       </AnimatePresence>
 
-      {/* Edit Modal */}
+      {/* Reschedule Modal */}
       <AppointmentEditModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         appointment={appointment}
         onUpdate={onClose}
         onGetDoctorAvailability={onGetDoctorAvailability}
+      />
+
+      {/* Transfer Doctor Modal */}
+      <TransferDoctorModal
+        isOpen={isTransferModalOpen}
+        onClose={() => setIsTransferModalOpen(false)}
+        appointment={appointment}
+        onUpdate={updatedData => {
+          onClose(); // close detail modal after transfer
+        }}
       />
     </>
   );

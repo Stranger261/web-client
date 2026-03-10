@@ -52,7 +52,6 @@ class appointmentSerevice {
   }
 
   // for staff
-
   async getDoctorAppointments(doctorUuid, filters = {}) {
     try {
       const doctorAppointments = await this.appointmentApi.get(
@@ -66,6 +65,7 @@ class appointmentSerevice {
       throw error;
     }
   }
+
   // doctor/receptionist/nurse
   async getAppointmentsToday(filters) {
     try {
@@ -226,6 +226,20 @@ class appointmentSerevice {
       return res.data;
     } catch (error) {
       console.log('daily statistics error:', error);
+      throw error;
+    }
+  }
+
+  // NEW: Transfer appointment to another doctor
+  async transferAppointment(transferData) {
+    try {
+      const response = await this.appointmentApi.post(
+        '/transfer',
+        transferData,
+      );
+      return response.data;
+    } catch (error) {
+      console.log('transfer appointment error: ', error);
       throw error;
     }
   }

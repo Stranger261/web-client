@@ -1,3 +1,5 @@
+// ReceptionistDashboard.jsx - ONLY ADD CANCEL SCHEDULE FEATURE
+
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
@@ -15,6 +17,7 @@ import {
   TrendingDown,
   Info,
   CalendarClock,
+  CalendarX, // ✅ NEW ICON for cancel schedule
 } from 'lucide-react';
 import { DEVELOPMENT_BASE_URL } from '../../../configs/CONST';
 import StatsCard from '../../../components/ui/stat-card';
@@ -27,6 +30,7 @@ import CreateAppointment from '../../../components/Forms/Appointments/CreateAppo
 import AppointmentList from '../../../components/shared/AppointmentList';
 import WalkInPatientRegistration from '../components/patientRegistration/WalkInPatientRegistration';
 import CreateScheduleModal from '../../../components/Modals/ScheduleModal';
+import CancelDoctorScheduleModal from '../../../components/Modals/CancelDoctorScheduleModal'; // ✅ NEW IMPORT
 
 const ReceptionistDashboard = () => {
   const { currentUser } = useAuth();
@@ -48,7 +52,7 @@ const ReceptionistDashboard = () => {
     getDoctorAvailability,
     getCombinedSchedule,
     clearSchedules,
-    createDoctorSchedule, // Make sure this function exists in your ScheduleContext
+    createDoctorSchedule,
     isLoading: scheduleLoading,
   } = useSchedule();
 
@@ -58,6 +62,7 @@ const ReceptionistDashboard = () => {
   const [searchingPatients, setSearchingPatients] = useState(false);
 
   const darkMode = document.documentElement.classList.contains('dark');
+  const appointmentTypes = dashboardStats?.breakdown?.appointmentTypes || {};
 
   const [isViewAppointModalOpen, setIsViewAppointModalOpen] = useState(false);
   const [isCreateAppointmentModalOpen, setIsCreateAppointmentModalOpen] =
@@ -68,8 +73,14 @@ const ReceptionistDashboard = () => {
   // create patient
   const [isCreatePatientModalOpen, setIsCreatePatientModalOpen] =
     useState(false);
+  const [registeredPatients, setRegisteredPatients] = useState([]);
   const [isCreateScheduleModalOpen, setIsCreateScheduleModalOpen] =
     useState(false);
+
+  // ✅ NEW STATE for Cancel Schedule Modal
+  const [isCancelScheduleModalOpen, setIsCancelScheduleModalOpen] =
+    useState(false);
+
   // Filter state
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -166,7 +177,6 @@ const ReceptionistDashboard = () => {
     } catch (error) {
       console.error('Dashboard stats error:', error);
       toast.error('Failed to fetch dashboard statistics');
-      // Set fallback stats
       setDashboardStats({
         totalPatients: 0,
         activePatients: 0,
@@ -225,13 +235,21 @@ const ReceptionistDashboard = () => {
 
   // Initialize schedule data
   useEffect(() => {
-    if (isCreateAppointmentModalOpen || isCreateScheduleModalOpen) {
+    if (
+      isCreateAppointmentModalOpen ||
+      isCreateScheduleModalOpen ||
+      isCancelScheduleModalOpen
+    ) {
       getDepartments();
       getAllDoctors();
     }
-  }, [isCreateAppointmentModalOpen, isCreateScheduleModalOpen]);
+  }, [
+    isCreateAppointmentModalOpen,
+    isCreateScheduleModalOpen,
+    isCancelScheduleModalOpen,
+  ]);
 
-  // Search patients function for CreateAppointment component
+  // Search patients function
   const handleSearchPatients = async searchTerm => {
     try {
       setSearchingPatients(true);
@@ -251,17 +269,15 @@ const ReceptionistDashboard = () => {
     }
   };
 
-  // Handle appointment creation for receptionist
+  // Handle appointment creation
   const handleCreateAppointment = async payload => {
     try {
-      // Use the same booking function but with receptionist context
       const response = await bookUserAppointment({
         ...payload,
         created_by: currentUser?.id,
         created_by_type: 'staff',
       });
 
-      // Refresh appointments list
       getAppointmentsToday({
         ...filters,
         limit,
@@ -292,6 +308,58 @@ const ReceptionistDashboard = () => {
       toast.error(errorMsg);
       throw error;
     }
+  };
+
+  // ✅ FIXED: Handle opening cancel schedule modal
+  const handleOpenCancelSchedule = () => {
+    // If doctors are already loaded, open modal
+    if (allDoctors && allDoctors.length > 0) {
+      setIsCancelScheduleModalOpen(true);
+      return;
+    }
+
+    // If doctors aren't loaded, show loading toast and fetch them
+    toast.loading('Loading doctors...', { id: 'loadDoctors' });
+
+    getAllDoctors()
+      .then(() => {
+        toast.success('Doctors loaded!', { id: 'loadDoctors' });
+        setIsCancelScheduleModalOpen(true);
+      })
+      .catch(() => {
+        toast.error('Failed to load doctors', { id: 'loadDoctors' });
+      });
+  };
+
+  // ✅ NEW: Handle schedule cancellation success
+  const handleScheduleCancellationSuccess = result => {
+    // Refresh appointments to show cancelled ones
+    getAppointmentsToday({
+      ...filters,
+      limit,
+      page: currentPage,
+    });
+
+    // Refresh stats
+    fetchData();
+
+    // Show summary
+    if (result.affectedAppointments && result.affectedAppointments.length > 0) {
+      toast.success(
+        `${result.cancelledCount} appointment(s) cancelled. Please contact affected patients.`,
+        { duration: 6000 },
+      );
+    }
+  };
+
+  // Format currency
+  const formatCurrency = amount => {
+    return new Intl.NumberFormat('en-PH', {
+      style: 'currency',
+      currency: 'PHP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount || 0);
   };
 
   // Format percentage
@@ -338,9 +406,6 @@ const ReceptionistDashboard = () => {
           value: (
             dashboardStats.todaysOverview?.appointments || 0
           ).toLocaleString(),
-          // change: `${
-          //   dashboardStats.todaysOverview?.waitingPatients || 0
-          // } waiting`,
           trend:
             calculateAppointmentTrend() > 0
               ? 'up'
@@ -403,9 +468,7 @@ const ReceptionistDashboard = () => {
     },
   ];
 
-  // Appointment type breakdown for chart
-  const appointmentTypes = dashboardStats?.breakdown?.appointmentTypes || {};
-
+  // ✅ UPDATED: Quick actions with Cancel Schedule
   const quickActions = [
     {
       icon: Calendar,
@@ -427,6 +490,13 @@ const ReceptionistDashboard = () => {
       color: 'blue',
       functions: () => setIsCreateScheduleModalOpen(true),
     },
+    // ✅ NEW: Cancel Doctor Schedule action
+    {
+      icon: CalendarX,
+      label: 'Cancel Doctor Schedule',
+      color: 'red',
+      functions: handleOpenCancelSchedule,
+    },
   ];
 
   // MODALS
@@ -439,7 +509,7 @@ const ReceptionistDashboard = () => {
     toast.success('New patient registered.');
   };
 
-  const handleScheduleCreated = () => {
+  const handleScheduleCreated = newSchedule => {
     toast.success('Doctor schedule created successfully!');
   };
 
@@ -476,10 +546,7 @@ const ReceptionistDashboard = () => {
       {/* Appointment Detail Modal */}
       <Modal
         isOpen={isViewAppointModalOpen}
-        onClose={() => {
-          setIsViewAppointModalOpen(false);
-          window.dispatchEvent(new Event('refresh-today-appointments'));
-        }}
+        onClose={() => setIsViewAppointModalOpen(false)}
         title="Appointment Details"
       >
         <AppointmentDetailModal
@@ -530,10 +597,23 @@ const ReceptionistDashboard = () => {
       <CreateScheduleModal
         isOpen={isCreateScheduleModalOpen}
         onClose={() => setIsCreateScheduleModalOpen(false)}
-        doctors={allDoctors} // Pass the list of doctors
+        doctors={allDoctors}
         onSubmit={handleCreateSchedule}
         onSuccess={handleScheduleCreated}
       />
+
+      {/* ✅ NEW: Cancel Doctor Schedule Modal */}
+      <CancelDoctorScheduleModal
+        isOpen={isCancelScheduleModalOpen}
+        onClose={() => {
+          setIsCancelScheduleModalOpen(false);
+        }}
+        doctors={allDoctors || []}
+        onSuccess={handleScheduleCancellationSuccess}
+      />
+
+      {/* REST OF THE DASHBOARD CODE REMAINS THE SAME... */}
+      {/* Welcome Section, Stats, Appointments List, etc. */}
 
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white shadow-lg">
@@ -597,11 +677,9 @@ const ReceptionistDashboard = () => {
 
       {/* Main content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left col */}
+        {/* Left col - Today's Appointments */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Today's Appointments */}
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-            {/* Header */}
             <div className="p-6 border-b border-gray-200 dark:border-gray-700">
               <header className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm rounded-lg mb-4 overflow-hidden">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 sm:px-6 py-4 gap-4">
@@ -701,7 +779,7 @@ const ReceptionistDashboard = () => {
           )}
         </div>
 
-        {/* Right Column */}
+        {/* Right Column - Quick Actions & Summary */}
         <div className="space-y-6">
           {/* Quick Actions */}
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">

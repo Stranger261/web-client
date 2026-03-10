@@ -23,6 +23,15 @@ import {
   LogOut,
   ArrowRightLeft,
   HeartPulse,
+  Info,
+  BookOpen,
+  ChevronDown,
+  ChevronUp,
+  Thermometer,
+  Droplets,
+  Wind,
+  Brain,
+  Bone,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -47,6 +56,23 @@ const TRIAGE = {
     dot: 'bg-red-500',
     ring: 'border-l-red-500',
     pulse: true,
+    maxWait: '0 minutes',
+    description: 'Immediate life-saving intervention required',
+    criteria: {
+      airway: 'Compromised / Unable to maintain',
+      breathing: 'Absent / Severe distress / RR <10 or >29',
+      circulation: 'Absent pulse / Severe shock / HR >140 / SBP <90',
+      disability: 'Unconscious / Fitting / GCS <9',
+      examples: [
+        'Cardiac arrest',
+        'Severe respiratory distress',
+        'Gunshot wound to head/chest/abdomen',
+        'Major trauma with unstable vitals',
+        'Severe burns > 40% BSA',
+        'Active seizures',
+        'Severe allergic reaction with airway compromise',
+      ],
+    },
   },
   2: {
     label: 'Emergency',
@@ -57,6 +83,24 @@ const TRIAGE = {
     dot: 'bg-orange-500',
     ring: 'border-l-orange-500',
     pulse: true,
+    maxWait: '< 10 minutes',
+    description: 'High risk of deterioration, rapid intervention required',
+    criteria: {
+      airway: 'Maintainable but at risk',
+      breathing: 'Moderate distress / RR 20-29',
+      circulation: 'Signs of shock but BP maintained / HR 120-140',
+      disability: 'Altered mental status / GCS 9-12',
+      examples: [
+        'Chest pain with cardiac history',
+        'Stroke symptoms',
+        'Gunshot wound to extremities',
+        'Stab wounds with stable vitals',
+        'Severe abdominal pain',
+        'Open fractures',
+        'Severe burns 20-40% BSA',
+        'Active labor with complications',
+      ],
+    },
   },
   3: {
     label: 'Urgent',
@@ -67,6 +111,24 @@ const TRIAGE = {
     dot: 'bg-yellow-500',
     ring: 'border-l-yellow-500',
     pulse: false,
+    maxWait: '< 30 minutes',
+    description: 'Significant symptoms, stable for short wait',
+    criteria: {
+      airway: 'Patent',
+      breathing: 'Mild distress / RR 16-20',
+      circulation: 'Stable / HR 100-119',
+      disability: 'Alert but anxious/confused / GCS 13-14',
+      examples: [
+        'Moderate abdominal pain',
+        'High fever with stable vitals',
+        'Closed fractures',
+        'Mild to moderate asthma',
+        'Dehydration requiring IV',
+        'Migraine',
+        'Urinary retention',
+        'Moderate burns < 20% BSA',
+      ],
+    },
   },
   4: {
     label: 'Less Urgent',
@@ -77,6 +139,24 @@ const TRIAGE = {
     dot: 'bg-green-500',
     ring: 'border-l-green-500',
     pulse: false,
+    maxWait: '< 60 minutes',
+    description: 'Minor symptoms, can wait without deterioration',
+    criteria: {
+      airway: 'Patent',
+      breathing: 'Normal / RR 12-16',
+      circulation: 'Stable / HR <100',
+      disability: 'Alert and oriented / GCS 15',
+      examples: [
+        'Minor lacerations',
+        'Sprains/Strains',
+        'Mild fever',
+        'Sore throat',
+        'Ear pain',
+        'Rash without systemic symptoms',
+        'Constipation',
+        'Minor burns < 10% BSA',
+      ],
+    },
   },
   5: {
     label: 'Non-Urgent',
@@ -87,6 +167,23 @@ const TRIAGE = {
     dot: 'bg-blue-500',
     ring: 'border-l-blue-500',
     pulse: false,
+    maxWait: '< 120 minutes',
+    description: 'Minor complaints, can be seen in primary care',
+    criteria: {
+      airway: 'Patent',
+      breathing: 'Normal',
+      circulation: 'Stable',
+      disability: 'Alert and oriented',
+      examples: [
+        'Medication refills',
+        'Minor cuts/scrapes',
+        'Chronic issues',
+        'Routine physical',
+        'Mild cold symptoms',
+        'Prescription renewal',
+        'Suture removal',
+      ],
+    },
   },
 };
 
@@ -107,6 +204,238 @@ const STATUS_TABS = [
   },
   { key: 'all', label: 'All', Icon: LayoutList, statKey: 'totalToday' },
 ];
+
+// ─── Triage Guidelines Component ─────────────────────────────────────────────
+const TriageGuidelines = ({ isOpen, onClose }) => {
+  const [expandedLevel, setExpandedLevel] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    if (searchQuery) {
+      setExpandedLevel('1');
+    }
+  }, [searchQuery]);
+
+  if (!isOpen) return null;
+
+  const filteredLevels = Object.entries(TRIAGE).filter(([level, data]) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+
+    return (
+      data.label.toLowerCase().includes(q) ||
+      data.criteria.examples.some(ex => ex.toLowerCase().includes(q))
+    );
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex items-center justify-center min-h-screen px-4 py-6">
+        {/* Backdrop */}
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm"
+          onClick={onClose}
+        />
+
+        {/* Modal */}
+        <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-6xl w-full max-h-[92vh] flex flex-col">
+          {/* Header */}
+          <div className="flex-none border-b border-gray-200 dark:border-gray-700 px-6 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                <BookOpen
+                  size={18}
+                  className="text-blue-600 dark:text-blue-400"
+                />
+              </div>
+
+              <div>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                  Triage Guidelines
+                </h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  CTAS-based triage criteria for emergency department
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+            >
+              <X size={20} className="text-gray-500" />
+            </button>
+          </div>
+
+          {/* Search */}
+          <div className="flex-none px-6 py-3 border-b border-gray-200 dark:border-gray-700">
+            <div className="relative">
+              <Search
+                size={18}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              />
+
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search by symptom (e.g., chest pain, stroke, fever)"
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          {/* Quick Reference */}
+          <div className="flex-none px-6 py-3 bg-blue-50 dark:bg-blue-950/30 border-b border-blue-200 dark:border-blue-800">
+            <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2 flex items-center gap-2">
+              <Zap size={15} /> Quick Reference
+            </h3>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-32 overflow-y-auto pr-1">
+              {[
+                { complaint: 'Cardiac arrest', level: 1 },
+                { complaint: 'Gunshot wound (head/chest)', level: 1 },
+                { complaint: 'Gunshot wound (extremity)', level: 2 },
+                { complaint: 'Chest pain + cardiac history', level: 2 },
+                { complaint: 'Chest pain (young)', level: 3 },
+                { complaint: 'Stroke symptoms', level: 2 },
+                { complaint: 'Severe headache', level: 3 },
+                { complaint: 'Severe abdominal pain', level: 2 },
+                { complaint: 'High fever >39°C', level: 3 },
+                { complaint: 'Minor laceration', level: 4 },
+                { complaint: 'Sprain/strain', level: 4 },
+                { complaint: 'Medication refill', level: 5 },
+              ].map((item, i) => (
+                <div
+                  key={i}
+                  onClick={() => setSearchQuery(item.complaint.toLowerCase())}
+                  className="text-xs px-3 py-2.5 bg-white dark:bg-gray-800 rounded-lg border border-blue-200 dark:border-blue-700 hover:border-blue-500 hover:shadow-sm transition cursor-pointer flex justify-between items-center"
+                >
+                  <span className="text-gray-700 dark:text-gray-300">
+                    {item.complaint}
+                  </span>
+
+                  <span
+                    className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded"
+                    style={{
+                      backgroundColor: TRIAGE[item.level].color + '20',
+                      color: TRIAGE[item.level].color,
+                    }}
+                  >
+                    L{item.level}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Scrollable Triage Levels */}
+          <div className="flex-1 overflow-y-auto px-6 py-4 min-h-[250px]">
+            <div className="space-y-4">
+              {filteredLevels.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  No matching criteria found
+                </div>
+              )}
+
+              {filteredLevels.map(([level, data]) => (
+                <div
+                  key={level}
+                  className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm"
+                >
+                  {/* Header */}
+                  <button
+                    onClick={() =>
+                      setExpandedLevel(expandedLevel === level ? null : level)
+                    }
+                    className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                  >
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <span
+                        className={`w-3 h-3 rounded-full ${data.dot} ${data.pulse ? 'animate-pulse' : ''}`}
+                      />
+
+                      <span
+                        className="font-semibold"
+                        style={{ color: data.color }}
+                      >
+                        Level {level} — {data.label}
+                      </span>
+
+                      <span className="text-xs px-2 py-1 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                        Max wait: {data.maxWait}
+                      </span>
+                    </div>
+
+                    {expandedLevel === level ? (
+                      <ChevronUp size={18} />
+                    ) : (
+                      <ChevronDown size={18} />
+                    )}
+                  </button>
+
+                  {/* Expanded */}
+                  {expandedLevel === level && (
+                    <div className="p-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                        {data.description}
+                      </p>
+
+                      <div className="grid md:grid-cols-2 gap-6">
+                        {/* Vital Signs */}
+                        <div>
+                          <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">
+                            Vital Signs Criteria
+                          </h4>
+
+                          <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                            <li>
+                              <b>Airway:</b> {data.criteria.airway}
+                            </li>
+                            <li>
+                              <b>Breathing:</b> {data.criteria.breathing}
+                            </li>
+                            <li>
+                              <b>Circulation:</b> {data.criteria.circulation}
+                            </li>
+                            <li>
+                              <b>Disability:</b> {data.criteria.disability}
+                            </li>
+                          </ul>
+                        </div>
+
+                        {/* Examples */}
+                        <div>
+                          <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">
+                            Common Examples
+                          </h4>
+
+                          <ul className="space-y-1 text-sm text-gray-600 dark:text-gray-400 max-h-40 overflow-y-auto pr-2">
+                            {data.criteria.examples.map((ex, i) => (
+                              <li key={i} className="flex gap-2">
+                                <span className="w-1 h-1 mt-2 rounded-full bg-gray-400" />
+                                {ex}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="flex-none px-6 py-3 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500">
+            Based on Canadian Triage and Acuity Scale (CTAS) • Updated 2024
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmtWait = mins => {
@@ -404,7 +733,6 @@ const PatientRow = ({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 const NurseERPage = () => {
   // ── Auth / current user ────────────────────────────────────────────────────
-  // Replace with your actual auth hook/context
   const currentUser = {
     staff_id: 1,
     person: { first_name: 'Nurse', last_name: 'On Duty' },
@@ -421,6 +749,7 @@ const NurseERPage = () => {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [newVisitIds, setNewVisitIds] = useState(new Set());
   const [selectedVisit, setSelectedVisit] = useState(null);
+  const [showGuidelines, setShowGuidelines] = useState(false);
 
   // Face recognition pending data
   const [pendingFaceMatch, setPendingFaceMatch] = useState(null);
@@ -463,9 +792,6 @@ const NurseERPage = () => {
           if (fresh.length) {
             setNewVisitIds(new Set(fresh));
             setTimeout(() => setNewVisitIds(new Set()), 4000);
-            // toast.success(
-            //   `${fresh.length} new arrival${fresh.length > 1 ? 's' : ''}`,
-            // );
           }
         }
 
@@ -511,13 +837,10 @@ const NurseERPage = () => {
   };
 
   // ── Triage saved → immediately open AssignDoctorModal ─────────────────────
-  // L1: auto-assigns on backend, AssignDoctorModal shows the result
-  // L2–L5: nurse picks a doctor
   const handleTriageSuccess = visit => {
     closeModal('triage');
     fetchData(true);
     toast.success('Triage assessment saved');
-    // Small delay so the triage drawer closes cleanly before the next modal opens
     setTimeout(() => {
       setPendingAssignVisit(visit ?? selectedVisit);
       setModals(m => ({ ...m, assignDoctor: true }));
@@ -614,6 +937,15 @@ const NurseERPage = () => {
           )}
 
           <div className="flex items-center gap-2 ml-auto">
+            {/* Triage Guidelines Button */}
+            <button
+              onClick={() => setShowGuidelines(true)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-semibold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+            >
+              <BookOpen size={13} />
+              <span className="hidden sm:inline">Triage Guide</span>
+            </button>
+
             {lastUpdated && (
               <span className="text-[11px] text-slate-400 dark:text-slate-500 hidden lg:block">
                 Updated{' '}
@@ -826,7 +1158,7 @@ const NurseERPage = () => {
             </span>
           </div>
 
-          {/* Table header — 7 columns now (added Doctor) */}
+          {/* Table header */}
           <div
             className="grid px-5 py-2.5 bg-slate-50 dark:bg-slate-800/40 border-b border-slate-200 dark:border-slate-700"
             style={{
@@ -958,6 +1290,12 @@ const NurseERPage = () => {
           {lastUpdated ? lastUpdated.toLocaleTimeString() : '—'}
         </span>
       </div>
+
+      {/* Triage Guidelines Modal */}
+      <TriageGuidelines
+        isOpen={showGuidelines}
+        onClose={() => setShowGuidelines(false)}
+      />
 
       {/* ══ MODALS ══════════════════════════════════════════════════════════════ */}
 
